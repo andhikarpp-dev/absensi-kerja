@@ -1,0 +1,377 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Izin</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard">Dasbor</a></li>
+          <li class="breadcrumb-item">Izin</li>
+          <li class="breadcrumb-item active">Izin Hari</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <h4 class="fw-bold mb-3">Izin Hari</h4>
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="alert py-2 px-3 mb-3 d-flex align-items-center gap-2"
+         [class.alert-success]="toastType()==='success'"
+         [class.alert-danger]="toastType()==='danger'"
+         style="position:fixed;top:70px;right:20px;z-index:9999;min-width:260px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+      <i [class]="toastType()==='success' ? 'bx bx-check-circle fs-5' : 'bx bx-x-circle fs-5'"></i>
+      <span>{{ toastMsg() }}</span>
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+
+      <!-- Tabs + Quick Filter -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm px-3"
+                  [class.btn-primary]="activeTab()==='MENUNGGU'"
+                  [class.btn-outline-secondary]="activeTab()!=='MENUNGGU'"
+                  (click)="setTab('MENUNGGU')">
+            Pengajuan
+            @if (countByStatus('MENUNGGU') > 0) {
+              <span class="badge rounded-pill ms-1" style="background:#f5a623;color:#fff">{{ countByStatus('MENUNGGU') }}</span>
+            }
+          </button>
+          <button class="btn btn-sm px-3"
+                  [class.btn-primary]="activeTab()==='DISETUJUI'"
+                  [class.btn-outline-secondary]="activeTab()!=='DISETUJUI'"
+                  (click)="setTab('DISETUJUI')">Disetujui</button>
+          <button class="btn btn-sm px-3"
+                  [class.btn-primary]="activeTab()==='DITOLAK'"
+                  [class.btn-outline-secondary]="activeTab()!=='DITOLAK'"
+                  (click)="setTab('DITOLAK')">Ditolak</button>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm"
+                  [class.btn-outline-primary]="quickFilter()!=='HARI_INI'"
+                  [class.btn-primary]="quickFilter()==='HARI_INI'"
+                  (click)="setQuickFilter('HARI_INI')">Izin Hari Ini</button>
+          <button class="btn btn-sm"
+                  [class.btn-outline-primary]="quickFilter()!=='BESOK'"
+                  [class.btn-primary]="quickFilter()==='BESOK'"
+                  (click)="setQuickFilter('BESOK')">Izin Besok</button>
+          <button class="btn btn-sm"
+                  [class.btn-outline-primary]="quickFilter()!=='7_HARI'"
+                  [class.btn-primary]="quickFilter()==='7_HARI'"
+                  (click)="setQuickFilter('7_HARI')">Izin 7 Hari Kedepan</button>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="date" class="form-control form-control-sm" style="width:160px"
+               [value]="filterFrom()" (change)="filterFrom.set($any($event.target).value)">
+        <span>-</span>
+        <input type="date" class="form-control form-control-sm" style="width:160px"
+               [value]="filterTo()" (change)="filterTo.set($any($event.target).value)">
+        <select class="form-select form-select-sm" style="width:160px"
+                [value]="filterDivisi()"
+                (change)="filterDivisi.set(+$any($event.target).value || null)">
+          <option value="">--Divisi--</option>
+          @for (d of divisiList(); track d.id) {
+            <option [value]="d.id">{{ d.namaDivisi }}</option>
+          }
+        </select>
+        <div class="input-group" style="width:220px">
+          <input type="text" class="form-control form-control-sm" placeholder="Cari"
+                 [value]="filterCari()" (input)="filterCari.set($any($event.target).value)"
+                 (keyup.enter)="onCari()">
+          <button class="btn btn-outline-secondary btn-sm" (click)="onCari()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+        <button class="btn btn-success btn-sm px-3" (click)="eksporExcel()">
+          <i class="bx bx-export me-1"></i>Ekspor Excel
+        </button>
+        <button class="btn btn-primary btn-sm px-3" (click)="openModal()">
+          <i class="bx bx-plus me-1"></i>Tambah Izin Hari
+        </button>
+      </div>
+
+      <!-- Info -->
+      @if (activeTab()==='MENUNGGU') {
+        <p class="text-muted small mb-3">Daftar karyawan yang melakukan izin dan membutuhkan aksi jawaban</p>
+      }
+
+      <!-- Loading -->
+      @if (loading()) {
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm me-2"></div>Memuat data...
+        </div>
+      }
+
+      @if (!loading()) {
+        <!-- Table Header -->
+        <table class="table table-borderless" style="min-width:900px">
+          <thead>
+            <tr class="border-bottom">
+              <th style="width:22%">Karyawan</th>
+              <th style="width:44%">Detail Pengajuan</th>
+              <th>Status Persetujuan</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (pagedData().length === 0) {
+              <tr>
+                <td colspan="4" class="text-center py-5 text-muted">
+                  <i class="bx bx-calendar-x fs-2 d-block mb-2"></i>Tidak ada data izin.
+                </td>
+              </tr>
+            }
+            @for (item of pagedData(); track item.id) {
+              <tr class="border-bottom align-top">
+                <!-- Karyawan -->
+                <td class="py-3 pe-3">
+                  <div class="d-flex align-items-start gap-2">
+                    @if (item.fotoProfil) {
+                      <img [src]="item.fotoProfil" alt="Foto"
+                           class="rounded-circle flex-shrink-0"
+                           style="width:44px;height:44px;object-fit:cover;border:2px solid #e9ecef">
+                    } @else {
+                      <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                           style="width:44px;height:44px;background:#f3f4f6;color:#9ca3af;font-size:1.2rem">
+                        <i class="bx bx-user"></i>
+                      </div>
+                    }
+                    <div>
+                      <div class="fw-bold" style="font-size:.9rem">{{ item.namaKaryawan }}</div>
+                      <div class="text-muted small">{{ item.namaDivisi }}</div>
+                      @if (item.zonaWaktu) {
+                        <div class="text-muted small">{{ zonaLabel(item.zonaWaktu) }}</div>
+                      }
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Detail -->
+                <td class="py-3">
+                  <table class="table table-borderless table-sm mb-0" style="font-size:.88rem">
+                    <tr>
+                      <td class="fw-semibold text-end pe-2" style="width:140px">Tgl. Pengajuan</td>
+                      <td class="text-muted pe-2">:</td>
+                      <td>{{ formatDateTime(item.createdAt) }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-semibold text-end pe-2">Tgl. Izin</td>
+                      <td class="text-muted pe-2">:</td>
+                      <td>
+                        @for (t of item.tanggalList; track t; let i = $index) {
+                          <div>{{ i + 1 }}. {{ formatTanggal(t) }}</div>
+                        }
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-semibold text-end pe-2">Keperluan</td>
+                      <td class="text-muted pe-2">:</td>
+                      <td>{{ item.keperluan }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-semibold text-end pe-2">File Kelengkapan</td>
+                      <td class="text-muted pe-2">:</td>
+                      <td>
+                        @if (item.lampiranUrl) {
+                          <a [href]="item.lampiranUrl" target="_blank" class="text-primary small">
+                            <i class="bx bx-file me-1"></i>Lihat File
+                          </a>
+                        }
+                      </td>
+                    </tr>
+                    @if (item.catatanPenolakan) {
+                      <tr>
+                        <td class="fw-semibold text-end pe-2">Catatan Penolakan</td>
+                        <td class="text-muted pe-2">:</td>
+                        <td class="text-danger">{{ item.catatanPenolakan }}</td>
+                      </tr>
+                    }
+                  </table>
+                </td>
+
+                <!-- Status -->
+                <td class="py-3">
+                  @if (item.status === 'MENUNGGU') {
+                    <span class="badge bg-warning text-dark">Menunggu</span>
+                  } @else if (item.status === 'DISETUJUI') {
+                    <span class="badge bg-success">Disetujui</span>
+                  } @else if (item.status === 'DITOLAK') {
+                    <span class="badge bg-danger">Ditolak</span>
+                  }
+                </td>
+
+                <!-- Aksi -->
+                <td class="py-3 text-end">
+                  <div class="d-flex flex-column align-items-end gap-2">
+                    @if (item.status === 'MENUNGGU') {
+                      <button class="btn btn-success btn-sm px-3 w-100" (click)="approve(item)">
+                        <i class="bx bx-check me-1"></i>Setujui
+                      </button>
+                      <button class="btn btn-danger btn-sm px-3 w-100" (click)="openTolak(item)">
+                        <i class="bx bx-x me-1"></i>Tolak
+                      </button>
+                    }
+                    @if (item.status === 'DISETUJUI') {
+                      <button class="btn btn-outline-danger btn-sm px-3 w-100" (click)="openTolak(item)">
+                        <i class="bx bx-x me-1"></i>Batalkan Persetujuan
+                      </button>
+                    }
+                    @if (item.status === 'DITOLAK') {
+                      <button class="btn btn-outline-success btn-sm px-3 w-100" (click)="approve(item)">
+                        <i class="bx bx-check me-1"></i>Setujui
+                      </button>
+                    }
+                    <button class="btn btn-outline-secondary btn-sm px-3 w-100" (click)="delete(item)">
+                      <i class="bx bx-trash me-1"></i>Hapus
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between mt-3">
+          <div class="text-muted small">
+            Menampilkan {{ filteredData().length === 0 ? 0 : (page()-1)*pageSize+1 }}
+            dari {{ filteredData().length }} total data
+          </div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="page()===1">
+                <button class="page-link" (click)="goPage(1)">&laquo;</button>
+              </li>
+              <li class="page-item" [class.disabled]="page()===1">
+                <button class="page-link" (click)="goPage(page()-1)">&lsaquo;</button>
+              </li>
+              @for (p of pageNumbers(); track p) {
+                <li class="page-item" [class.active]="p===page()">
+                  <button class="page-link" (click)="goPage(p)">{{ p }}</button>
+                </li>
+              }
+              <li class="page-item" [class.disabled]="page()===totalPages()">
+                <button class="page-link" (click)="goPage(page()+1)">&rsaquo;</button>
+              </li>
+              <li class="page-item" [class.disabled]="page()===totalPages()">
+                <button class="page-link" (click)="goPage(totalPages())">&raquo;</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
+
+    </div>
+  </div>
+
+  <!-- ── Modal Tolak ── -->
+  @if (showTolakModal()) {
+    <div class="modal d-block" style="background:rgba(0,0,0,.4)">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title">Tolak Izin</h5>
+            <button class="btn-close" (click)="showTolakModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">Catatan Penolakan (opsional)</label>
+            <textarea class="form-control" rows="3"
+                      [value]="tolakCatatan()"
+                      (input)="tolakCatatan.set($any($event.target).value)"></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="showTolakModal.set(false)">Batal</button>
+            <button class="btn btn-danger btn-sm px-4" (click)="submitTolak()" [disabled]="tolakSaving()">
+              <span *ngIf="tolakSaving()" class="spinner-border spinner-border-sm me-1"></span>
+              Tolak
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Tambah Izin Hari ── -->
+  @if (showModal()) {
+    <div class="modal d-block" style="background:rgba(0,0,0,.4)">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title">Tambah Izin Hari</h5>
+            <button class="btn-close" (click)="showModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            @if (modalError()) {
+              <div class="alert alert-danger py-2">{{ modalError() }}</div>
+            }
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Karyawan <span class="text-danger">*</span></label>
+              <select class="form-select"
+                      [value]="modalKaryawanId()"
+                      (change)="modalKaryawanId.set(+$any($event.target).value || null)">
+                <option value="">-- Pilih Karyawan --</option>
+                @for (k of karyawanList(); track k.id) {
+                  <option [value]="k.id">{{ k.namaLengkap }}
+                    @if (k.namaDivisi) { ({{ k.namaDivisi }}) }
+                  </option>
+                }
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tanggal Izin <span class="text-danger">*</span></label>
+              <div class="d-flex gap-2 mb-2">
+                <input type="date" class="form-control" style="max-width:200px"
+                       [value]="newTanggal()" (change)="newTanggal.set($any($event.target).value)">
+                <button class="btn btn-outline-primary btn-sm px-3" (click)="addTanggal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                @for (t of modalForm().tanggalList; track t) {
+                  <span class="badge bg-primary d-flex align-items-center gap-1" style="font-size:.85rem">
+                    {{ formatTanggal(t) }}
+                    <button class="btn-close btn-close-white ms-1" style="font-size:.6rem"
+                            (click)="removeTanggal(t)"></button>
+                  </span>
+                }
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Keperluan <span class="text-danger">*</span></label>
+              <textarea class="form-control" rows="3"
+                        [value]="modalForm().keperluan"
+                        (input)="modalForm.set({...modalForm(), keperluan: $any($event.target).value})"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">File Kelengkapan</label>
+              <input type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png"
+                     (change)="onLampiranChange($event)">
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="mengurangiGaji"
+                     [checked]="modalForm().mengurangiGaji"
+                     (change)="modalForm.set({...modalForm(), mengurangiGaji: $any($event.target).checked})">
+              <label class="form-check-label" for="mengurangiGaji">Mengurangi Gaji</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="showModal.set(false)">Batal</button>
+            <button class="btn btn-primary btn-sm px-4" (click)="submitModal()" [disabled]="modalSaving()">
+              @if (modalSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

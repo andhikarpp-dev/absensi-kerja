@@ -1,0 +1,115 @@
+<app-layout>
+  <div class="d-flex flex-column align-items-center justify-content-center text-center"
+       style="min-height: 60vh; padding: 2rem">
+
+    <!-- Ilustrasi -->
+    <div class="mb-4 position-relative">
+      <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto"
+           style="width:120px;height:120px;background:linear-gradient(135deg,#fee2e2,#fecaca)">
+        <i class="bx bx-shield-x" style="font-size:3.5rem;color:#dc2626"></i>
+      </div>
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+            style="font-size:1rem;padding:.4rem .65rem">403</span>
+    </div>
+
+    <!-- Pesan -->
+    <h3 class="fw-bold mb-2">Akses Ditolak</h3>
+    <p class="text-muted mb-1" style="max-width:420px">
+      Maaf, kamu tidak memiliki izin untuk mengakses halaman ini.
+    </p>
+    <p class="text-muted mb-4" style="font-size:.85rem">
+      Role kamu saat ini:
+      <span class="badge ms-1"
+            [style.background]="auth.currentUser()?.role === 'ADMIN' ? '#dbeafe' :
+                                auth.currentUser()?.role === 'PEMILIK' ? '#dcfce7' : '#fef3c7'"
+            [style.color]="auth.currentUser()?.role === 'ADMIN' ? '#1e40af' :
+                           auth.currentUser()?.role === 'PEMILIK' ? '#166534' : '#92400e'">
+        {{ auth.currentUser()?.role ?? '-' }}
+      </span>
+      tidak memiliki akses ke halaman ini.
+    </p>
+
+    <!-- Role Matrix Info -->
+    <div class="card border-0 shadow-sm mb-4 text-start" style="max-width:500px;width:100%">
+      <div class="card-header bg-transparent border-0 pb-0 d-flex align-items-center gap-2">
+        <i class="bx bx-info-circle text-info fs-5"></i>
+        <h6 class="mb-0 fw-semibold">Hak Akses per Role</h6>
+      </div>
+      <div class="card-body pt-2">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0" style="font-size:.82rem">
+            <thead class="table-light">
+              <tr>
+                <th>Fitur</th>
+                <th class="text-center">PEMILIK</th>
+                <th class="text-center">ADMIN</th>
+                <th class="text-center">KARYAWAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><i class="bx bx-home-circle me-1 text-primary"></i>Dashboard</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+              </tr>
+              <tr>
+                <td><i class="bx bx-fingerprint me-1 text-primary"></i>Absensi</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+              </tr>
+              <tr>
+                <td><i class="bx bx-buildings me-1 text-primary"></i>Divisi</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-x-circle text-danger fs-5"></i></td>
+              </tr>
+              <tr>
+                <td><i class="bx bx-briefcase me-1 text-primary"></i>Jabatan</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-x-circle text-danger fs-5"></i></td>
+              </tr>
+              <tr>
+                <td><i class="bx bx-group me-1 text-primary"></i>Data Karyawan</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-x-circle text-danger fs-5"></i></td>
+              </tr>
+              <tr>
+                <td><i class="bx bx-map me-1 text-primary"></i>Lokasi Kehadiran</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-x-circle text-danger fs-5"></i></td>
+              </tr>
+              <tr>
+                <td><i class="bx bx-calendar me-1 text-primary"></i>Jadwal & Shift</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-x-circle text-danger fs-5"></i></td>
+              </tr>
+              <tr>
+                <td><i class="bx bx-file me-1 text-primary"></i>Laporan</td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-check-circle text-success fs-5"></i></td>
+                <td class="text-center"><i class="bx bx-x-circle text-danger fs-5"></i></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tombol aksi -->
+    <div class="d-flex gap-2 flex-wrap justify-content-center">
+      <a routerLink="/dashboard" class="btn btn-primary px-4">
+        <i class="bx bx-home-alt me-1"></i> Ke Dashboard
+      </a>
+      <button class="btn btn-outline-secondary px-4" onclick="history.back()">
+        <i class="bx bx-arrow-back me-1"></i> Kembali
+      </button>
+    </div>
+
+  </div>
+</app-layout>

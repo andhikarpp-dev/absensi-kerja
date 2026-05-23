@@ -1,0 +1,117 @@
+/* Izin Hari Component Styles */
+
+:host {
+  display: block;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+.btn-tab {
+  border-radius: 6px;
+  font-size: .875rem;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+}
+
+// ── Table ─────────────────────────────────────────────────────
+.table > :not(caption) > * > * {
+  padding: .75rem .5rem;
+}
+
+.table tbody tr {
+  transition: background .1s;
+  &:hover {
+    background: #f8f9ff;
+  }
+}
+
+// ── Detail table inside each row ──────────────────────────────
+.detail-table td {
+  padding: 2px 4px;
+  vertical-align: top;
+  font-size: .875rem;
+}
+
+// ── Avatar ────────────────────────────────────────────────────
+.avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.avatar-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+// ── Quick filter buttons ───────────────────────────────────────
+.quick-filter-btn {
+  font-size: .8rem;
+  padding: .25rem .75rem;
+  border-radius: 20px;
+}
+
+// ── Badge ─────────────────────────────────────────────────────
+.badge-menunggu {
+  background: #f5a623;
+  color: #fff;
+}
+
+// ── Dropdown Aksi ─────────────────────────────────────────────
+.dropdown-menu {
+  min-width: 160px;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  border-radius: 8px;
+}
+
+.dropdown-item {
+  font-size: .875rem;
+  padding: .5rem 1rem;
+  &:hover {
+    background: #f3f4f6;
+  }
+}
+
+// ── Modal ─────────────────────────────────────────────────────
+.modal {
+  z-index: 1050;
+}
+
+.modal-content {
+  border-radius: 12px;
+}
+
+// ── Pagination ────────────────────────────────────────────────
+.page-link {
+  font-size: .8rem;
+  padding: .3rem .6rem;
+  color: #6366f1;
+}
+
+.page-item.active .page-link {
+  background-color: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+.toast-float {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 260px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  border-radius: 8px;
+}

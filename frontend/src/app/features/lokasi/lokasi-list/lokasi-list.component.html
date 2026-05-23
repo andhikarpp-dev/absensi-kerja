@@ -1,0 +1,620 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item active" aria-current="page">Lokasi Kehadiran</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="mb-0">
+      <i class="bx bx-map-pin me-2"></i>Lokasi Kehadiran
+    </h5>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <span class="badge bg-light text-dark border" title="Sisa kuota lokasi">
+        <i class="bx bx-package me-1"></i> Sisa kuota: {{ sisaKuota() }}
+      </span>
+      <button type="button" class="btn btn-primary btn-sm px-3"
+              (click)="bukaPengaturan()">
+        <i class="bx bx-cog me-1"></i> Pengaturan
+      </button>
+      @if (sisaKuota() > 0) {
+        <button type="button" class="btn btn-success btn-sm px-3"
+                (click)="klikTambahLokasi()">
+          <i class="bx bx-plus me-1"></i> Tambah Lokasi
+        </button>
+      } @else {
+        <button type="button" class="btn btn-success btn-sm px-3"
+                title="Kuota lokasi habis. Klik untuk memesan kuota tambahan."
+                (click)="klikTambahLokasi()">
+          <i class="bx bx-cart-add me-1"></i> Tambah Lokasi (Pesan Kuota)
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="alert alert-info py-2 small d-flex align-items-start gap-2">
+    <i class="bx bx-info-circle fs-5 mt-0 lh-1"></i>
+    <div>
+      Atur titik lokasi tempat karyawan diizinkan melakukan presensi.
+      Aktifkan <strong>Hanya Mesin Fingerspot</strong> bila pada lokasi tertentu
+      presensi <em>wajib</em> dilakukan melalui mesin Fingerspot terdaftar
+      (bukan via aplikasi mobile/web).
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger small">{{ error() }}</div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    @if (loading()) {
+      <div class="p-4">
+        @for (i of [1,2,3]; track i) {
+          <div class="placeholder-glow mb-3">
+            <span class="placeholder col-3 rounded d-block mb-2" style="height:12px"></span>
+            <span class="placeholder col-7 rounded d-block" style="height:10px"></span>
+          </div>
+        }
+      </div>
+    } @else if (list().length === 0) {
+      <div class="text-center py-5 text-muted">
+        <i class="bx bx-map" style="font-size:3rem"></i>
+        <p class="mt-2 mb-3">Belum ada lokasi kehadiran.</p>
+        @if (sisaKuota() > 0) {
+          <button type="button" class="btn btn-primary btn-sm"
+                  (click)="klikTambahLokasi()">Tambah Sekarang</button>
+        } @else {
+          <button type="button" class="btn btn-primary btn-sm"
+                  (click)="bukaPesanKuota()">Pesan Kuota Lokasi</button>
+        }
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table id="tabelLokasi" class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="min-width:200px">Nama Lokasi</th>
+              <th>Alamat</th>
+              <th class="text-center">Koordinat</th>
+              <th class="text-center">Radius</th>
+              <th style="min-width:220px">Karyawan Ditugaskan</th>
+              <th class="text-center">Mode</th>
+              <th class="text-center">Status</th>
+              <th class="text-center" style="width:140px">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (k of list(); track k.id) {
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ k.namaLokasi }}</div>
+                  @if (k.fingerspotSn || k.fingerspotIp) {
+                    <div class="small text-muted">
+                      <i class="bx bx-chip"></i>
+                      @if (k.fingerspotSn) { SN: {{ k.fingerspotSn }} }
+                      @if (k.fingerspotSn && k.fingerspotIp) { · }
+                      @if (k.fingerspotIp) { {{ k.fingerspotIp }}@if (k.fingerspotPort) {:{{ k.fingerspotPort }}} }
+                    </div>
+                  }
+                </td>
+                <td class="small text-muted" style="max-width:280px">
+                  {{ k.alamat || '—' }}
+                </td>
+                <td class="text-center small">
+                  @if (k.latitude != null && k.longitude != null) {
+                    <button type="button" class="btn btn-link btn-sm p-0"
+                            title="Buka di Google Maps"
+                            (click)="bukaPeta(k)">
+                      {{ k.latitude }}, {{ k.longitude }}
+                      <i class="bx bx-link-external"></i>
+                    </button>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-light text-dark border">
+                    {{ k.radiusMeter ?? 0 }} m
+                  </span>
+                </td>
+                <td class="small">
+                  @if (!k.targetTipe || k.targetTipe === 'SEMUA') {
+                    <span class="badge text-dark"
+                          style="background:#fcd34d">Semua Karyawan</span>
+                  } @else if (k.targetTipe === 'DIVISI') {
+                    <div class="fw-semibold text-dark mb-1">Spesifik Divisi:</div>
+                    <ol class="ps-3 mb-0 small">
+                      @for (d of k.divisiTugas ?? []; track d.id) {
+                        <li>{{ d.nama }}</li>
+                      }
+                      @if ((k.divisiTugas?.length ?? 0) === 0) {
+                        <li class="text-muted fst-italic">— belum ada —</li>
+                      }
+                    </ol>
+                  } @else if (k.targetTipe === 'KARYAWAN') {
+                    <div class="fw-semibold text-dark mb-1">Spesifik Karyawan:</div>
+                    <ol class="ps-3 mb-0 small">
+                      @for (kk of k.karyawanTugas ?? []; track kk.id) {
+                        <li>{{ kk.nama }}</li>
+                      }
+                      @if ((k.karyawanTugas?.length ?? 0) === 0) {
+                        <li class="text-muted fst-italic">— belum ada —</li>
+                      }
+                    </ol>
+                  }
+                </td>
+                <td class="text-center">
+                  @if (k.hanyaFingerspot) {
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
+                          title="Presensi hanya dapat dilakukan melalui mesin Fingerspot">
+                      <i class="bx bx-fingerprint"></i> Fingerspot Saja
+                    </span>
+                  } @else {
+                    <span class="badge bg-info-subtle text-info border border-info-subtle">
+                      <i class="bx bx-mobile-alt"></i> Aplikasi & Fingerspot
+                    </span>
+                  }
+                </td>
+                <td class="text-center">
+                  @if (k.aktif) {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                      Aktif
+                    </span>
+                  } @else {
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                      Nonaktif
+                    </span>
+                  }
+                </td>
+                <td class="text-center">
+                  <a [routerLink]="['/lokasi', k.id, 'edit']"
+                     class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                    <i class="bx bx-edit-alt"></i>
+                  </a>
+                  <button type="button"
+                          class="btn btn-sm btn-light border"
+                          title="Aksi lainnya"
+                          (click)="toggleAksi(k.id!, $event)">
+                    <i class="bx bx-dots-horizontal-rounded"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- ───── Modal Konfirmasi Hapus ───── -->
+  @if (confirmDeleteId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1080">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-body p-4 text-center">
+            <i class="bx bx-error-circle text-danger" style="font-size:3rem"></i>
+            <h5 class="mt-3">Hapus lokasi?</h5>
+            <p class="text-muted small mb-4">
+              Lokasi yang dihapus tidak dapat dikembalikan kecuali dipulihkan oleh administrator.
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+              <button type="button" class="btn btn-light border btn-sm px-4"
+                      [disabled]="deleteBusy()"
+                      (click)="confirmDeleteId.set(null)">Batal</button>
+              <button type="button" class="btn btn-danger btn-sm px-4"
+                      [disabled]="deleteBusy()" (click)="doDelete()">
+                @if (deleteBusy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ───── Modal Pengaturan ───── -->
+  @if (showPengaturan()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1080">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bx-cog me-2"></i>Pengaturan Lokasi Kehadiran
+            </h5>
+            <button type="button" class="btn-close"
+                    (click)="showPengaturan.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            @if (pengaturanLoading()) {
+              <div class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Memuat pengaturan…
+              </div>
+            } @else {
+              <!-- SPV dapat menambah lokasi -->
+              <div class="row align-items-center mb-3">
+                <label class="col-sm-7 col-form-label small">
+                  SPV dapat menambah lokasi
+                </label>
+                <div class="col-sm-5 d-flex gap-3">
+                  <div class="form-check">
+                    <input type="radio" class="form-check-input" id="spvAddYa"
+                           name="spvAdd"
+                           [checked]="pengaturan().spvDapatMenambahLokasi"
+                           (change)="setSpvTambah(true)">
+                    <label class="form-check-label small" for="spvAddYa">YA</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="radio" class="form-check-input" id="spvAddTidak"
+                           name="spvAdd"
+                           [checked]="!pengaturan().spvDapatMenambahLokasi"
+                           (change)="setSpvTambah(false)">
+                    <label class="form-check-label small" for="spvAddTidak">TIDAK</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SPV dapat memperbarui lokasi -->
+              <div class="row align-items-center mb-2">
+                <label class="col-sm-7 col-form-label small">
+                  SPV dapat memperbarui lokasi
+                </label>
+                <div class="col-sm-5 d-flex gap-3">
+                  <div class="form-check">
+                    <input type="radio" class="form-check-input" id="spvUpdYa"
+                           name="spvUpd"
+                           [checked]="pengaturan().spvDapatMemperbaruiLokasi"
+                           (change)="setSpvUpdate(true)">
+                    <label class="form-check-label small" for="spvUpdYa">YA</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="radio" class="form-check-input" id="spvUpdTidak"
+                           name="spvUpd"
+                           [checked]="!pengaturan().spvDapatMemperbaruiLokasi"
+                           (change)="setSpvUpdate(false)">
+                    <label class="form-check-label small" for="spvUpdTidak">TIDAK</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="alert alert-info py-2 small mt-3 mb-0">
+                <i class="bx bx-info-circle"></i>
+                Pengaturan ini berlaku untuk semua supervisor (SPV) di
+                perusahaan Anda. Pemilik &amp; Admin tetap dapat
+                menambah/memperbarui lokasi.
+              </div>
+            }
+          </div>
+          <div class="modal-footer d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-light border btn-sm px-4"
+                    [disabled]="pengaturanSaving()"
+                    (click)="showPengaturan.set(false)">Batal</button>
+            <button type="button" class="btn btn-primary btn-sm px-4"
+                    [disabled]="pengaturanLoading() || pengaturanSaving()"
+                    (click)="simpanPengaturan()">
+              @if (pengaturanSaving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+              }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ───── Modal Pesan Kuota Lokasi Tambahan ───── -->
+  @if (showKuota()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1080">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:640px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">Pesan Kuota Lokasi Tambahan</h5>
+            <button type="button" class="btn-close"
+                    [disabled]="kuotaSaving()"
+                    (click)="showKuota.set(false)"></button>
+          </div>
+          <div class="modal-body px-4 pt-3 pb-4">
+            <div class="mb-2 fw-semibold">Kuota</div>
+            <div class="row g-3 mb-4">
+              @for (p of paketKuota; track p.kuota) {
+                <div class="col-4">
+                  <button type="button"
+                          class="w-100 border rounded-3 py-3 px-2 bg-white"
+                          [class.border-success]="kuotaTerpilih() === p.kuota"
+                          [class.border-2]="kuotaTerpilih() === p.kuota"
+                          [style.opacity]="kuotaTerpilih() === p.kuota ? 1 : 0.65"
+                          (click)="pilihKuota(p.kuota)">
+                    <div class="fs-5 fw-semibold text-dark">{{ p.kuota }}</div>
+                    <div class="small text-muted mt-1">
+                      Rp{{ p.harga.toLocaleString('id-ID') }}
+                    </div>
+                  </button>
+                </div>
+              }
+            </div>
+
+            <div class="d-flex align-items-center mb-4">
+              <div class="fw-semibold me-4" style="min-width:90px">Total (Rp)</div>
+              <div class="fs-3 fw-bold" style="color:#7367f0">
+                {{ totalHargaKuota().toLocaleString('id-ID') }}
+              </div>
+            </div>
+
+            <hr class="my-3" style="border-style:dashed">
+
+            <div class="text-center">
+              <button type="button" class="btn btn-primary px-4 py-2 fw-semibold"
+                      style="background:#7367f0;border-color:#7367f0"
+                      [disabled]="kuotaSaving()"
+                      (click)="pesanKuota()">
+                @if (kuotaSaving()) {
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                Pesan Kuota <i class="bx bx-right-arrow-alt ms-1"></i>
+              </button>
+              <div class="small text-muted mt-3">
+                Dengan melanjutkan, Anda menyetujui
+                <a href="#" class="text-decoration-none" style="color:#7367f0">
+                  S&amp;K Layanan <i class="bx bx-link-external"></i></a>
+                dan
+                <a href="#" class="text-decoration-none" style="color:#7367f0">
+                  Privasi <i class="bx bx-link-external"></i></a>
+                Kerjoo.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ───── Floating Menu Aksi (fixed — bebas overflow tabel) ───── -->
+  @if (openAksiId() !== null) {
+    <div class="shadow rounded bg-white border"
+         (click)="$event.stopPropagation()"
+         [style.position]="'fixed'"
+         [style.top.px]="aksiPos().top"
+         [style.left.px]="aksiPos().left"
+         [style.width.px]="220"
+         [style.zIndex]="2000">
+      @for (k of list(); track k.id) {
+        @if (k.id === openAksiId()) {
+          <button type="button" class="dropdown-item py-2 px-3"
+                  (click)="tutupAksi(); bukaPenugasan(k)">
+            <i class="bx bx-user-pin me-2"></i> Karyawan Ditugaskan
+          </button>
+          <button type="button" class="dropdown-item py-2 px-3"
+                  (click)="tutupAksi(); bukaRiwayat(k)">
+            <i class="bx bx-history me-2"></i> Riwayat Perubahan
+          </button>
+          <hr class="my-1">
+          <button type="button" class="dropdown-item py-2 px-3 text-danger"
+                  (click)="tutupAksi(); confirmDeleteId.set(k.id)">
+            <i class="bx bx-trash me-2"></i> Hapus
+          </button>
+        }
+      }
+    </div>
+  }
+
+  <!-- ───── Modal Karyawan Ditugaskan ───── -->
+  @if (showPenugasan()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1080">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">
+              Karyawan Ditugaskan
+              @if (penugasanLokasi()) {
+                <small class="text-muted fw-normal ms-2">
+                  — {{ penugasanLokasi()!.namaLokasi }}
+                </small>
+              }
+            </h5>
+            <button type="button" class="btn-close"
+                    [disabled]="penugasanSaving()"
+                    (click)="showPenugasan.set(false)"></button>
+          </div>
+          <div class="modal-body px-4 pt-3 pb-4">
+
+            <h6 class="fw-bold mb-3"># Spesifik Divisi</h6>
+            @if (divisiOptions().length === 0) {
+              <p class="text-muted small">Belum ada divisi.</p>
+            } @else {
+              <div class="row g-2 mb-4">
+                @for (d of divisiOptions(); track d.id) {
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox"
+                             [id]="'pen-div-' + d.id"
+                             [checked]="isDivisiSelected(d.id!)"
+                             (change)="togglePenugasanDivisi(d.id!, $any($event.target).checked)">
+                      <label class="form-check-label" [for]="'pen-div-' + d.id">
+                        {{ d.namaDivisi }}
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <h6 class="fw-bold mb-2"># Spesifik Karyawan</h6>
+            <input type="text" class="form-control mb-2"
+                   placeholder="Tulis kata kunci..."
+                   [ngModel]="searchKaryawan()"
+                   (ngModelChange)="searchKaryawan.set($event)">
+
+            @if (selKaryawanIds().size > 0) {
+              <div class="d-flex flex-wrap gap-1 mb-2">
+                @for (id of selKaryawanIdsArray(); track id) {
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                    {{ namaKaryawanById(id) }}
+                    <button type="button"
+                            class="btn-close btn-close-sm ms-1"
+                            style="font-size:.6rem"
+                            (click)="hapusKaryawanPenugasan(id)"></button>
+                  </span>
+                }
+              </div>
+            }
+
+            <div class="border rounded"
+                 style="max-height:240px;overflow-y:auto">
+              @if (filteredKaryawanPenugasan().length === 0) {
+                <div class="p-3 text-muted small text-center">
+                  Tidak ada karyawan ditemukan.
+                </div>
+              } @else {
+                @for (k of filteredKaryawanPenugasan(); track k.id) {
+                  <div class="form-check px-3 py-2 border-bottom">
+                    <input class="form-check-input" type="checkbox"
+                           [id]="'pen-kar-' + k.id"
+                           [checked]="isKaryawanSelected(k.id!)"
+                           (change)="togglePenugasanKaryawan(k.id!, $any($event.target).checked)">
+                    <label class="form-check-label" [for]="'pen-kar-' + k.id">
+                      <span class="fw-semibold">{{ k.namaLengkap }}</span>
+                      @if (k.nip) { <small class="text-muted ms-2">{{ k.nip }}</small> }
+                    </label>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-primary px-4"
+                    style="background:#7367f0;border-color:#7367f0"
+                    [disabled]="penugasanSaving()"
+                    (click)="simpanPenugasan()">
+              @if (penugasanSaving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+              }
+              Simpan
+            </button>
+            <button type="button" class="btn btn-light border"
+                    [disabled]="penugasanSaving()"
+                    (click)="showPenugasan.set(false)">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ───── Modal Riwayat Perubahan ───── -->
+  @if (showRiwayat()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1080">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">
+              Riwayat Perubahan
+              <small class="text-muted fw-normal ms-2">
+                — {{ riwayatLokasiNama() }}
+              </small>
+            </h5>
+            <button type="button" class="btn-close"
+                    (click)="showRiwayat.set(false)"></button>
+          </div>
+          <div class="modal-body px-4 pt-3 pb-4">
+            @if (riwayatLoading()) {
+              <div class="text-center py-4">
+                <span class="spinner-border text-primary"></span>
+              </div>
+            } @else if (riwayatList().length === 0) {
+              <p class="text-muted text-center py-4 mb-0">
+                Belum ada riwayat perubahan.
+              </p>
+            } @else {
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width:34%">User</th>
+                      <th>Aktivitas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (r of riwayatList(); track r.id) {
+                      <tr>
+                        <td>
+                          <div class="d-flex align-items-start gap-2">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                 style="width:38px;height:38px;background:#28c76f;color:#fff;flex-shrink:0">
+                              <i class="bx bx-user"></i>
+                            </div>
+                            <div>
+                              <div class="fw-semibold">{{ r.changedBy || 'Sistem' }}</div>
+                              <div class="small text-muted">
+                                {{ r.changedAt | date:'dd MMM yyyy @ HH:mm' }}
+                              </div>
+                              <span class="badge mt-1" [class]="riwayatBadgeClass(r.tipe)">
+                                {{ riwayatLabelTipe(r.tipe) }}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge mb-2"
+                                style="background:#ff9f43;color:#fff">
+                            Lokasi Kehadiran
+                            <span class="badge bg-light text-dark ms-1">ID: {{ r.id }}</span>
+                          </span>
+                          <ul class="list-unstyled small mb-0">
+                            @for (a of r.aktivitas; track $index) {
+                              <li class="mb-1">
+                                <strong>{{ a.label }}:</strong>
+                                <span class="text-decoration-underline">{{ a.nilai }}</span>
+                              </li>
+                            }
+                          </ul>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light border"
+                    (click)="showRiwayat.set(false)">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1090">
+      <div class="toast show text-white"
+           [class.bg-success]="toastType() === 'success'"
+           [class.bg-danger]="toastType() === 'danger'"
+           [class.bg-warning]="toastType() === 'warning'"
+           role="alert">
+        <div class="d-flex">
+          <div class="toast-body small">{{ toastMsg() }}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                  (click)="toastMsg.set('')"></button>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

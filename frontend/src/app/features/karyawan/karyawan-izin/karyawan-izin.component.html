@@ -1,0 +1,1527 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          @if (karyawan()?.namaLengkap) {
+            <li class="breadcrumb-item">
+              <a [routerLink]="['/karyawan', karyawan()!.id]">{{ karyawan()!.namaLengkap }}</a>
+            </li>
+          }
+          <li class="breadcrumb-item active">Izin</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Info Bar karyawan -->
+  <div class="info-bar card border-0 shadow-sm mb-3 px-4 py-3 d-flex flex-row align-items-center gap-3">
+    @if (fotoUrl(karyawan()?.fotoProfil); as url) {
+      <img [src]="url" alt="Foto" class="rounded-circle"
+           style="width:44px;height:44px;object-fit:cover;border:2px solid #e9ecef;flex-shrink:0" />
+    } @else {
+      <div class="rounded-circle d-flex align-items-center justify-content-center"
+           style="width:44px;height:44px;background:#f3f4f6;color:#9ca3af;font-size:1.2rem;flex-shrink:0">
+        <i class="bx bx-user"></i>
+      </div>
+    }
+    <div class="flex-grow-1">
+      <div class="fw-bold" style="font-size:1rem">{{ karyawan()?.namaLengkap || '—' }}</div>
+      <div class="text-muted small">
+        {{ karyawan()?.namaDivisi || 'Belum ada divisi' }}
+        @if (karyawan()?.namaJabatan) { · {{ karyawan()!.namaJabatan }} }
+      </div>
+    </div>
+    <a [routerLink]="['/karyawan', karyawan()?.id]" class="btn btn-outline-secondary btn-sm px-3">
+      <i class="bx bx-arrow-back me-1"></i> Kembali
+    </a>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="izin-toast d-flex align-items-center gap-2"
+         [class.izin-toast--danger]="toastType() === 'danger'">
+      <i [class]="toastType() === 'success' ? 'bx bx-check-circle fs-5' : 'bx bx-x-circle fs-5'"></i>
+      <span>{{ toastMsg() }}</span>
+    </div>
+  }
+
+  <!-- Card Utama -->
+  <div class="card border-0 shadow-sm">
+    <div class="px-4 pt-4 pb-0">
+
+      <!-- Judul -->
+      <div class="fw-bold mb-3" style="font-size:1.2rem">Izin</div>
+
+      <!-- Tab Izin Jam / Izin Hari -->
+      <div class="d-flex gap-2 mb-4">
+        <button class="izin-tab-btn" [class.izin-tab-btn--active]="activeTab() === 'jam'"
+                (click)="setTab('jam')">Izin Jam</button>
+        <button class="izin-tab-btn" [class.izin-tab-btn--active]="activeTab() === 'hari'"
+                (click)="setTab('hari')">Izin Hari</button>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════
+         TAB: IZIN JAM
+    ════════════════════════════════════════ -->
+    @if (activeTab() === 'jam') {
+
+    <div class="px-4 pb-4">
+
+      <!-- Status tabs pill group -->
+      <div class="d-flex gap-2 mb-4 flex-wrap">
+        <button class="status-btn" [class.status-btn--active]="activeStatus() === 'DISETUJUI'"
+                (click)="setStatus('DISETUJUI')">
+          <i class="bx bx-check-circle me-1"></i>Disetujui
+        </button>
+        <button class="status-btn" [class.status-btn--active]="activeStatus() === 'DITOLAK'"
+                (click)="setStatus('DITOLAK')">
+          <i class="bx bx-x-circle me-1"></i>Ditolak
+        </button>
+        <button class="status-btn" [class.status-btn--active]="activeStatus() === 'TERPENUHI'"
+                (click)="setStatus('TERPENUHI')">
+          <i class="bx bx-badge-check me-1"></i>Terpenuhi
+        </button>
+        <button class="status-btn" [class.status-btn--active]="activeStatus() === 'TIDAK_TERPENUHI'"
+                (click)="setStatus('TIDAK_TERPENUHI')">
+          <i class="bx bx-block me-1"></i>Tidak Terpenuhi
+        </button>
+      </div>
+
+      <!-- Toolbar: filter + aksi -->
+      <div class="d-flex align-items-center flex-wrap gap-2 mb-3 p-3 rounded-3"
+           style="background:#f8f9fb;border:1px solid #eef0f4">
+        <i class="bx bx-filter text-muted"></i>
+        <input type="date" class="form-control form-control-sm" style="width:148px"
+               [ngModel]="filterMulai()" (ngModelChange)="filterMulai.set($event)" />
+        <span class="text-muted">—</span>
+        <input type="date" class="form-control form-control-sm" style="width:148px"
+               [ngModel]="filterSelesai()" (ngModelChange)="filterSelesai.set($event)" />
+
+        @if (activeStatus() === 'DISETUJUI' || activeStatus() === 'TERPENUHI' || activeStatus() === 'TIDAK_TERPENUHI') {
+          <select class="form-select form-select-sm" style="width:200px"
+                  [ngModel]="filterDapatMengganti()" (ngModelChange)="filterDapatMengganti.set($event)">
+            <option value="">Dapat Mengganti</option>
+            <option value="YA">Ya</option>
+            <option value="TIDAK">Tidak</option>
+          </select>
+          <select class="form-select form-select-sm" style="width:200px"
+                  [ngModel]="filterKenaPotong()" (ngModelChange)="filterKenaPotong.set($event)">
+            <option value="">Kenakan Potongan</option>
+            <option value="YA">Ya</option>
+            <option value="TIDAK">Tidak</option>
+          </select>
+          <select class="form-select form-select-sm" style="width:200px"
+                  [ngModel]="filterKenaDenda()" (ngModelChange)="filterKenaDenda.set($event)">
+            <option value="">Kenakan Denda</option>
+            <option value="YA">Ya</option>
+            <option value="TIDAK">Tidak</option>
+          </select>
+        }
+
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+          <button class="btn btn-sm btn-ekspor px-3 d-flex align-items-center gap-1"
+                  (click)="eksporExcel()" [disabled]="eksporting()">
+            @if (eksporting()) { <span class="spinner-border spinner-border-sm"></span> }
+            @else { <i class="bx bx-spreadsheet"></i> }
+            Ekspor
+          </button>
+          <button class="btn btn-sm btn-izin-action px-3 d-flex align-items-center gap-1"
+                  (click)="showPengaturanModal.set(true)">
+            <i class="bx bx-cog"></i> Pengaturan
+          </button>
+          @if (activeStatus() !== 'DITOLAK') {
+            <button class="btn btn-sm btn-izin-action px-3 d-flex align-items-center gap-1"
+                    (click)="openTambah()">
+              <i class="bx bx-plus"></i> Tambah
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Search toolbar -->
+      <div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted small">Tampilkan</span>
+          <select class="form-select form-select-sm" style="width:68px"
+                  [ngModel]="dtPageSize()" (ngModelChange)="dtSetPageSize(+$event)">
+            <option [value]="5">5</option>
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+          </select>
+          <span class="text-muted small">entri</span>
+        </div>
+        <div class="input-group input-group-sm" style="width:220px">
+          <span class="input-group-text bg-white"><i class="bx bx-search text-muted"></i></span>
+          <input type="text" class="form-control border-start-0" placeholder="Cari keperluan..."
+                 [ngModel]="dtSearch()" (ngModelChange)="dtSearch.set($event); dtPage.set(1)" />
+        </div>
+      </div>
+
+      <!-- ── Loading ── -->
+      @if (loading()) {
+        <div class="text-center py-5 text-muted">
+          <span class="spinner-border text-primary mb-3" style="width:2.5rem;height:2.5rem"></span>
+          <p class="mb-0 small fw-semibold">Memuat data izin jam...</p>
+        </div>
+      }
+
+      @if (!loading()) {
+
+        <!-- Empty state -->
+        @if (dtRows().length === 0) {
+          <div class="text-center py-5">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                 style="width:64px;height:64px;background:#f3f4f6">
+              <i class="bx bx-calendar-x text-muted" style="font-size:1.8rem"></i>
+            </div>
+            <div class="fw-semibold text-muted mb-1">Tidak ada data izin jam</div>
+            <div class="text-muted small">Belum ada pengajuan izin jam untuk filter ini.</div>
+          </div>
+        }
+
+        <!-- Card Grid -->
+        <div class="izin-grid mb-3">
+          @for (item of dtRows(); track item.id) {
+            <div class="jam-card">
+
+              <!-- Header card -->
+              <div class="jam-card__header">
+                <span class="jam-card__created">
+                  <i class="bx bx-calendar"></i>
+                  {{ formatTanggalCreated(item.createdAt) }}
+                </span>
+                <!-- Status pill -->
+                @if (item.status === 'DISETUJUI' || item.status === 'TERPENUHI') {
+                  <span class="status-pill status-pill--disetujui">
+                    <i class="bx bx-check-circle"></i>
+                    {{ item.status === 'DISETUJUI' ? 'Disetujui' : 'Terpenuhi' }}
+                  </span>
+                } @else if (item.status === 'DITOLAK') {
+                  <span class="status-pill status-pill--ditolak">
+                    <i class="bx bx-x-circle"></i> Ditolak
+                  </span>
+                } @else if (item.status === 'TIDAK_TERPENUHI') {
+                  <span class="status-pill status-pill--tdk-terp">
+                    <i class="bx bx-block"></i> Tdk Terpenuhi
+                  </span>
+                } @else {
+                  <span class="status-pill status-pill--menunggu">
+                    <i class="bx bx-time"></i> Menunggu
+                  </span>
+                }
+              </div>
+
+              <!-- Body: waktu range -->
+              <div class="jam-card__body">
+                <div class="jam-range">
+                  <div class="jam-range__block">
+                    <div class="jam-range__date">
+                      {{ formatTanggal(item.tanggalMulai).replace('\n', ' ') }}
+                    </div>
+                    <div class="jam-range__time">{{ formatJam(item.jamMulai) }}</div>
+                  </div>
+
+                  <div class="jam-range__arrow">
+                    <div class="jam-range__duration">{{ formatDurasi(item.durasiMenit) }}</div>
+                    <div class="jam-range__line"></div>
+                    <i class="bx bx-right-arrow-alt text-primary" style="font-size:1.1rem"></i>
+                  </div>
+
+                  <div class="jam-range__block">
+                    <div class="jam-range__date">
+                      {{ formatTanggal(item.tanggalSelesai).replace('\n', ' ') }}
+                    </div>
+                    <div class="jam-range__time">{{ formatJam(item.jamSelesai) }}</div>
+                  </div>
+                </div>
+
+                <!-- Jam pengganti -->
+                @if (item.jamPengganti) {
+                  <div class="mb-2">
+                    <span class="jam-pengganti">
+                      <i class="bx bx-refresh"></i>
+                      Jam Pengganti: {{ formatJam(item.jamPengganti) }}
+                    </span>
+                  </div>
+                }
+
+                <!-- Tags -->
+                @if (activeStatus() !== 'DITOLAK') {
+                  <div class="d-flex flex-wrap gap-1 mb-1">
+                    <span [class]="'jam-tag ' + (item.dapatMengganti ? 'jam-tag--yes' : 'jam-tag--no')">
+                      <i class="bx" [class]="item.dapatMengganti ? 'bx-check' : 'bx-minus'"></i>
+                      Dapat Mengganti
+                    </span>
+                    <span [class]="'jam-tag ' + (item.kenaPotong ? 'jam-tag--warn' : 'jam-tag--no')">
+                      <i class="bx" [class]="item.kenaPotong ? 'bx-minus-circle' : 'bx-minus'"></i>
+                      Potong Gaji
+                    </span>
+                    <span [class]="'jam-tag ' + (item.kenaDenda ? 'jam-tag--warn' : 'jam-tag--no')">
+                      <i class="bx" [class]="item.kenaDenda ? 'bx-error' : 'bx-minus'"></i>
+                      Denda
+                    </span>
+                  </div>
+                }
+
+                <!-- Keperluan -->
+                @if (item.keperluan) {
+                  <div class="jam-keperluan">
+                    <i class="bx bx-note text-muted me-1"></i>{{ item.keperluan }}
+                  </div>
+                }
+
+                <!-- Catatan tolak -->
+                @if (item.status === 'DITOLAK' && item.catatanPenolakan) {
+                  <div class="rounded-3 px-3 py-2 mt-2"
+                       style="background:#fff5f5;border:1px solid #fecaca;font-size:.78rem;color:#b91c1c">
+                    <i class="bx bx-info-circle me-1"></i>{{ item.catatanPenolakan }}
+                    @if (item.updatedAt) {
+                      <span class="ms-2 text-muted">— {{ formatTanggalCreated(item.updatedAt) }}</span>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Footer: aksi -->
+              <div class="jam-card__footer">
+                <button class="aksi-btn aksi-riwayat" title="Riwayat" (click)="openRiwayat(item)">
+                  <i class="bx bx-history"></i>
+                </button>
+                @if (!isKaryawan()) {
+                  <button class="aksi-btn aksi-edit" title="Edit" (click)="openEdit(item)">
+                    <i class="bx bx-edit"></i>
+                  </button>
+                  @if (item.status !== 'DITOLAK') {
+                    <button class="aksi-btn aksi-tolak" title="Tolak" (click)="openTolak(item)">
+                      <i class="bx bx-x"></i>
+                    </button>
+                  }
+                  @if (konfirmasiHapusId() === item.id) {
+                    <div class="d-flex align-items-center gap-1 ms-1">
+                      <span style="font-size:.72rem;color:#b91c1c">Hapus?</span>
+                      <button class="btn btn-danger btn-sm py-0 px-2"
+                              [disabled]="deletingId() === item.id"
+                              (click)="hapus(item.id)">Ya</button>
+                      <button class="btn btn-secondary btn-sm py-0 px-2"
+                              (click)="konfirmasiHapusId.set(null)">Batal</button>
+                    </div>
+                  } @else {
+                    <button class="aksi-btn aksi-hapus" title="Hapus"
+                            (click)="konfirmasiHapusId.set(item.id)">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  }
+                }
+              </div>
+
+            </div>
+          }
+        </div>
+
+        <!-- Footer pagination -->
+        <div class="dt-footer d-flex align-items-center justify-content-between flex-wrap gap-2 px-1 pt-3 pb-1">
+          <div class="text-muted small">
+            Menampilkan {{ dtInfoStart() }}–{{ dtInfoEnd() }} dari {{ dtTotal() }} entri
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <button class="dt-pg-btn" [disabled]="dtPage() === 1" (click)="dtPage.set(1)">
+              <i class="bx bx-chevrons-left"></i>
+            </button>
+            <button class="dt-pg-btn" [disabled]="dtPage() === 1" (click)="dtPage.set(dtPage() - 1)">
+              <i class="bx bx-chevron-left"></i>
+            </button>
+            @for (p of dtPageNumbers(); track p) {
+              <button class="dt-pg-btn" [class.dt-pg-btn--active]="p === dtPage()" (click)="dtPage.set(p)">
+                {{ p }}
+              </button>
+            }
+            <button class="dt-pg-btn" [disabled]="dtPage() >= dtTotalPages()" (click)="dtPage.set(dtPage() + 1)">
+              <i class="bx bx-chevron-right"></i>
+            </button>
+            <button class="dt-pg-btn" [disabled]="dtPage() >= dtTotalPages()" (click)="dtPage.set(dtTotalPages())">
+              <i class="bx bx-chevrons-right"></i>
+            </button>
+          </div>
+        </div>
+
+      } <!-- end !loading -->
+    </div>
+
+    } <!-- end tab jam -->
+
+    <!-- ════════════════════════════════════════
+         TAB: IZIN HARI
+    ════════════════════════════════════════ -->
+    @if (activeTab() === 'hari') {
+
+    <div class="px-4 pb-4">
+
+      <!-- Status / Quick-filter tabs -->
+      <div class="d-flex gap-2 mb-4 flex-wrap align-items-center">
+        <button class="status-btn" [class.status-btn--active]="hariFilter() === 'PENGAJUAN'"
+                (click)="setHariFilter('PENGAJUAN')">
+          <i class="bx bx-send me-1"></i>Pengajuan
+        </button>
+        <button class="status-btn" [class.status-btn--active]="hariFilter() === 'DISETUJUI'"
+                (click)="setHariFilter('DISETUJUI')">
+          <i class="bx bx-check-circle me-1"></i>Disetujui
+        </button>
+        <button class="status-btn" [class.status-btn--active]="hariFilter() === 'DITOLAK'"
+                (click)="setHariFilter('DITOLAK')">
+          <i class="bx bx-x-circle me-1"></i>Ditolak
+        </button>
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+          <button class="status-btn" [class.status-btn--active]="hariFilter() === 'HARI_INI'"
+                  (click)="setHariFilter('HARI_INI')">Hari Ini</button>
+          <button class="status-btn" [class.status-btn--active]="hariFilter() === 'BESOK'"
+                  (click)="setHariFilter('BESOK')">Besok</button>
+          <button class="status-btn" [class.status-btn--active]="hariFilter() === '7_HARI'"
+                  (click)="setHariFilter('7_HARI')">7 Hari Kedepan</button>
+        </div>
+      </div>
+
+      <!-- Filter toolbar -->
+      <div class="d-flex align-items-center flex-wrap gap-2 mb-4 p-3 rounded-3"
+           style="background:#f8f9fb;border:1px solid #eef0f4">
+        <i class="bx bx-filter text-muted"></i>
+        <input type="date" class="form-control form-control-sm" style="width:148px"
+               [ngModel]="hariFilterMulai()"
+               (ngModelChange)="hariFilterMulai.set($event)" />
+        <span class="text-muted">—</span>
+        <input type="date" class="form-control form-control-sm" style="width:148px"
+               [ngModel]="hariFilterSelesai()"
+               (ngModelChange)="hariFilterSelesai.set($event)" />
+        <button class="btn btn-sm btn-primary px-3 d-flex align-items-center gap-1"
+                (click)="hariPage.set(1); loadIzinHari()">
+          <i class="bx bx-search"></i> Cari
+        </button>
+        @if (hariFilterMulai() || hariFilterSelesai()) {
+          <button class="btn btn-sm btn-outline-secondary px-3"
+                  (click)="hariFilterMulai.set(''); hariFilterSelesai.set(''); hariPage.set(1); loadIzinHari()">
+            <i class="bx bx-x"></i> Reset
+          </button>
+        }
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+          <button class="btn btn-sm btn-ekspor px-3 d-flex align-items-center gap-1"
+                  (click)="eksporExcelHari()" [disabled]="hariEksporting()">
+            @if (hariEksporting()) { <span class="spinner-border spinner-border-sm"></span> }
+            @else { <i class="bx bx-spreadsheet"></i> }
+            Ekspor
+          </button>
+          <button class="btn btn-sm btn-izin-action px-3 d-flex align-items-center gap-1"
+                  (click)="openHariTambah()">
+            <i class="bx bx-plus"></i> Tambah Izin Hari
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      @if (hariLoading()) {
+        <div class="text-center py-5">
+          <span class="spinner-border text-primary mb-3" style="width:2.5rem;height:2.5rem"></span>
+          <div class="text-muted small fw-semibold">Memuat data izin hari...</div>
+        </div>
+      } @else if (listIzinHari().length === 0) {
+        <div class="text-center py-5">
+          <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+               style="width:64px;height:64px;background:#f3f4f6">
+            <i class="bx bx-calendar-x text-muted" style="font-size:1.8rem"></i>
+          </div>
+          <div class="fw-semibold text-muted mb-1">Belum ada data izin hari</div>
+          <div class="text-muted small">Belum ada pengajuan izin hari untuk filter ini.</div>
+        </div>
+      } @else {
+
+        <!-- Cards -->
+        @for (item of hariRows(); track item.id) {
+          <div class="hari-card mb-3">
+            <div class="row g-0">
+
+              <!-- Kolom kiri: Detail -->
+              <div class="col-12 col-md-7 hari-card__left">
+
+                <!-- Header mini -->
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <span class="created-at">
+                    <i class="bx bx-calendar me-1"></i>
+                    Diajukan: {{ formatTanggalCreated(item.createdAt) }}
+                  </span>
+                  @if (item.mengurangiGaji) {
+                    <span class="hari-gaji-badge hari-gaji-badge--ya">
+                      <i class="bx bx-minus-circle me-1"></i>Memotong Gaji
+                    </span>
+                  } @else {
+                    <span class="hari-gaji-badge hari-gaji-badge--tidak">
+                      Tidak Potong Gaji
+                    </span>
+                  }
+                </div>
+
+                <!-- Tanggal izin sebagai chip -->
+                <div class="hari-detail-row">
+                  <div class="hari-detail-label">Tgl. Izin</div>
+                  <div class="hari-detail-sep">:</div>
+                  <div class="hari-detail-value">
+                    <div class="d-flex flex-column gap-1">
+                      @for (tgl of item.tanggalList; track tgl; let i = $index) {
+                        <span class="hari-tgl-chip">
+                          <i class="bx bx-calendar-event"></i>
+                          {{ i + 1 }}. {{ formatTanggalHari(tgl) }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Keperluan -->
+                <div class="hari-detail-row">
+                  <div class="hari-detail-label">Keperluan</div>
+                  <div class="hari-detail-sep">:</div>
+                  <div class="hari-detail-value">
+                    <div class="jam-keperluan" style="margin-top:0">
+                      <i class="bx bx-note text-muted me-1"></i>{{ item.keperluan }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lampiran -->
+                <div class="hari-detail-row">
+                  <div class="hari-detail-label">File Kelengkapan</div>
+                  <div class="hari-detail-sep">:</div>
+                  <div class="hari-detail-value">
+                    @if (item.lampiranUrl) {
+                      <a [href]="item.lampiranUrl" target="_blank" rel="noopener"
+                         class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.75rem">
+                        <i class="bx bx-file me-1"></i>Lihat File
+                      </a>
+                    } @else {
+                      <span class="text-muted small">—</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Catatan penolakan -->
+                @if (item.catatanPenolakan) {
+                  <div class="rounded-3 px-3 py-2 mt-1"
+                       style="background:#fff5f5;border:1px solid #fecaca;font-size:.78rem;color:#b91c1c">
+                    <i class="bx bx-info-circle me-1"></i>{{ item.catatanPenolakan }}
+                  </div>
+                }
+
+              </div>
+
+              <!-- Kolom kanan: Status + Aksi -->
+              <div class="col-12 col-md-5 hari-card__right">
+
+                <!-- Status pill -->
+                @if (item.status === 'DISETUJUI') {
+                  <span class="status-pill status-pill--disetujui" style="font-size:.82rem;padding:8px 18px">
+                    <i class="bx bx-check-circle"></i> Disetujui
+                  </span>
+                } @else if (item.status === 'DITOLAK') {
+                  <span class="status-pill status-pill--ditolak" style="font-size:.82rem;padding:8px 18px">
+                    <i class="bx bx-x-circle"></i> Ditolak
+                  </span>
+                } @else {
+                  <span class="status-pill status-pill--menunggu" style="font-size:.82rem;padding:8px 18px">
+                    <i class="bx bx-time"></i> Menunggu
+                  </span>
+                }
+
+                <!-- Dropdown Aksi -->
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-izin-action dropdown-toggle px-4"
+                          type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-dots-horizontal-rounded me-1"></i>Aksi
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0"
+                      style="border-radius:12px;min-width:190px">
+
+                    @if (item.status === 'DISETUJUI') {
+                      <!-- Status DISETUJUI: Edit, Cetak, Batal Permohonan, Riwayat -->
+                      <li>
+                        <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                (click)="openHariEdit(item)">
+                          <span class="d-flex align-items-center justify-content-center rounded-2"
+                                style="width:24px;height:24px;background:#e0f2fe">
+                            <i class="bx bx-edit" style="color:#0369a1"></i>
+                          </span>
+                          Edit
+                        </button>
+                      </li>
+                      <li>
+                        <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                (click)="cetakPermohonan(item)">
+                          <span class="d-flex align-items-center justify-content-center rounded-2"
+                                style="width:24px;height:24px;background:#f3f4f6">
+                            <i class="bx bx-printer" style="color:#374151"></i>
+                          </span>
+                          Cetak Permohonan
+                        </button>
+                      </li>
+                      <li><hr class="dropdown-divider my-1"></li>
+                      <li>
+                        <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                style="color:#b45309"
+                                (click)="openBatalPermohonan(item)">
+                          <span class="d-flex align-items-center justify-content-center rounded-2"
+                                style="width:24px;height:24px;background:#fef3c7">
+                            <i class="bx bx-undo" style="color:#b45309"></i>
+                          </span>
+                          Batal Permohonan
+                        </button>
+                      </li>
+                      <li><hr class="dropdown-divider my-1"></li>
+                      <li>
+                        <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                (click)="openRiwayatHari(item)">
+                          <span class="d-flex align-items-center justify-content-center rounded-2"
+                                style="width:24px;height:24px;background:#f3f4f6">
+                            <i class="bx bx-history" style="color:#6b7280"></i>
+                          </span>
+                          Riwayat Perubahan
+                        </button>
+                      </li>
+
+                    } @else {
+                      <!-- Status selain DISETUJUI: aksi penuh -->
+                      @if (!isKaryawan()) {
+                        <li>
+                          <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                  (click)="terimaHari(item)">
+                            <span class="d-flex align-items-center justify-content-center rounded-2"
+                                  style="width:24px;height:24px;background:#dcfce7">
+                              <i class="bx bx-check" style="color:#166534"></i>
+                            </span>
+                            Terima
+                          </button>
+                        </li>
+                        <li>
+                          <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                  (click)="openTolakHari(item)">
+                            <span class="d-flex align-items-center justify-content-center rounded-2"
+                                  style="width:24px;height:24px;background:#fee2e2">
+                              <i class="bx bx-x" style="color:#b91c1c"></i>
+                            </span>
+                            Tolak
+                          </button>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                      }
+                      <li>
+                        <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                (click)="openHariEdit(item)">
+                          <span class="d-flex align-items-center justify-content-center rounded-2"
+                                style="width:24px;height:24px;background:#e0f2fe">
+                            <i class="bx bx-edit" style="color:#0369a1"></i>
+                          </span>
+                          Edit
+                        </button>
+                      </li>
+                      <li>
+                        <button class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                (click)="cetakPermohonan(item)">
+                          <span class="d-flex align-items-center justify-content-center rounded-2"
+                                style="width:24px;height:24px;background:#f3f4f6">
+                            <i class="bx bx-printer" style="color:#374151"></i>
+                          </span>
+                          Cetak Permohonan
+                        </button>
+                      </li>
+                      <li><hr class="dropdown-divider my-1"></li>
+                      <li>
+                        <button class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                                (click)="hariKonfirmasiHapusId.set(item.id)">
+                          <span class="d-flex align-items-center justify-content-center rounded-2"
+                                style="width:24px;height:24px;background:#fee2e2">
+                            <i class="bx bx-trash" style="color:#b91c1c"></i>
+                          </span>
+                          Hapus
+                        </button>
+                      </li>
+                    }
+
+                  </ul>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Footer pagination -->
+        <div class="dt-footer d-flex align-items-center justify-content-between flex-wrap gap-2 px-1 pt-3 pb-1">
+          <div class="text-muted small">
+            Menampilkan {{ hariInfoStart() }}–{{ hariInfoEnd() }} dari {{ hariTotal() }} total data
+          </div>
+          <div class="d-flex gap-1">
+            <button class="dt-pg-btn" [disabled]="hariPage() <= 1" (click)="hariPage.set(1)">
+              <i class="bx bx-chevrons-left"></i>
+            </button>
+            <button class="dt-pg-btn" [disabled]="hariPage() <= 1" (click)="hariPage.set(hariPage() - 1)">
+              <i class="bx bx-chevron-left"></i>
+            </button>
+            @for (p of hariPageNumbers(); track p) {
+              <button class="dt-pg-btn" [class.dt-pg-btn--active]="p === hariPage()" (click)="hariPage.set(p)">
+                {{ p }}
+              </button>
+            }
+            <button class="dt-pg-btn" [disabled]="hariPage() >= hariTotalPages()" (click)="hariPage.set(hariPage() + 1)">
+              <i class="bx bx-chevron-right"></i>
+            </button>
+            <button class="dt-pg-btn" [disabled]="hariPage() >= hariTotalPages()" (click)="hariPage.set(hariTotalPages())">
+              <i class="bx bx-chevrons-right"></i>
+            </button>
+          </div>
+        </div>
+
+      } <!-- end !loading -->
+    </div>
+
+    } <!-- end tab hari -->
+
+  <!-- ═══ Modal Tambah/Edit Izin Hari ════════════════════════ -->
+  @if (showHariModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055"
+         (click)="closeHariModal()">
+      <div class="modal-dialog modal-dialog-centered modal-lg"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bx-calendar-plus me-2 text-primary"></i>
+              {{ hariEditId() ? 'Edit Izin Hari' : 'Tambah Izin Hari' }}
+            </h5>
+            <button type="button" class="btn-close" (click)="closeHariModal()"></button>
+          </div>
+          <div class="modal-body pt-3">
+            @if (hariError()) {
+              <div class="alert alert-danger py-2 small mb-3">{{ hariError() }}</div>
+            }
+            <div class="row g-3">
+
+              <!-- Tgl. Izin -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small">
+                  Tgl. Izin <span class="text-danger">*</span>
+                </label>
+                <input type="date" class="form-control form-control-sm"
+                       [ngModel]="hariForm().tanggalList.length > 0 ? hariForm().tanggalList[0] : ''"
+                       (ngModelChange)="hariForm.update(f => ({...f, tanggalList: $event ? [$event] : []}))" />
+              </div>
+
+              <!-- Keperluan -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small">
+                  Keperluan <span class="text-danger">*</span>
+                </label>
+                <textarea class="form-control form-control-sm" rows="3"
+                          placeholder="Tulis keperluan izin..."
+                          [ngModel]="hariForm().keperluan"
+                          (ngModelChange)="hariForm.update(f => ({...f, keperluan: $event}))">
+                </textarea>
+              </div>
+
+              <!-- Mengurangi Gaji -->
+              <div class="col-12">
+                <div class="d-flex align-items-center justify-content-between
+                            rounded-3 px-3 py-2 border">
+                  <div>
+                    <div class="fw-semibold small">Izin ini akan mengurangi gaji</div>
+                    <div class="text-muted" style="font-size:.75rem">
+                      Aktifkan jika izin ini diperhitungkan dalam pemotongan gaji
+                    </div>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           style="width:2.5em;height:1.3em"
+                           [ngModel]="hariForm().mengurangiGaji"
+                           (ngModelChange)="hariForm.update(f => ({...f, mengurangiGaji: $event}))" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lampiran -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small">Lampiran</label>
+                <div class="d-flex align-items-center gap-2">
+                  <label class="btn btn-sm btn-outline-secondary mb-0" style="cursor:pointer">
+                    <i class="bx bx-upload me-1"></i>Pilih File
+                    <input type="file" class="d-none" accept=".pdf,.jpg,.jpeg,.png"
+                           (change)="onHariLampiranChange($event)" />
+                  </label>
+                  @if (hariLampiranNama()) {
+                    <span class="small text-muted text-truncate" style="max-width:200px">
+                      {{ hariLampiranNama() }}
+                    </span>
+                  } @else {
+                    <span class="small text-muted">PDF / JPG / PNG</span>
+                  }
+                </div>
+              </div>
+
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary" (click)="closeHariModal()">Batal</button>
+            <button type="button" class="btn btn-primary px-4"
+                    (click)="simpanHari()" [disabled]="hariSaving()">
+              @if (hariSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Modal Tolak Izin Hari ═══════════════════════════════ -->
+  @if (hariShowTolakModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1056"
+         (click)="hariShowTolakModal.set(false)">
+      <div class="modal-dialog modal-dialog-centered"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold text-danger">
+              <i class="bx bx-x-circle me-2"></i>Tolak Izin Hari
+            </h5>
+            <button type="button" class="btn-close" (click)="hariShowTolakModal.set(false)"></button>
+          </div>
+          <div class="modal-body pt-3">
+            <label class="form-label fw-semibold small">Catatan Penolakan</label>
+            <textarea class="form-control form-control-sm" rows="3"
+                      placeholder="Tuliskan alasan penolakan (opsional)..."
+                      [ngModel]="hariTolakCatatan()"
+                      (ngModelChange)="hariTolakCatatan.set($event)">
+            </textarea>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary"
+                    (click)="hariShowTolakModal.set(false)">Batal</button>
+            <button type="button" class="btn btn-danger px-4"
+                    (click)="konfirmasiTolakHari()" [disabled]="hariSavingTolak()">
+              @if (hariSavingTolak()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Tolak Izin
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  </div>
+
+  <!-- ═══ Modal Tambah Izin Jam ══════════════════════════════ -->
+  @if (showTambahModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055"
+         (click)="closeTambah()">
+      <div class="modal-dialog modal-dialog-centered"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bx-plus-circle me-2 text-primary"></i>
+              {{ editId() ? 'Edit Izin Jam' : 'Tambah Izin Jam' }}
+            </h5>
+            <button type="button" class="btn-close" (click)="closeTambah()"></button>
+          </div>
+          <div class="modal-body pt-3">
+            @if (errorTambah()) {
+              <div class="alert alert-danger py-2 small mb-3">{{ errorTambah() }}</div>
+            }
+
+            <!-- ── Form TAMBAH ── -->
+            @if (!editId()) {
+              <div class="row g-3">
+                <!-- Waktu Mulai -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">
+                    Waktu Mulai <span class="text-danger">*</span>
+                  </label>
+                  <div class="d-flex gap-2">
+                    <input type="date" class="form-control form-control-sm"
+                           [ngModel]="formTambah().tanggalMulai"
+                           (ngModelChange)="formTambah.update(f => ({...f, tanggalMulai: $event}))" />
+                    <input type="time" class="form-control form-control-sm"
+                           [ngModel]="formTambah().jamMulai"
+                           (ngModelChange)="formTambah.update(f => ({...f, jamMulai: $event}))" />
+                  </div>
+                </div>
+                <!-- Waktu Selesai -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">
+                    Waktu Selesai <span class="text-danger">*</span>
+                  </label>
+                  <div class="d-flex gap-2">
+                    <input type="date" class="form-control form-control-sm"
+                           [ngModel]="formTambah().tanggalSelesai"
+                           (ngModelChange)="formTambah.update(f => ({...f, tanggalSelesai: $event}))" />
+                    <input type="time" class="form-control form-control-sm"
+                           [ngModel]="formTambah().jamSelesai"
+                           (ngModelChange)="formTambah.update(f => ({...f, jamSelesai: $event}))" />
+                  </div>
+                </div>
+                <!-- Keperluan -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">
+                    Keperluan <span class="text-danger">*</span>
+                  </label>
+                  <textarea class="form-control form-control-sm" rows="3"
+                            [ngModel]="formTambah().keperluan"
+                            (ngModelChange)="formTambah.update(f => ({...f, keperluan: $event}))"
+                            placeholder="Tuliskan keperluan izin..."></textarea>
+                </div>
+              </div>
+            }
+
+            <!-- ── Form EDIT ── -->
+            @if (editId()) {
+              <div class="d-flex flex-column gap-4">
+
+                <!-- Dapat Mengganti -->
+                <div class="radio-group">
+                  <div class="radio-group-label">
+                    Karyawan dapat mengganti izin jam?
+                  </div>
+                  <div class="d-flex gap-2 mt-2">
+                    <label class="radio-opt" [class.radio-opt--active]="formTambah().dapatMengganti === true">
+                      <input type="radio" name="dapatMengganti" [value]="true"
+                             [checked]="formTambah().dapatMengganti === true"
+                             (change)="formTambah.update(f => ({...f, dapatMengganti: true}))" />
+                      <span>Ya</span>
+                    </label>
+                    <label class="radio-opt" [class.radio-opt--active]="formTambah().dapatMengganti === false">
+                      <input type="radio" name="dapatMengganti" [value]="false"
+                             [checked]="formTambah().dapatMengganti === false"
+                             (change)="formTambah.update(f => ({...f, dapatMengganti: false}))" />
+                      <span>Tidak</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Kenakan Potongan -->
+                <div class="radio-group">
+                  <div class="radio-group-label">
+                    Kenakan potongan izin jam pada rincian gaji
+                  </div>
+                  <div class="d-flex gap-2 mt-2">
+                    <label class="radio-opt" [class.radio-opt--active]="formTambah().kenaPotong === true">
+                      <input type="radio" name="kenaPotong" [value]="true"
+                             [checked]="formTambah().kenaPotong === true"
+                             (change)="formTambah.update(f => ({...f, kenaPotong: true}))" />
+                      <span>Ya</span>
+                    </label>
+                    <label class="radio-opt" [class.radio-opt--active]="formTambah().kenaPotong === false">
+                      <input type="radio" name="kenaPotong" [value]="false"
+                             [checked]="formTambah().kenaPotong === false"
+                             (change)="formTambah.update(f => ({...f, kenaPotong: false}))" />
+                      <span>Tidak</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Kenakan Denda -->
+                <div class="radio-group">
+                  <div class="radio-group-label">
+                    Kenakan Denda Keterlambatan jika presensi masuk lebih dari selesai izin jam
+                  </div>
+                  <div class="d-flex gap-2 mt-2">
+                    <label class="radio-opt" [class.radio-opt--active]="formTambah().kenaDenda === true">
+                      <input type="radio" name="kenaDenda" [value]="true"
+                             [checked]="formTambah().kenaDenda === true"
+                             (change)="formTambah.update(f => ({...f, kenaDenda: true}))" />
+                      <span>Ya</span>
+                    </label>
+                    <label class="radio-opt" [class.radio-opt--active]="formTambah().kenaDenda === false">
+                      <input type="radio" name="kenaDenda" [value]="false"
+                             [checked]="formTambah().kenaDenda === false"
+                             (change)="formTambah.update(f => ({...f, kenaDenda: false}))" />
+                      <span>Tidak</span>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            }
+
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="closeTambah()" [disabled]="savingTambah()">Batal</button>
+            <button class="btn btn-izin-action btn-sm px-4"
+                    (click)="simpanTambah()" [disabled]="savingTambah()">
+              @if (savingTambah()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              } @else {
+                <i class="bx bx-save me-1"></i>
+              }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Modal Pengaturan Izin Jam ═════════════════════════ -->
+  @if (showPengaturanModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055"
+         (click)="showPengaturanModal.set(false)">
+      <div class="modal-dialog modal-dialog-centered"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bx-cog me-2 text-primary"></i>Pengaturan Izin Jam
+            </h5>
+            <button type="button" class="btn-close" (click)="showPengaturanModal.set(false)"></button>
+          </div>
+          <div class="modal-body pt-3">
+            <p class="text-muted small">Pengaturan izin jam untuk karyawan ini belum tersedia. Hubungi administrator.</p>
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="showPengaturanModal.set(false)">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Konfirmasi Hapus ═══════════════════════════════════ -->
+  @if (konfirmasiHapusId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1060">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger fw-bold">
+              <i class="bx bx-trash me-2"></i>Hapus Izin?
+            </h5>
+          </div>
+          <div class="modal-body text-muted" style="font-size:.9rem">
+            Data izin ini akan dihapus permanen dan tidak dapat dibatalkan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="konfirmasiHapusId.set(null)"
+                    [disabled]="deletingId() !== null">Batal</button>
+            <button class="btn btn-danger btn-sm px-4"
+                    (click)="hapus(konfirmasiHapusId()!)"
+                    [disabled]="deletingId() !== null">
+              @if (deletingId() !== null) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              } @else {
+                <i class="bx bx-trash me-1"></i>
+              }
+              Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Konfirmasi Hapus Izin Hari ════════════════════════ -->
+  @if (hariKonfirmasiHapusId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1065"
+         (click)="hariKonfirmasiHapusId.set(null)">
+      <div class="modal-dialog modal-dialog-centered"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger fw-bold">
+              <i class="bx bx-trash me-2"></i>Hapus Izin Hari?
+            </h5>
+          </div>
+          <div class="modal-body text-muted" style="font-size:.9rem">
+            Data izin hari ini akan dihapus permanen dan tidak dapat dikembalikan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="hariKonfirmasiHapusId.set(null)"
+                    [disabled]="hariDeletingId() !== null">
+              Batal
+            </button>
+            <button class="btn btn-danger btn-sm px-4"
+                    (click)="hapusHari(hariKonfirmasiHapusId()!)"
+                    [disabled]="hariDeletingId() !== null">
+              @if (hariDeletingId() !== null) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              } @else {
+                <i class="bx bx-trash me-1"></i>
+              }
+              Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Modal Konfirmasi Tolak ═══════════════════════════ -->
+  @if (showTolakModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1065"
+         (click)="!savingTolak() && showTolakModal.set(false)">
+      <div class="modal-dialog modal-dialog-centered"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+
+          <!-- Header -->
+          <div class="modal-header border-0 pb-0 pt-4 px-4">
+            <div class="d-flex align-items-center gap-3">
+              <div style="width:42px;height:42px;border-radius:50%;background:#fee2e2;
+                          display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="bx bx-x-circle" style="font-size:1.3rem;color:#b91c1c"></i>
+              </div>
+              <div>
+                <h5 class="modal-title fw-bold mb-0" style="font-size:1rem">Tolak Izin Jam</h5>
+                @if (tolakItem()) {
+                  <div class="text-muted small mt-1">
+                    {{ formatTanggal(tolakItem()!.tanggalMulai).replace('\n',' ') }}
+                    {{ formatJam(tolakItem()!.jamMulai) }} — {{ formatJam(tolakItem()!.jamSelesai) }}
+                  </div>
+                }
+              </div>
+            </div>
+            <button type="button" class="btn-close ms-auto"
+                    (click)="showTolakModal.set(false)"
+                    [disabled]="savingTolak()"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body px-4 pt-3 pb-2">
+            <p class="text-muted small mb-3">
+              Apakah Anda yakin ingin menolak izin jam ini?
+              Status akan berubah menjadi <strong class="text-danger">Ditolak</strong>.
+            </p>
+            <label class="form-label fw-semibold small">
+              Catatan Penolakan
+              <span class="text-muted fw-normal">(opsional)</span>
+            </label>
+            <textarea class="form-control form-control-sm" rows="3"
+                      placeholder="Tuliskan alasan penolakan..."
+                      [ngModel]="tolakCatatan()"
+                      (ngModelChange)="tolakCatatan.set($event)"
+                      [disabled]="savingTolak()"></textarea>
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer border-0 px-4 pb-4 pt-2 gap-2 justify-content-end">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="showTolakModal.set(false)"
+                    [disabled]="savingTolak()">
+              Batal
+            </button>
+            <button class="btn btn-danger btn-sm px-4"
+                    (click)="konfirmasiTolak()"
+                    [disabled]="savingTolak()">
+              @if (savingTolak()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              } @else {
+                <i class="bx bx-x-circle me-1"></i>
+              }
+              Ya, Tolak
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Modal Riwayat Perubahan ══════════════════════════ -->
+  @if (showRiwayatModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.52);z-index:1070"
+         (click)="showRiwayatModal.set(false)">
+      <div class="modal-dialog modal-dialog-centered modal-lg"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden">
+
+          <!-- Header -->
+          <div class="modal-header border-bottom px-4 py-3">
+            <h5 class="modal-title fw-bold mb-0">
+              <i class="bx bx-history me-2 text-primary"></i>Riwayat Perubahan
+            </h5>
+            <button type="button" class="btn-close" (click)="showRiwayatModal.set(false)"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body p-0" style="max-height:65vh;overflow-y:auto">
+
+            @if (riwayatLoading()) {
+              <div class="text-center py-5 text-muted">
+                <span class="spinner-border text-primary mb-3"></span>
+                <p class="mb-0 small">Memuat riwayat...</p>
+              </div>
+            }
+
+            @if (!riwayatLoading() && riwayatError()) {
+              <div class="alert alert-danger m-3">{{ riwayatError() }}</div>
+            }
+
+            @if (!riwayatLoading() && !riwayatError()) {
+
+              <!-- Tabel header -->
+              <table class="table mb-0" style="font-size:.84rem;table-layout:fixed">
+                <thead>
+                  <tr style="background:#f9fafb">
+                    <th style="width:260px;padding:12px 20px;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb">
+                      User
+                    </th>
+                    <th style="padding:12px 20px;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb">
+                      Aktivitas
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (riwayatRows().length === 0) {
+                    <tr>
+                      <td colspan="2" class="text-center py-5 text-muted">
+                        <i class="bx bx-history fs-3 d-block mb-2"></i>
+                        Belum ada riwayat perubahan.
+                      </td>
+                    </tr>
+                  }
+                  @for (r of riwayatRows(); track r.id) {
+                    <tr style="border-bottom:1px solid #f1f3f5;vertical-align:top">
+
+                      <!-- Kolom User -->
+                      <td style="padding:16px 20px;width:260px">
+                        <div class="d-flex align-items-start gap-3">
+                          <div class="rw-avatar flex-shrink-0">
+                            {{ (r.changedBy || '?').charAt(0).toUpperCase() }}
+                          </div>
+                          <div>
+                            <div class="fw-semibold" style="font-size:.88rem">
+                              {{ r.changedBy || 'Sistem' }}
+                            </div>
+                            <div class="text-muted small mt-1">
+                              {{ formatRiwayatAt(r.changedAt) }}
+                            </div>
+                            <span [class]="tipeClass(r.tipe)" class="mt-2 d-inline-block">
+                              {{ tipeLabel(r.tipe) }}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Kolom Aktivitas -->
+                      <td style="padding:16px 20px">
+                        <!-- Badge judul -->
+                        <div class="mb-2">
+                          <span class="rw-judul-badge">
+                            Permohonan Izin Jam
+                            <span class="rw-id-badge">ID: {{ r.izinJamId }}</span>
+                          </span>
+                        </div>
+
+                        <!-- List perubahan -->
+                        @for (akt of r.aktivitas; track $index) {
+                          <div class="rw-item">
+                            @if (r.tipe === 'DIBUAT') {
+                              <span class="rw-label fw-semibold">{{ akt.label }}:</span>
+                              <span class="rw-val ms-1">{{ akt.baru || '—' }}</span>
+                            } @else {
+                              <span>Perubahan <span class="fw-semibold">{{ akt.label }}:</span></span>
+                              <span class="rw-val-lama ms-1">{{ akt.lama || '—' }}</span>
+                              <i class="bx bx-right-arrow-alt mx-1 text-muted" style="font-size:.9rem;vertical-align:middle"></i>
+                              <span class="rw-val-baru">{{ akt.baru || '—' }}</span>
+                            }
+                          </div>
+                        }
+                      </td>
+
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+
+          <!-- Footer: pagination -->
+          @if (!riwayatLoading() && riwayatTotal() > 0) {
+            <div class="modal-footer border-top d-flex align-items-center justify-content-between px-4 py-2">
+              <div class="text-muted small">
+                {{ riwayatTotal() }} entri
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <button class="dt-pg-btn" [disabled]="riwayatPage() === 1"
+                        (click)="riwayatPage.set(riwayatPage() - 1)">
+                  <i class="bx bx-chevron-left"></i>
+                </button>
+                @for (p of [].constructor(riwayatTotalPage()); track $index) {
+                  <button class="dt-pg-btn"
+                          [class.dt-pg-btn--active]="riwayatPage() === $index + 1"
+                          (click)="riwayatPage.set($index + 1)">
+                    {{ $index + 1 }}
+                  </button>
+                }
+                <button class="dt-pg-btn" [disabled]="riwayatPage() >= riwayatTotalPage()"
+                        (click)="riwayatPage.set(riwayatPage() + 1)">
+                  <i class="bx bx-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          }
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Modal Riwayat Perubahan Izin Hari ════════════════ -->
+  @if (hariShowRiwayatModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.52);z-index:1080"
+         (click)="hariShowRiwayatModal.set(false)">
+      <div class="modal-dialog modal-dialog-centered modal-lg"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden">
+
+          <!-- Header -->
+          <div class="modal-header border-bottom px-4 py-3">
+            <h5 class="modal-title fw-bold mb-0">
+              <i class="bx bx-history me-2 text-primary"></i>Riwayat Perubahan
+            </h5>
+            <button type="button" class="btn-close" (click)="hariShowRiwayatModal.set(false)"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body p-0" style="max-height:65vh;overflow-y:auto">
+
+            @if (hariRiwayatLoading()) {
+              <div class="text-center py-5 text-muted">
+                <span class="spinner-border text-primary mb-3"></span>
+                <p class="mb-0 small">Memuat riwayat...</p>
+              </div>
+            }
+
+            @if (!hariRiwayatLoading() && hariRiwayatError()) {
+              <div class="alert alert-danger m-3">{{ hariRiwayatError() }}</div>
+            }
+
+            @if (!hariRiwayatLoading() && !hariRiwayatError()) {
+
+              <!-- Tabel header -->
+              <table class="table mb-0" style="font-size:.84rem;table-layout:fixed">
+                <thead>
+                  <tr style="background:#f9fafb">
+                    <th style="width:260px;padding:12px 20px;font-size:.72rem;text-transform:uppercase;
+                               letter-spacing:.05em;color:#6b7280;font-weight:700;
+                               border-bottom:1px solid #e5e7eb">
+                      User
+                    </th>
+                    <th style="padding:12px 20px;font-size:.72rem;text-transform:uppercase;
+                               letter-spacing:.05em;color:#6b7280;font-weight:700;
+                               border-bottom:1px solid #e5e7eb">
+                      Aktivitas
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (hariRiwayatRows().length === 0) {
+                    <tr>
+                      <td colspan="2" class="text-center py-5 text-muted">
+                        <i class="bx bx-history fs-3 d-block mb-2"></i>
+                        Belum ada riwayat perubahan.
+                      </td>
+                    </tr>
+                  }
+                  @for (r of hariRiwayatRows(); track r.id) {
+                    <tr style="border-bottom:1px solid #f1f3f5;vertical-align:top">
+
+                      <!-- Kolom User -->
+                      <td style="padding:16px 20px;width:260px">
+                        <div class="d-flex align-items-start gap-3">
+                          <!-- Avatar hijau bergaya seperti gambar -->
+                          <div style="width:42px;height:42px;border-radius:50%;
+                                      background:#22c55e;color:#fff;font-weight:700;
+                                      font-size:1rem;display:flex;align-items:center;
+                                      justify-content:center;flex-shrink:0">
+                            {{ (r.changedBy || '?').charAt(0).toUpperCase() }}
+                          </div>
+                          <div>
+                            <div class="fw-bold" style="font-size:.88rem;color:#111827">
+                              {{ r.changedBy || 'Sistem' }}
+                            </div>
+                            <div class="text-muted small mt-1">
+                              {{ formatRiwayatHariAt(r.changedAt) }}
+                            </div>
+                            <!-- Badge tipe -->
+                            <span class="mt-2 d-inline-block"
+                                  [class]="hariTipeClass(r.tipe)">
+                              {{ hariTipeLabel(r.tipe) }}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Kolom Aktivitas -->
+                      <td style="padding:16px 20px">
+                        <!-- Badge judul oranye bergaya seperti gambar -->
+                        <div class="mb-2">
+                          <span style="display:inline-flex;align-items:center;gap:6px;
+                                       background:#f97316;color:#fff;font-size:.78rem;
+                                       font-weight:700;padding:4px 12px;border-radius:9999px">
+                            <i class="bx bx-calendar"></i>
+                            Izin
+                            <span style="background:rgba(255,255,255,.25);border-radius:9999px;
+                                         padding:1px 8px;font-size:.72rem;font-weight:700">
+                              ID: {{ r.izinHariId }}
+                            </span>
+                          </span>
+                        </div>
+
+                        <!-- List perubahan -->
+                        @for (akt of r.aktivitas; track $index) {
+                          <div style="font-size:.83rem;color:#374151;line-height:1.8">
+                            @if (r.tipe === 'DIBUAT') {
+                              <span class="fw-semibold" style="color:#111827">{{ akt.label }}:</span>
+                              <span style="text-decoration:underline;margin-left:4px">{{ akt.baru || '—' }}</span>
+                            } @else {
+                              <span>Perubahan <span class="fw-semibold" style="color:#111827">{{ akt.label }}:</span></span>
+                              <span style="color:#6b7280;text-decoration:underline;margin-left:4px">{{ akt.lama || '—' }}</span>
+                              <i class="bx bx-right-arrow-alt mx-1 text-muted"
+                                 style="font-size:.9rem;vertical-align:middle"></i>
+                              <span style="text-decoration:underline;font-weight:500">{{ akt.baru || '—' }}</span>
+                            }
+                          </div>
+                        }
+                      </td>
+
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+
+          <!-- Footer pagination — tombol panah ungu seperti gambar -->
+          @if (!hariRiwayatLoading() && hariRiwayatTotal() > 0) {
+            <div class="modal-footer border-top d-flex align-items-center justify-content-between px-4 py-2">
+              <div class="text-muted small">{{ hariRiwayatTotal() }} entri</div>
+              <div class="d-flex align-items-center gap-1">
+                <button class="dt-pg-btn" [disabled]="hariRiwayatPage() === 1"
+                        (click)="hariRiwayatPage.set(hariRiwayatPage() - 1)">
+                  <i class="bx bx-chevron-left"></i>
+                </button>
+                @for (p of [].constructor(hariRiwayatTotalPage()); track $index) {
+                  <button class="dt-pg-btn"
+                          [class.dt-pg-btn--active]="hariRiwayatPage() === $index + 1"
+                          (click)="hariRiwayatPage.set($index + 1)">
+                    {{ $index + 1 }}
+                  </button>
+                }
+                <button class="dt-pg-btn" [disabled]="hariRiwayatPage() >= hariRiwayatTotalPage()"
+                        (click)="hariRiwayatPage.set(hariRiwayatPage() + 1)">
+                  <i class="bx bx-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          }
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Modal Batal Permohonan Izin Hari ════════════════ -->
+  @if (showBatalModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1090"
+         (click)="showBatalModal.set(false)">
+      <div class="modal-dialog modal-dialog-centered"
+           style="max-width:380px"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden">
+
+          <!-- Header -->
+          <div class="modal-header border-bottom px-4 py-3">
+            <h5 class="modal-title fw-bold mb-0" style="color:#1e1b4b">
+              Batalkan Izin
+            </h5>
+            <button type="button" class="btn-close"
+                    (click)="showBatalModal.set(false)"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body px-4 py-3">
+
+            <!-- Info box ungu -->
+            <div class="rounded-3 px-3 py-2 mb-3"
+                 style="background:#ede9fe;color:#4338ca;font-size:.88rem;font-weight:600;line-height:1.5">
+              Centang tanggal izin yang akan dibatalkan:
+            </div>
+
+            <!-- Checkbox list tanggal -->
+            @if (batalItem()) {
+              @for (tgl of batalItem()!.tanggalList; track tgl) {
+                <label class="d-flex align-items-center gap-3 py-2"
+                       style="border-bottom:1px solid #f3f4f6;cursor:pointer;
+                              font-size:.9rem;color:#374151">
+                  <input type="checkbox"
+                         style="width:16px;height:16px;accent-color:#6366f1;
+                                cursor:pointer;flex-shrink:0"
+                         [checked]="isBatalDateSelected(tgl)"
+                         (change)="toggleBatalDate(tgl)" />
+                  {{ formatTanggalHari(tgl) }}
+                </label>
+              }
+            }
+
+            @if (batalSelectedDates().length === 0 && hariBatalSaving()) {
+              <div class="text-danger small mt-2">
+                Pilih minimal satu tanggal.
+              </div>
+            }
+
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer border-0 px-4 pb-4 pt-2 justify-content-start gap-2">
+            <button type="button" class="btn btn-primary px-4 fw-semibold"
+                    style="background:#6366f1;border-color:#6366f1;border-radius:10px"
+                    [disabled]="hariBatalSaving() || batalSelectedDates().length === 0"
+                    (click)="batalPermohonanHari()">
+              @if (hariBatalSaving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Proses
+            </button>
+            <button type="button" class="btn btn-outline-secondary fw-semibold px-4"
+                    style="border-radius:10px"
+                    (click)="showBatalModal.set(false)">
+              Nanti dulu
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

@@ -1,0 +1,74 @@
+/* Bootstrap & plugins sudah di-load via index.html */
+
+/* ── Google Fonts ─────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
+/* ── Material Icons (untuk komponen lama) ─── */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* ── Base override ───────────────────────── */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f0f0;
+}
+
+/* ── Angular router outlet fix ──────────── */
+/* Pastikan :host pada landing / login tidak kena layout Bootstrap */
+app-root {
+  display: block;
+}
+
+/* ── SweetAlert2 Custom ────────────────────── */
+.swal2-popup.swal-rounded {
+  border-radius: 14px !important;
+  padding: 24px 20px 20px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.swal2-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #1e1b4b !important;
+  text-align: left !important;
+  padding: 0 0 12px 0 !important;
+}
+
+.swal2-html-container {
+  text-align: left !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: .88rem !important;
+}
+
+.swal2-actions {
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  margin-top: 20px !important;
+}
+
+.swal2-confirm {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  padding: 8px 24px !important;
+  font-size: .88rem !important;
+}
+
+.swal-cancel-custom {
+  border: 1.5px solid #e5e7eb !important;
+  color: #374151 !important;
+  background: #fff !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  padding: 8px 24px !important;
+  font-size: .88rem !important;
+
+  &:hover {
+    background: #f9fafb !important;
+    border-color: #d1d5db !important;
+  }
+}
+
+.swal2-validation-message {
+  border-radius: 8px !important;
+  font-size: .82rem !important;
+}

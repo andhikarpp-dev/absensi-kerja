@@ -1,0 +1,224 @@
+<div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055" (click)="tutup()">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content border-0 shadow-lg">
+
+      <!-- ── Header ──────────────────────────────────────── -->
+      <div class="modal-header border-bottom px-4 py-3">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+          <i class="bx bx-file-export text-success fs-5"></i> Ekspor Excel
+        </h6>
+        <button type="button" class="btn-close" (click)="tutup()"></button>
+      </div>
+
+      <!-- ── Tab ────────────────────────────────────────── -->
+      <div class="px-4 pt-3 border-bottom d-flex gap-0">
+        <button class="btn btn-sm px-4 pb-2 border-0 border-bottom rounded-0 fw-semibold"
+                style="border-bottom-width:2px!important"
+                [class.text-primary]="activeTab() === 'tanggal-tertentu'"
+                [class.border-primary]="activeTab() === 'tanggal-tertentu'"
+                [class.text-secondary]="activeTab() !== 'tanggal-tertentu'"
+                (click)="setTab('tanggal-tertentu')">
+          Tanggal Tertentu
+        </button>
+        <button class="btn btn-sm px-4 pb-2 border-0 border-bottom rounded-0 fw-semibold"
+                style="border-bottom-width:2px!important"
+                [class.text-primary]="activeTab() === 'rentang-waktu'"
+                [class.border-primary]="activeTab() === 'rentang-waktu'"
+                [class.text-secondary]="activeTab() !== 'rentang-waktu'"
+                (click)="setTab('rentang-waktu')">
+          Rentang Waktu
+        </button>
+      </div>
+
+      <!-- ── Body ───────────────────────────────────────── -->
+      <div class="modal-body px-4 py-4" style="max-height:70vh;overflow-y:auto">
+
+        <!-- Alert error / sukses -->
+        @if (error()) {
+          <div class="alert alert-danger py-2 mb-3"><i class="bx bx-error-circle me-1"></i>{{ error() }}</div>
+        }
+        @if (success()) {
+          <div class="alert alert-success py-2 mb-3"><i class="bx bx-check-circle me-1"></i>{{ success() }}</div>
+        }
+
+        <!-- ════ TAB: Tanggal Tertentu ════ -->
+        @if (activeTab() === 'tanggal-tertentu') {
+
+          <!-- Tanggal -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" [(ngModel)]="tanggal" />
+          </div>
+
+          <!-- Divisi -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Divisi</label>
+            <select class="form-select" [(ngModel)]="divisiId">
+              <option value="">-- Divisi --</option>
+              @for (d of divisiList(); track d.id) {
+                <option [value]="d.id">{{ d.namaDivisi }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Lokasi Kehadiran -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Lokasi Kehadiran</label>
+            <select class="form-select" [(ngModel)]="lokasiId">
+              <option value="">Lokasi</option>
+              @for (l of lokasiList(); track l.id) {
+                <option [value]="l.id">{{ l.namaLokasi }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Spesifik Karyawan -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Spesifik Karyawan</label>
+            <input type="text" class="form-control" placeholder="Tulis kata kunci..."
+                   [ngModel]="karyawanKunci"
+                   (ngModelChange)="onKunciChange($event)" />
+            @if (karyawanKunci && karyawanFiltered().length > 0) {
+              <div class="border rounded mt-1" style="max-height:140px;overflow-y:auto;background:#fff">
+                @for (k of karyawanFiltered(); track k.id) {
+                  <div class="px-3 py-2" style="cursor:pointer;font-size:.85rem;border-bottom:1px solid #f3f4f6"
+                       (click)="pilihKaryawan(k)">
+                    {{ k.namaLengkap }}
+                    @if (k.nip) { <span class="text-muted ms-1">({{ k.nip }})</span> }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ════ TAB: Rentang Waktu ════ -->
+        @if (activeTab() === 'rentang-waktu') {
+
+          <!-- Rentang Tanggal -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="date" class="form-control" [(ngModel)]="tanggalDari" />
+              <span class="text-muted">-</span>
+              <input type="date" class="form-control" [(ngModel)]="tanggalSampai" />
+            </div>
+          </div>
+
+          <!-- Divisi -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Divisi</label>
+            <select class="form-select" [(ngModel)]="divisiId">
+              <option value="">-- Divisi --</option>
+              @for (d of divisiList(); track d.id) {
+                <option [value]="d.id">{{ d.namaDivisi }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Lokasi Kehadiran -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Lokasi Kehadiran</label>
+            <select class="form-select" [(ngModel)]="lokasiId">
+              <option value="">Lokasi</option>
+              @for (l of lokasiList(); track l.id) {
+                <option [value]="l.id">{{ l.namaLokasi }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Spesifik Karyawan -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Spesifik Karyawan</label>
+            <input type="text" class="form-control" placeholder="Tulis kata kunci..."
+                   [ngModel]="karyawanKunci"
+                   (ngModelChange)="onKunciChange($event)" />
+            @if (karyawanKunci && karyawanFiltered().length > 0) {
+              <div class="border rounded mt-1" style="max-height:140px;overflow-y:auto;background:#fff">
+                @for (k of karyawanFiltered(); track k.id) {
+                  <div class="px-3 py-2" style="cursor:pointer;font-size:.85rem;border-bottom:1px solid #f3f4f6"
+                       (click)="pilihKaryawan(k)">
+                    {{ k.namaLengkap }}
+                    @if (k.nip) { <span class="text-muted ms-1">({{ k.nip }})</span> }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Email tujuan -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Kirimkan File ke Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" [(ngModel)]="emailTujuan"
+                   placeholder="contoh@email.com" />
+            <div class="form-text">Pisah email dengan koma jika lebih dari satu.</div>
+          </div>
+        }
+
+        <!-- ════ FORMAT (shared) ════ -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Format</label>
+          <select class="form-select" [(ngModel)]="selectedFormat">
+            @for (f of formatList; track f.value) {
+              <option [value]="f.value">{{ f.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- ════ PILIH KOLOM — hanya tampil saat format "Pilih Kolom" ════ -->
+        @if (isPilihKolom) {
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Pilih Kolom</label>
+            @for (g of kolomGroups; track g.key) {
+              <div class="border rounded mb-2" style="overflow:hidden">
+                <!-- Header group -->
+                <div class="d-flex align-items-center px-3 py-2"
+                     style="background:#f8f9fa;border-bottom:1px solid #e9ecef">
+                  <input class="form-check-input me-2" type="checkbox"
+                         [id]="'grp-' + g.key"
+                         [checked]="isGroupAllChecked(g)"
+                         [indeterminate]="isGroupIndeterminate(g)"
+                         (change)="toggleGroup(g, $any($event.target).checked)" />
+                  <label class="form-check-label fw-semibold mb-0" [for]="'grp-' + g.key"
+                         style="font-size:.87rem;cursor:pointer">
+                    {{ g.label }}
+                  </label>
+                  <span class="ms-2 badge bg-secondary" style="font-size:.7rem">Semua</span>
+                </div>
+                <!-- Item-item kolom -->
+                <div class="px-3 py-2 d-flex flex-wrap gap-2">
+                  @for (item of g.items; track item.key) {
+                    <div class="form-check form-check-inline mb-0" style="min-width:180px">
+                      <input class="form-check-input" type="checkbox"
+                             [id]="'col-' + item.key"
+                             [(ngModel)]="item.checked" />
+                      <label class="form-check-label" [for]="'col-' + item.key"
+                             style="font-size:.82rem">{{ item.label }}</label>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+      </div><!-- end modal-body -->
+
+      <!-- ── Footer ──────────────────────────────────────── -->
+      <div class="modal-footer border-top px-4 py-3 gap-2">
+        <button class="btn btn-secondary px-4" (click)="tutup()" [disabled]="loading()">
+          Batal
+        </button>
+        <button class="btn btn-success px-5" (click)="ekspor()" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>Memproses...
+          } @else {
+            <i class="bx bx-download me-2"></i>
+            {{ activeTab() === 'rentang-waktu' ? 'Kirim ke Email' : 'Ekspor Excel' }}
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

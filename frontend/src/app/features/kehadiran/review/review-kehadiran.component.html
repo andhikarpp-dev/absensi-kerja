@@ -1,0 +1,293 @@
+<app-layout>
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Kehadiran</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/kehadiran/harian">Kehadiran</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Review Kehadiran</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <h5 class="fw-bold mb-3">Review Kehadiran</h5>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+
+      <!-- ── Toolbar ──────────────────────────────────────── -->
+      <div class="d-flex align-items-center gap-2 p-3 border-bottom flex-wrap">
+
+        <!-- Tab Perlu Dicek / Sudah Dicek -->
+        <div class="d-flex gap-0">
+          <button class="btn btn-sm px-4 fw-semibold"
+                  [class.btn-primary]="activeTab() === 'perlu'"
+                  [class.btn-outline-secondary]="activeTab() !== 'perlu'"
+                  style="border-radius:6px 0 0 6px"
+                  (click)="setTab('perlu')">
+            Perlu Dicek
+            @if (jumlahPerlu() > 0) {
+              <span class="badge bg-warning text-dark ms-1">{{ jumlahPerlu() }}</span>
+            }
+          </button>
+          <button class="btn btn-sm px-4 fw-semibold"
+                  [class.btn-primary]="activeTab() === 'sudah'"
+                  [class.btn-outline-secondary]="activeTab() !== 'sudah'"
+                  style="border-radius:0 6px 6px 0"
+                  (click)="setTab('sudah')">
+            Sudah Dicek
+          </button>
+        </div>
+
+        <!-- Filter Divisi -->
+        <select class="form-select form-select-sm ms-auto" style="width:200px" [(ngModel)]="divisiId" (ngModelChange)="loadData()">
+          <option value="">--Divisi--</option>
+          @for (d of divisiList(); track d.id) {
+            <option [value]="d.id">{{ d.namaDivisi }}</option>
+          }
+        </select>
+
+        <!-- Cari -->
+        <div class="input-group input-group-sm" style="width:200px">
+          <input type="text" class="form-control" placeholder="Cari..." [(ngModel)]="cari" (keyup.enter)="loadData()" />
+          <button class="btn btn-outline-secondary" (click)="loadData()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+
+        <!-- Refresh -->
+        <button class="btn btn-success btn-sm px-3" (click)="loadData()" [disabled]="loading()">
+          <i class="bx bx-refresh me-1"></i>Refresh
+        </button>
+      </div>
+
+      <!-- ── Info Banner ──────────────────────────────────── -->
+      <div class="px-3 pt-3 pb-1">
+        <div class="rounded p-3" style="background:#f8f9fa;font-size:.82rem;color:#555">
+          Data yang ditampilkan adalah saat:
+          <ul class="mb-0 mt-1 ps-3">
+            <li>Presensi pertama kali</li>
+            <li>Berada di luar lokasi kehadiran yang sudah diatur</li>
+            <li>Menggunakan device yang berbeda dengan sebelumnya</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── Error ──────────────────────────────────────── -->
+      @if (error()) {
+        <div class="alert alert-danger mx-3 mt-2 py-2 small">
+          <i class="bx bx-error-circle me-1"></i>{{ error() }}
+        </div>
+      }
+
+      <!-- ── Loading ────────────────────────────────────── -->
+      @if (loading()) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary"></div>
+          <div class="text-muted small mt-2">Memuat data...</div>
+        </div>
+      }
+
+      <!-- ── Tabel ──────────────────────────────────────── -->
+      @if (!loading()) {
+
+        <!-- DataTable controls -->
+        <div class="d-flex align-items-center justify-content-between px-3 pt-3 pb-2 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <label class="text-muted small mb-0">Tampilkan</label>
+            <select class="form-select form-select-sm" style="width:75px"
+                    [(ngModel)]="dtPageSize" (ngModelChange)="onPageSize()">
+              @for (n of pageSizeOptions; track n) {
+                <option [value]="n">{{ n }}</option>
+              }
+            </select>
+            <span class="text-muted small">data</span>
+          </div>
+          <div class="input-group input-group-sm" style="width:220px">
+            <span class="input-group-text"><i class="bx bx-search"></i></span>
+            <input type="text" class="form-control" placeholder="Cari dalam tabel..."
+                   [(ngModel)]="dtSearch" (ngModelChange)="onDtSearch()" />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+            <thead class="table-light">
+              <tr>
+                <th style="min-width:240px;cursor:pointer" (click)="sortBy('namaKaryawan')">
+                  Karyawan <i class="bx {{ sortIcon('namaKaryawan') }}"></i>
+                </th>
+                <th style="min-width:180px;cursor:pointer" (click)="sortBy('tanggal')">
+                  Presensi <i class="bx {{ sortIcon('tanggal') }}"></i>
+                </th>
+                <th style="min-width:220px;cursor:pointer" (click)="sortBy('alasanReview')">
+                  Alasan <i class="bx {{ sortIcon('alasanReview') }}"></i>
+                </th>
+                <th class="text-center" style="min-width:110px">Status GPS</th>
+                <th class="text-center" style="min-width:90px">Swafoto</th>
+                <th class="text-center" style="min-width:100px">Perangkat</th>
+                @if (activeTab() === 'perlu') {
+                  <th class="text-center" style="min-width:160px">
+                    Tandai Sudah Dicek<br>
+                    <button class="btn btn-link btn-sm p-0 text-primary fw-semibold" style="font-size:.78rem"
+                            (click)="tandaiSemua()">
+                      [ Tandai Semua ]
+                    </button>
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @if (pagedRows().length === 0) {
+                <tr>
+                  <td [attr.colspan]="activeTab() === 'perlu' ? 7 : 6" class="text-center py-5 text-muted">
+                    <i class="bx bx-check-circle" style="font-size:2rem;color:#ccc"></i>
+                    <div class="mt-1">Tidak ada data</div>
+                  </td>
+                </tr>
+              }
+              @for (a of pagedRows(); track a.id) {
+                <tr>
+                  <!-- Karyawan -->
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      @if (fotoUrl(a.fotoProfil); as url) {
+                        <img [src]="url" alt="" class="rounded-circle flex-shrink-0"
+                             style="width:40px;height:40px;object-fit:cover;border:2px solid #e9ecef" />
+                      } @else {
+                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                             style="width:40px;height:40px;background:#e9ecef;font-size:14px;font-weight:600;color:#6c757d">
+                          {{ a.namaKaryawan.charAt(0) }}
+                        </div>
+                      }
+                      <div>
+                        <div class="fw-semibold">{{ a.namaKaryawan }}</div>
+                        <div class="text-muted" style="font-size:.75rem">
+                          @if (a.namaJabatan) { <span>{{ a.namaJabatan }}</span> }
+                          @if (a.namaJabatan && a.namaDivisi) { <span class="mx-1">|</span> }
+                          @if (a.namaDivisi) { <span class="text-primary">{{ a.namaDivisi }}</span> }
+                        </div>
+                        @if (a.zonaWaktu) {
+                          <div class="text-muted" style="font-size:.72rem">{{ a.zonaWaktu }}</div>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Presensi -->
+                  <td>
+                    <div class="d-flex flex-column">
+                      <span class="badge mb-1 px-2 py-1 text-white"
+                            [style.background]="badgeColor(tipePresensi(a))"
+                            style="font-size:.75rem;border-radius:4px;width:fit-content">
+                        {{ tipePresensi(a) }}
+                      </span>
+                      <div class="text-muted" style="font-size:.75rem">{{ formatTanggal(a.tanggal) }}</div>
+                      <div class="fw-bold" style="font-size:1.05rem;letter-spacing:.03em">{{ jamPresensi(a) }}</div>
+                    </div>
+                  </td>
+
+                  <!-- Alasan -->
+                  <td>
+                    @if (a.alasanReview) {
+                      <span class="text-primary" style="font-size:.83rem">{{ a.alasanReview }}</span>
+                    } @else if (a.diLuarLokasi) {
+                      <span class="text-primary" style="font-size:.83rem">Presensi di Luar Area</span>
+                    } @else if (a.perangkatBerbeda) {
+                      <span class="text-primary" style="font-size:.83rem">Presensi Menggunakan Device Berbeda</span>
+                    } @else {
+                      <span class="text-muted" style="font-size:.83rem">-</span>
+                    }
+                  </td>
+
+                  <!-- Status GPS -->
+                  <td class="text-center">
+                    @if (a.lokasiMasukUrl) {
+                      <a [href]="a.lokasiMasukUrl" target="_blank" title="Lihat di Maps">
+                        <i class="bx bxs-map-pin" [style.color]="a.diLuarLokasi ? '#e74c3c' : '#27ae60'" style="font-size:1.3rem"></i>
+                      </a>
+                    } @else {
+                      <i class="bx bxs-map-pin" style="font-size:1.3rem;color:#ccc"></i>
+                    }
+                  </td>
+
+                  <!-- Swafoto -->
+                  <td class="text-center">
+                    @if (a.fotoMasukUrl) {
+                      <a [href]="a.fotoMasukUrl" target="_blank" title="Lihat foto">
+                        <i class="bx bx-camera" style="font-size:1.3rem;color:#495057"></i>
+                      </a>
+                    } @else {
+                      <span class="text-muted small">-</span>
+                    }
+                  </td>
+
+                  <!-- Perangkat -->
+                  <td class="text-center">
+                    @if (a.namaPerangkat) {
+                      <span [title]="a.namaPerangkat">
+                        <i class="bx bx-mobile-alt" style="font-size:1.3rem;color:#495057"></i>
+                      </span>
+                    } @else {
+                      <i class="bx bx-mobile-alt" style="font-size:1.3rem;color:#ccc"></i>
+                    }
+                  </td>
+
+                  <!-- Tandai Sudah Dicek (hanya tab Perlu) -->
+                  @if (activeTab() === 'perlu') {
+                    <td class="text-center">
+                      <button class="btn btn-success btn-sm px-3"
+                              (click)="tandaiDicek(a)"
+                              [disabled]="savingId() === a.id">
+                        @if (savingId() === a.id) {
+                          <span class="spinner-border spinner-border-sm"></span>
+                        } @else {
+                          <i class="bx bx-check"></i>
+                        }
+                      </button>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── Footer DataTable ──────────────────────────── -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top flex-wrap gap-2">
+          <div class="text-muted small">
+            Menampilkan
+            {{ filtered().length === 0 ? 0 : (dtPage() - 1) * dtPageSize() + 1 }}–{{ Math.min(dtPage() * dtPageSize(), filtered().length) }}
+            dari {{ filtered().length }} data
+            @if (rows().length !== filtered().length) {
+              <span>(difilter dari {{ rows().length }} total)</span>
+            }
+          </div>
+          @if (totalPages() > 1) {
+            <nav>
+              <ul class="pagination pagination-sm mb-0 gap-1">
+                <li class="page-item" [class.disabled]="dtPage() === 1">
+                  <button class="page-link rounded" (click)="dtPage.set(dtPage() - 1)"
+                          [disabled]="dtPage() === 1">«</button>
+                </li>
+                @for (p of pagesArr(); track p) {
+                  <li class="page-item" [class.active]="dtPage() === p">
+                    <button class="page-link rounded" (click)="dtPage.set(p)">{{ p }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="dtPage() === totalPages()">
+                  <button class="page-link rounded" (click)="dtPage.set(dtPage() + 1)"
+                          [disabled]="dtPage() === totalPages()">»</button>
+                </li>
+              </ul>
+            </nav>
+          }
+        </div>
+      }
+
+    </div>
+  </div>
+
+</app-layout>

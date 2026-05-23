@@ -1,0 +1,335 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Karyawan</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          @if (karyawan()) {
+            <li class="breadcrumb-item">
+              <a [routerLink]="['/karyawan', karyawan()!.id]">{{ karyawan()!.namaLengkap }}</a>
+            </li>
+          }
+          <li class="breadcrumb-item active" aria-current="page">Dokumen</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Header + Toolbar -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <h5 class="mb-3"><i class="bx bx-folder me-2"></i>Dokumen Karyawan</h5>
+
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Search -->
+        <div class="input-group" style="max-width: 320px">
+          <input type="text" class="form-control" placeholder="Cari"
+                 [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" />
+          <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
+        </div>
+
+        <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+          <button class="btn btn-tambah btn-sm px-3" (click)="openTambah()">
+            <i class="bx bx-plus me-1"></i> Tambah Dokumen
+          </button>
+          <span class="kuota-badge kuota-gratis">
+            Kuota Gratis: <strong>{{ kuota().kuotaGratis - kuota().totalGratis }}</strong>
+          </span>
+          <span class="kuota-badge kuota-berbayar" role="button" style="cursor:pointer" (click)="openPesanKuota()" title="Klik untuk tambah kuota berbayar">
+            Kuota Berbayar: <strong>{{ kuota().kuotaBerbayar - kuota().totalBerbayar }}</strong>
+            <i class="bx bx-plus-circle ms-1"></i>
+          </span>
+          <button class="icon-btn" title="Riwayat" type="button">
+            <i class="bx bx-history"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ error() }}
+      <button type="button" class="btn-close" (click)="error.set('')"></button>
+    </div>
+  }
+
+  <!-- Info -->
+  <div class="text-muted mb-2" style="font-size:.78rem;font-family:monospace">
+    Kuota dokumen berbayar yang sudah digunakan tidak dapat dikembalikan.
+  </div>
+
+  <!-- Tabel -->
+  <div class="card border-0 shadow-sm">
+    @if (loading()) {
+      <div class="p-4 text-center text-muted">
+        <div class="spinner-border spinner-border-sm me-2"></div> Memuat...
+      </div>
+    } @else if (rows().length === 0) {
+      <div class="text-center py-5 text-muted">
+        <i class="bx bx-folder-open" style="font-size:3rem"></i>
+        <p class="mt-2 mb-3">Belum ada dokumen.</p>
+        <button class="btn btn-tambah btn-sm" (click)="openTambah()">
+          <i class="bx bx-plus me-1"></i> Tambah Dokumen
+        </button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="text-center text-muted" style="font-size:.85rem">
+            <tr>
+              <th class="text-start">Nama Dokumen</th>
+              <th>Berkas</th>
+              <th>Tanggal Berakhir</th>
+              <th>Status Kuota</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of rows(); track d.id) {
+              <tr>
+                <!-- Nama Dokumen -->
+                <td style="min-width:160px">{{ d.namaDokumen }}</td>
+
+                <!-- Berkas -->
+                <td class="text-center">
+                  <a [href]="d.fileUrl" target="_blank" class="text-decoration-none">
+                    <div class="berkas-card">
+                      <i class="bx" [ngClass]="iconForFile(d.namaBerkas)"
+                         [style.color]="iconColor(d.namaBerkas)"
+                         style="font-size:1.6rem"></i>
+                      <div class="text-start">
+                        <div class="text-dark" style="font-size:.85rem;font-weight:500">
+                          {{ d.namaBerkas }}
+                        </div>
+                        <div class="text-muted" style="font-size:.72rem">
+                          ({{ formatBytes(d.ukuranBerkas) }})
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                  @if (d.tanggalUpload) {
+                    <div class="text-muted mt-1" style="font-size:.72rem">
+                      <i class="bx bx-calendar"></i> {{ formatDateTime(d.tanggalUpload) }}
+                    </div>
+                  }
+                </td>
+
+                <!-- Tanggal Berakhir -->
+                <td class="text-center">
+                  @if (d.tanggalBerakhir) {
+                    <span class="badge bg-success" style="font-size:.75rem">
+                      <i class="bx bx-bell"></i> {{ d.hariReminder ?? 7 }} Hari Sebelum
+                    </span>
+                    <div class="mt-1" style="font-size:.78rem;color:#dc2626">
+                      <i class="bx bx-calendar-event"></i> {{ formatTanggal(d.tanggalBerakhir) }}
+                    </div>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+
+                <!-- Status Kuota -->
+                <td class="text-center">
+                  @if (d.statusKuota === 'GRATIS') {
+                    <span class="badge rounded-pill" style="background:#f3f4f6;color:#374151;font-weight:500">Gratis</span>
+                  } @else {
+                    <span class="badge rounded-pill bg-success">Berbayar</span>
+                  }
+                </td>
+
+                <!-- Aksi -->
+                <td class="text-center">
+                  <div class="d-inline-flex gap-2">
+                    <button class="icon-btn" title="Edit" (click)="openEdit(d)">
+                      <i class="bx bx-edit"></i>
+                    </button>
+                    <button class="icon-btn danger" title="Hapus" (click)="konfirmasiHapus(d.id)">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Modal Form -->
+  @if (showFormModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bx bx-folder me-2"></i>
+              {{ editId() ? 'Edit Dokumen' : 'Tambah Dokumen' }}
+            </h5>
+            <button type="button" class="btn-close" (click)="closeForm()"></button>
+          </div>
+          <div class="modal-body">
+            @if (errorForm()) {
+              <div class="alert alert-danger py-2" style="font-size:.85rem">{{ errorForm() }}</div>
+            }
+
+            <div class="mb-3">
+              <label class="form-label">Nama Dokumen <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [ngModel]="form().namaDokumen"
+                     (ngModelChange)="updateForm('namaDokumen', $event)"
+                     placeholder="Contoh: Sertifikat K3" />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">
+                Berkas
+                @if (!editId()) { <span class="text-danger">*</span> }
+              </label>
+              <input type="file" class="form-control" (change)="onBerkasChange($event)" />
+              @if (berkasNama()) {
+                <small class="text-muted">{{ berkasNama() }}</small>
+              }
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tanggal Berakhir</label>
+                <input type="date" class="form-control"
+                       [ngModel]="form().tanggalBerakhir"
+                       (ngModelChange)="updateForm('tanggalBerakhir', $event)" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Reminder (hari sebelum)</label>
+                <input type="number" min="0" class="form-control"
+                       [ngModel]="form().hariReminder"
+                       (ngModelChange)="updateForm('hariReminder', $event)" />
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label">Status Kuota</label>
+              <select class="form-select"
+                      [ngModel]="form().statusKuota"
+                      (ngModelChange)="updateForm('statusKuota', $event)">
+                <option value="GRATIS">Gratis</option>
+                <option value="BERBAYAR">Berbayar</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="closeForm()" [disabled]="saving()">Batal</button>
+            <button class="btn btn-tambah btn-sm px-4"
+                    (click)="simpan()" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...
+              } @else {
+                <i class="bx bx-save me-1"></i> Simpan
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Konfirmasi Hapus -->
+  @if (konfirmasiHapusId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger">
+              <i class="bx bx-trash me-2"></i>Hapus Dokumen?
+            </h5>
+          </div>
+          <div class="modal-body text-muted" style="font-size:.9rem">
+            Dokumen akan dihapus permanen dan tidak dapat dikembalikan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="batalHapus()">Batal</button>
+            <button class="btn btn-danger btn-sm px-4" (click)="hapus()">
+              <i class="bx bx-trash me-1"></i> Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:2000">
+      <div class="toast show align-items-center text-white border-0"
+           [class.bg-success]="toastType() === 'success'"
+           [class.bg-danger]="toastType() === 'danger'">
+        <div class="d-flex">
+          <div class="toast-body">{{ toastMsg() }}</div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Pesan Tambahan Kuota -->
+  @if (showPesanKuotaModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-bottom-0 pb-1">
+            <h5 class="modal-title fw-semibold">Pesan Tambahan Kuota Dokumen Karyawan</h5>
+            <button type="button" class="btn-close" (click)="showPesanKuotaModal.set(false)"></button>
+          </div>
+          <div class="modal-body pt-2">
+            <label class="form-label text-muted mb-2" style="font-size:.85rem">Kuota</label>
+            <div class="d-flex gap-2 mb-4">
+              @for (opt of kuotaOptions; track opt.jumlah) {
+                <button
+                  class="btn flex-fill py-3"
+                  style="border:2px solid; border-radius:10px; font-size:.85rem; transition:all .15s"
+                  [style.border-color]="selectedKuotaOption().jumlah === opt.jumlah ? '#6366f1' : '#e5e7eb'"
+                  [style.background]="selectedKuotaOption().jumlah === opt.jumlah ? '#f0f0ff' : '#f9fafb'"
+                  [style.color]="selectedKuotaOption().jumlah === opt.jumlah ? '#4f46e5' : '#374151'"
+                  (click)="selectedKuotaOption.set(opt)">
+                  <div class="fw-semibold">{{ opt.jumlah }}</div>
+                  <div style="font-size:.75rem">Rp{{ formatRupiah(opt.harga) }}</div>
+                </button>
+              }
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between border-top pt-3 mb-3">
+              <span class="text-muted" style="font-size:.85rem">Total (Rp)</span>
+              <span style="font-size:1.5rem;font-weight:700;color:#6366f1">
+                {{ formatRupiah(selectedKuotaOption().harga) }}
+              </span>
+            </div>
+
+            <div class="d-grid mb-2">
+              <button class="btn btn-lg fw-semibold text-white"
+                      style="background:#6366f1;border-radius:8px"
+                      (click)="pesanKuota()"
+                      [disabled]="pesanKuotaSaving()">
+                @if (pesanKuotaSaving()) {
+                  <span class="spinner-border spinner-border-sm me-2"></span> Memproses...
+                } @else {
+                  Pesan Kuota &rarr;
+                }
+              </button>
+            </div>
+            <div class="text-muted text-center" style="font-size:.75rem">
+              Dengan melanjutkan, Anda menyetujui
+              <a href="#" class="text-decoration-none">S&amp;K Layanan</a> dan
+              <a href="#" class="text-decoration-none">Privasi</a> kami.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

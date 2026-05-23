@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/pola-kerja/pola-kerja.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\nimport { authGuard } from '../../core/guards/auth.guard';\r\nimport { roleGuard } from '../../core/guards/role.guard';\r\n\r\nexport const polaKerjaRoutes: Routes = [\r\n  {\r\n    path: 'hari-kerja',\r\n    canActivate: [authGuard, roleGuard(['PEMILIK', 'ADMIN'])],\r\n    loadComponent: () =>\r\n      import('./hari-kerja/hari-kerja-list.component').then(m => m.HariKerjaListComponent)\r\n  },\r\n  {\r\n    path: 'shift',\r\n    canActivate: [authGuard, roleGuard(['PEMILIK', 'ADMIN'])],\r\n    loadComponent: () =>\r\n      import('./shift/shift-list.component').then(m => m.ShiftListComponent)\r\n  },\r\n  {\r\n    path: 'openshift',\r\n    canActivate: [authGuard, roleGuard(['PEMILIK', 'ADMIN'])],\r\n    loadComponent: () =>\r\n      import('./openshift/openshift-list.component').then(m => m.OpenshiftListComponent)\r\n  }\r\n];\r\n"],
+  "mappings": ";;;;;;;;;;AAIO,IAAM,kBAA0B;EACrC;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,WAAW,OAAO,CAAC,CAAC;IACxD,eAAe,MACb,OAAO,qBAAwC,EAAE,KAAK,OAAK,EAAE,sBAAsB;;EAEvF;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,WAAW,OAAO,CAAC,CAAC;IACxD,eAAe,MACb,OAAO,qBAA8B,EAAE,KAAK,OAAK,EAAE,kBAAkB;;EAEzE;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,WAAW,OAAO,CAAC,CAAC;IACxD,eAAe,MACb,OAAO,qBAAsC,EAAE,KAAK,OAAK,EAAE,sBAAsB;;;",
+  "names": []
+}

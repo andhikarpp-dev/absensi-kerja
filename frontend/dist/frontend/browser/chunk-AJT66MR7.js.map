@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/jabatan/jabatan.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\nimport { authGuard } from '../../core/guards/auth.guard';\r\nimport { roleGuard } from '../../core/guards/role.guard';\r\n\r\nexport const jabatanRoutes: Routes = [\r\n  {\r\n    path: '',\r\n    canActivate: [authGuard, roleGuard(['ADMIN','PEMILIK'])],\r\n    loadComponent: () =>\r\n      import('./jabatan-list/jabatan-list.component').then(m => m.JabatanListComponent)\r\n  },\r\n  {\r\n    path: 'baru',\r\n    canActivate: [authGuard, roleGuard(['ADMIN','PEMILIK'])],\r\n    loadComponent: () =>\r\n      import('./jabatan-form/jabatan-form.component').then(m => m.JabatanFormComponent)\r\n  },\r\n  {\r\n    path: ':id/edit',\r\n    canActivate: [authGuard, roleGuard(['ADMIN','PEMILIK'])],\r\n    loadComponent: () =>\r\n      import('./jabatan-form/jabatan-form.component').then(m => m.JabatanFormComponent)\r\n  }\r\n];\r\n"],
+  "mappings": ";;;;;;;;;;AAIO,IAAM,gBAAwB;EACnC;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,SAAQ,SAAS,CAAC,CAAC;IACvD,eAAe,MACb,OAAO,qBAAuC,EAAE,KAAK,OAAK,EAAE,oBAAoB;;EAEpF;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,SAAQ,SAAS,CAAC,CAAC;IACvD,eAAe,MACb,OAAO,qBAAuC,EAAE,KAAK,OAAK,EAAE,oBAAoB;;EAEpF;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,SAAQ,SAAS,CAAC,CAAC;IACvD,eAAe,MACb,OAAO,qBAAuC,EAAE,KAAK,OAAK,EAAE,oBAAoB;;;",
+  "names": []
+}

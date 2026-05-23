@@ -1,0 +1,1870 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          <li class="breadcrumb-item active">Detail</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="card border-0 shadow-sm p-5 text-center text-muted">
+      <span class="spinner-border spinner-border-sm me-2"></span> Memuat data...
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+    </div>
+  }
+
+  @if (!loading() && karyawan(); as k) {
+
+    <!-- ── Profile Hero Card ─────────────────────────────── -->
+    <div class="hero-card card border-0 shadow-sm mb-4 overflow-hidden">
+
+      <!-- Top gradient strip -->
+      <div class="hero-banner"></div>
+
+      <div class="card-body pt-0 px-4 pb-4">
+        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-end gap-3">
+
+          <!-- Avatar -->
+          <div class="avatar-wrap flex-shrink-0">
+            @if (fotoUrl(k.fotoProfil); as url) {
+              <img [src]="url" alt="Foto" class="avatar-img" />
+            } @else {
+              <div class="avatar-placeholder">
+                <i class="bx bx-user"></i>
+              </div>
+            }
+            <!-- Status dot -->
+            <span class="status-dot"
+                  [class.dot-aktif]="k.statusKerja === 'AKTIF'"
+                  [class.dot-nonaktif]="k.statusKerja !== 'AKTIF'"
+                  [title]="statusKerjaLabel(k.statusKerja)">
+            </span>
+          </div>
+
+          <!-- Nama & info ringkas -->
+          <div class="flex-grow-1 pb-1">
+            <h4 class="mb-1 fw-bold">{{ k.namaLengkap }}</h4>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <span class="text-muted small">
+                <i class="bx bx-id-card me-1"></i>{{ k.nip }}
+              </span>
+              @if (k.namaJabatan) {
+                <span class="chip chip-blue">{{ k.namaJabatan }}</span>
+              }
+              @if (k.namaDivisi) {
+                <span class="chip chip-purple">{{ k.namaDivisi }}</span>
+              }
+              <span class="chip" [class]="statusKerjaBadgeClass(k.statusKerja)">
+                {{ statusKerjaLabel(k.statusKerja) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="d-flex gap-2 flex-shrink-0">
+            <a [routerLink]="['/karyawan', k.id, 'edit']"
+               class="btn btn-primary btn-sm px-3">
+              <i class="bx bx-edit me-1"></i> Edit
+            </a>
+            <a routerLink="/karyawan" class="btn btn-outline-secondary btn-sm px-3">
+              <i class="bx bx-arrow-back me-1"></i> Kembali
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Stats row -->
+        <div class="stats-row mt-4">
+          <div class="stat-item">
+            <div class="stat-label"><i class="bx bx-time-five me-1"></i>Zona Waktu</div>
+            <div class="stat-value">{{ zonaWaktuLabel(k.zonaWaktu) }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label"><i class="bx bx-calendar me-1"></i>Mulai Bekerja</div>
+            <div class="stat-value">{{ k.tglMulaiBekerja ? (k.tglMulaiBekerja | date:'dd MMM yyyy') : '—' }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label"><i class="bx bx-briefcase me-1"></i>Masa Kerja</div>
+            <div class="stat-value">{{ masaKerja(k.tglMulaiBekerja) }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label"><i class="bx bx-leaf me-1"></i>Sisa Cuti</div>
+            <div class="stat-value">{{ k.sisaCuti }} hari</div>
+          </div>
+          @if (k.email) {
+            <div class="stat-item">
+              <div class="stat-label"><i class="bx bx-envelope me-1"></i>Email</div>
+              <div class="stat-value">{{ k.email }}</div>
+            </div>
+          }
+          @if (k.noTelepon) {
+            <div class="stat-item">
+              <div class="stat-label"><i class="bx bx-phone me-1"></i>Telepon</div>
+              <div class="stat-value">{{ k.noTelepon }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tabs ──────────────────────────────────────────── -->
+    <div class="tab-bar card border-0 shadow-sm mb-4">
+      <div class="tab-list">
+        @for (tab of [
+          {key:'pribadi',     label:'Data Pribadi',  icon:'bx-user'},
+          {key:'kepegawaian', label:'Kepegawaian',   icon:'bx-briefcase'},
+          {key:'pendidikan',  label:'Pendidikan',    icon:'bx-graduation'},
+          {key:'akun',        label:'Akun & Kontak', icon:'bx-shield-alt-2'}
+        ]; track tab.key) {
+          <button class="tab-btn" [class.active]="activeTab() === tab.key"
+                  (click)="activeTab.set($any(tab.key))">
+            <i class="bx {{ tab.icon }} me-1"></i>{{ tab.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- ── Tab: Data Pribadi ─────────────────────────────── -->
+    @if (activeTab() === 'pribadi') {
+
+      <!-- Sub-tab bar -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="tab-list px-2" style="border-bottom:1px solid #e9ecef;">
+          @for (sub of [
+            {key:'informasi',   label:'Informasi Pribadi',    icon:'bx-user-circle'},
+            {key:'identitas',   label:'File Identitas',       icon:'bx-folder-open'},
+            {key:'pengalaman',  label:'Pengalaman Kerja',     icon:'bx-briefcase-alt-2'},
+            {key:'pendidikan',  label:'Background Pendidikan',icon:'bx-book-open'},
+            {key:'portofolio',  label:'Portofolio',           icon:'bx-image'},
+            {key:'penghargaan', label:'Penghargaan',          icon:'bx-medal'},
+            {key:'sertifikat',  label:'Sertifikat',           icon:'bx-certification'},
+            {key:'organisasi',  label:'Pengalaman Organisasi',icon:'bx-group'}
+          ]; track sub.key) {
+            <button class="tab-btn" style="font-size:.82rem;padding:.5rem .9rem"
+                    [class.active]="pribadiSubTab() === sub.key"
+                    (click)="pribadiSubTab.set($any(sub.key))">
+              <i class="bx {{ sub.icon }} me-1"></i>{{ sub.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- ── Sub-tab: Informasi Pribadi ── -->
+      @if (pribadiSubTab() === 'informasi') {
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="info-card card border-0 shadow-sm h-100">
+              <div class="info-card-header">
+                <i class="bx bx-user-circle me-2 text-primary"></i>Identitas Diri
+              </div>
+              <div class="info-card-body">
+                <div class="info-row">
+                  <span class="info-label">Nama Lengkap</span>
+                  <span class="info-value fw-semibold">{{ k.namaLengkap }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Jenis Kelamin</span>
+                  <span class="info-value">{{ jenisKelaminLabel(k.jenisKelamin) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Tempat Lahir</span>
+                  <span class="info-value">{{ k.tempatLahir || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Tanggal Lahir</span>
+                  <span class="info-value">
+                    {{ k.tanggalLahir ? (k.tanggalLahir | date:'dd MMMM yyyy') : '—' }}
+                    @if (k.tanggalLahir) {
+                      <span class="text-muted ms-1 small">({{ umur(k.tanggalLahir) }})</span>
+                    }
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Golongan Darah</span>
+                  <span class="info-value">{{ golonganDarahLabel(k.golonganDarah) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Status Perkawinan</span>
+                  <span class="info-value">{{ statusPerkawinanLabel(k.statusPerkawinan) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Agama</span>
+                  <span class="info-value">{{ agamaLabel(k.agama) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="info-card card border-0 shadow-sm mb-4">
+              <div class="info-card-header">
+                <i class="bx bx-id-card me-2 text-warning"></i>Kartu Identitas
+              </div>
+              <div class="info-card-body">
+                <div class="info-row">
+                  <span class="info-label">Jenis Identitas</span>
+                  <span class="info-value">{{ k.jenisIdentitas || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Nomor Identitas</span>
+                  <span class="info-value fw-mono">{{ k.nomorIdentitas || '—' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header">
+                <i class="bx bx-map me-2 text-success"></i>Alamat
+              </div>
+              <div class="info-card-body">
+                <div class="info-row">
+                  <span class="info-label">Alamat KTP</span>
+                  <span class="info-value">{{ k.alamatKtp || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Kabupaten/Kota</span>
+                  <span class="info-value">{{ k.namaKabupatenKota || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Provinsi</span>
+                  <span class="info-value">{{ k.namaProvinsi || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Alamat Domisili</span>
+                  <span class="info-value">{{ k.alamatDomisili || '—' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          @if (k.catatan) {
+            <div class="col-12">
+              <div class="info-card card border-0 shadow-sm">
+                <div class="info-card-header">
+                  <i class="bx bx-note me-2 text-info"></i>Catatan
+                </div>
+                <div class="info-card-body">
+                  <p class="mb-0 text-muted" style="font-size:.9rem;white-space:pre-line">{{ k.catatan }}</p>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── Sub-tab: File Identitas ── -->
+      @if (pribadiSubTab() === 'identitas') {
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header d-flex align-items-center justify-content-between">
+                <span><i class="bx bx-folder-open me-2 text-primary"></i>File Identitas Tambahan</span>
+                <button class="btn btn-primary btn-sm px-3" (click)="openFileIdentitasModal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="info-card-body px-3 py-2">
+                @if (fileIdentitasLoading()) {
+                  <div class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                  </div>
+                }
+                @if (!fileIdentitasLoading() && fileIdentitasList().length === 0) {
+                  <div class="text-center text-muted py-5">
+                    <i class="bx bx-folder-open fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0">Belum ada file identitas tambahan.</p>
+                    <button class="btn btn-outline-primary btn-sm mt-3" (click)="openFileIdentitasModal()">
+                      <i class="bx bx-plus me-1"></i>Tambah File Identitas
+                    </button>
+                  </div>
+                }
+                @if (!fileIdentitasLoading() && fileIdentitasList().length > 0) {
+                  <div class="file-identitas-table-wrap">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:40px">#</th>
+                          <th>Jenis Identitas</th>
+                          <th>Nomor</th>
+                          <th>File</th>
+                          <th class="text-end" style="width:80px">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (fi of fileIdentitasList(); track fi.id; let i = $index) {
+                          <tr>
+                            <td class="text-muted small">{{ i + 1 }}</td>
+                            <td><span class="chip chip-blue">{{ jenisIdentitasTambahanLabel(fi.jenisIdentitas) }}</span></td>
+                            <td class="fw-mono">{{ fi.nomor }}</td>
+                            <td>
+                              @if (fileIdentitasUrl(fi.fileUrl); as url) {
+                                <a [href]="url" target="_blank" class="btn btn-outline-primary btn-xs">
+                                  <i class="bx bx-link-external me-1"></i>Lihat
+                                </a>
+                              } @else {
+                                <span class="text-muted small">—</span>
+                              }
+                            </td>
+                            <td class="text-end">
+                              <button class="btn btn-outline-danger btn-xs"
+                                      (click)="deleteFileIdentitas(fi.id)" title="Hapus">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Sub-tab: Pengalaman Kerja ── -->
+      @if (pribadiSubTab() === 'pengalaman') {
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header d-flex align-items-center justify-content-between">
+                <span><i class="bx bx-briefcase-alt-2 me-2 text-success"></i>Riwayat Pengalaman Kerja</span>
+                <button class="btn btn-primary btn-sm px-3" (click)="openPengalamanModal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="info-card-body px-3 py-2">
+                @if (pengalamanKerjaLoading()) {
+                  <div class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                  </div>
+                }
+                @if (!pengalamanKerjaLoading() && pengalamanKerjaList().length === 0) {
+                  <div class="text-center text-muted py-5">
+                    <i class="bx bx-briefcase fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0">Belum ada riwayat pengalaman kerja.</p>
+                    <button class="btn btn-outline-primary btn-sm mt-3" (click)="openPengalamanModal()">
+                      <i class="bx bx-plus me-1"></i>Tambah Pengalaman Kerja
+                    </button>
+                  </div>
+                }
+                @if (!pengalamanKerjaLoading() && pengalamanKerjaList().length > 0) {
+                  <div class="file-identitas-table-wrap">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:40px">#</th>
+                          <th>Jabatan / Posisi</th>
+                          <th>Nama Perusahaan</th>
+                          <th>Periode</th>
+                          <th>Informasi Tambahan</th>
+                          <th class="text-end" style="width:90px">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (pk of pengalamanKerjaList(); track pk.id; let i = $index) {
+                          <tr>
+                            <td class="text-muted small">{{ i + 1 }}</td>
+                            <td class="fw-semibold">{{ pk.jabatan }}</td>
+                            <td>
+                              {{ pk.namaPerusahaan }}
+                              @if (pk.bidangIndustri) {
+                                <div class="text-muted small">{{ pk.bidangIndustri }}</div>
+                              }
+                            </td>
+                            <td class="small text-muted" style="white-space:nowrap">
+                              {{ pengalamanPeriode(pk) }}
+                              @if (pk.masihBekerja) {
+                                <span class="badge bg-success ms-1" style="font-size:.7rem">Aktif</span>
+                              }
+                            </td>
+                            <td class="small text-muted" style="max-width:200px;white-space:pre-wrap">
+                              {{ pk.deskripsi || '—' }}
+                            </td>
+                            <td class="text-end">
+                              <button class="btn btn-outline-primary btn-xs me-1"
+                                      (click)="openEditPengalamanModal(pk)" title="Edit">
+                                <i class="bx bx-edit"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-xs"
+                                      (click)="deletePengalamanKerja(pk.id)" title="Hapus">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Sub-tab: Background Pendidikan ── -->
+      @if (pribadiSubTab() === 'pendidikan') {
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header d-flex align-items-center justify-content-between">
+                <span><i class="bx bx-book-open me-2 text-primary"></i>Background Pendidikan</span>
+                <button class="btn btn-primary btn-sm px-3" (click)="openBgPendidikanModal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="info-card-body px-3 py-2">
+                @if (bgPendidikanLoading()) {
+                  <div class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                  </div>
+                }
+                @if (!bgPendidikanLoading() && bgPendidikanList().length === 0) {
+                  <div class="text-center text-muted py-5">
+                    <i class="bx bx-graduation fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0">Belum ada riwayat pendidikan.</p>
+                    <button class="btn btn-outline-primary btn-sm mt-3" (click)="openBgPendidikanModal()">
+                      <i class="bx bx-plus me-1"></i>Tambah Background Pendidikan
+                    </button>
+                  </div>
+                }
+                @if (!bgPendidikanLoading() && bgPendidikanList().length > 0) {
+                  <div class="file-identitas-table-wrap">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:40px">#</th>
+                          <th>Tingkat</th>
+                          <th>Nama Institusi</th>
+                          <th>Jurusan</th>
+                          <th>Tahun Masuk</th>
+                          <th>Tahun Lulus</th>
+                          <th>Nilai / IPK</th>
+                          <th class="text-end" style="width:90px">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (bp of bgPendidikanList(); track bp.id; let i = $index) {
+                          <tr>
+                            <td class="text-muted small">{{ i + 1 }}</td>
+                            <td><span class="chip chip-blue">{{ tingkatPendidikanLabel(bp.tingkatPendidikan) }}</span></td>
+                            <td class="fw-semibold">{{ bp.namaInstitusi }}</td>
+                            <td>{{ bp.jurusan || '—' }}</td>
+                            <td>{{ bp.tahunMasuk || '—' }}</td>
+                            <td>{{ bp.tahunLulus || '—' }}</td>
+                            <td>{{ bp.nilai || '—' }}</td>
+                            <td class="text-end">
+                              <button class="btn btn-outline-primary btn-xs me-1"
+                                      (click)="openEditBgPendidikanModal(bp)" title="Edit">
+                                <i class="bx bx-edit"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-xs"
+                                      (click)="deleteBgPendidikan(bp.id)" title="Hapus">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Sub-tab: Portofolio ── -->
+      @if (pribadiSubTab() === 'portofolio') {
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header d-flex align-items-center justify-content-between">
+                <span><i class="bx bx-image me-2 text-warning"></i>Daftar Portofolio</span>
+                <button class="btn btn-primary btn-sm px-3" (click)="openPortofolioModal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="info-card-body px-3 py-2">
+                @if (portofolioLoading()) {
+                  <div class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                  </div>
+                }
+                @if (!portofolioLoading() && portofolioList().length === 0) {
+                  <div class="text-center text-muted py-5">
+                    <i class="bx bx-image fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0">Belum ada portofolio.</p>
+                    <button class="btn btn-outline-primary btn-sm mt-3" (click)="openPortofolioModal()">
+                      <i class="bx bx-plus me-1"></i>Tambah Portofolio
+                    </button>
+                  </div>
+                }
+                @if (!portofolioLoading() && portofolioList().length > 0) {
+                  <div class="file-identitas-table-wrap">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:40px">#</th>
+                          <th>Judul</th>
+                          <th>Situs Portofolio</th>
+                          <th>Informasi Tambahan</th>
+                          <th class="text-end" style="width:90px">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (pf of portofolioList(); track pf.id; let i = $index) {
+                          <tr>
+                            <td class="text-muted small">{{ i + 1 }}</td>
+                            <td class="fw-semibold">{{ pf.judul }}</td>
+                            <td>
+                              @if (pf.urlLink) {
+                                <a [href]="pf.urlLink" target="_blank" class="text-primary small">
+                                  <i class="bx bx-link-external me-1"></i>{{ pf.urlLink }}
+                                </a>
+                              } @else {
+                                <span class="text-muted small">—</span>
+                              }
+                            </td>
+                            <td class="small text-muted" style="max-width:200px;white-space:pre-wrap">
+                              {{ pf.deskripsi || '—' }}
+                            </td>
+                            <td class="text-end">
+                              <button class="btn btn-outline-primary btn-xs me-1"
+                                      (click)="openEditPortofolioModal(pf)" title="Edit">
+                                <i class="bx bx-edit"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-xs"
+                                      (click)="deletePortofolio(pf.id)" title="Hapus">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Sub-tab: Penghargaan ── -->
+      @if (pribadiSubTab() === 'penghargaan') {
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header d-flex align-items-center justify-content-between">
+                <span><i class="bx bx-medal me-2 text-warning"></i>Daftar Penghargaan</span>
+                <button class="btn btn-primary btn-sm px-3" (click)="openPenghargaanModal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="info-card-body px-3 py-2">
+                @if (penghargaanLoading()) {
+                  <div class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                  </div>
+                }
+                @if (!penghargaanLoading() && penghargaanList().length === 0) {
+                  <div class="text-center text-muted py-5">
+                    <i class="bx bx-medal fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0">Belum ada data penghargaan.</p>
+                    <button class="btn btn-outline-primary btn-sm mt-3" (click)="openPenghargaanModal()">
+                      <i class="bx bx-plus me-1"></i>Tambah Penghargaan
+                    </button>
+                  </div>
+                }
+                @if (!penghargaanLoading() && penghargaanList().length > 0) {
+                  <div class="file-identitas-table-wrap">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:40px">#</th>
+                          <th>Nama Penghargaan</th>
+                          <th>Judul Prestasi / Kontribusi</th>
+                          <th>Tahun</th>
+                          <th>Informasi Tambahan</th>
+                          <th class="text-end" style="width:90px">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (ph of penghargaanList(); track ph.id; let i = $index) {
+                          <tr>
+                            <td class="text-muted small">{{ i + 1 }}</td>
+                            <td class="fw-semibold">{{ ph.namaPenghargaan }}</td>
+                            <td>{{ ph.penerbit || '—' }}</td>
+                            <td class="small text-muted">{{ ph.tahun || '—' }}</td>
+                            <td class="small text-muted" style="max-width:200px;white-space:pre-wrap">
+                              {{ ph.deskripsi || '—' }}
+                            </td>
+                            <td class="text-end">
+                              <button class="btn btn-outline-primary btn-xs me-1"
+                                      (click)="openEditPenghargaanModal(ph)" title="Edit">
+                                <i class="bx bx-edit"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-xs"
+                                      (click)="deletePenghargaan(ph.id)" title="Hapus">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Sub-tab: Sertifikat ── -->
+      @if (pribadiSubTab() === 'sertifikat') {
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header d-flex align-items-center justify-content-between">
+                <span><i class="bx bx-certification me-2 text-success"></i>Daftar Sertifikat</span>
+                <button class="btn btn-primary btn-sm px-3" (click)="openSertifikatModal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="info-card-body px-3 py-2">
+                @if (sertifikatLoading()) {
+                  <div class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                  </div>
+                }
+                @if (!sertifikatLoading() && sertifikatList().length === 0) {
+                  <div class="text-center text-muted py-5">
+                    <i class="bx bx-certification fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0">Belum ada data sertifikat.</p>
+                    <button class="btn btn-outline-primary btn-sm mt-3" (click)="openSertifikatModal()">
+                      <i class="bx bx-plus me-1"></i>Tambah Sertifikat
+                    </button>
+                  </div>
+                }
+                @if (!sertifikatLoading() && sertifikatList().length > 0) {
+                  <div class="file-identitas-table-wrap">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:40px">#</th>
+                          <th>Nama Sertifikat</th>
+                          <th>Penerbit / Lembaga</th>
+                          <th>No. Sertifikat</th>
+                          <th>Tgl Terbit</th>
+                          <th>Tgl Kadaluarsa</th>
+                          <th>File</th>
+                          <th class="text-end" style="width:90px">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (sr of sertifikatList(); track sr.id; let i = $index) {
+                          <tr>
+                            <td class="text-muted small">{{ i + 1 }}</td>
+                            <td class="fw-semibold">{{ sr.namaSertifikat }}</td>
+                            <td>{{ sr.penerbit || '—' }}</td>
+                            <td class="fw-mono small">{{ sr.nomorSertifikat || '—' }}</td>
+                            <td class="small text-muted">
+                              {{ sr.tanggalTerbit ? (sr.tanggalTerbit | date:'dd MMM yyyy') : '—' }}
+                            </td>
+                            <td class="small text-muted">
+                              @if (sr.tanggalKadaluarsa) {
+                                <span>{{ sr.tanggalKadaluarsa | date:'dd MMM yyyy' }}</span>
+                              } @else {
+                                <span>—</span>
+                              }
+                            </td>
+                            <td>
+                              @if (sertifikatFileUrl(sr.fileUrl); as url) {
+                                <a [href]="url" target="_blank" class="btn btn-outline-primary btn-xs">
+                                  <i class="bx bx-link-external me-1"></i>Lihat
+                                </a>
+                              } @else {
+                                <span class="text-muted small">—</span>
+                              }
+                            </td>
+                            <td class="text-end">
+                              <button class="btn btn-outline-primary btn-xs me-1"
+                                      (click)="openEditSertifikatModal(sr)" title="Edit">
+                                <i class="bx bx-edit"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-xs"
+                                      (click)="deleteSertifikat(sr.id)" title="Hapus">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Sub-tab: Pengalaman Organisasi ── -->
+      @if (pribadiSubTab() === 'organisasi') {
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="info-card card border-0 shadow-sm">
+              <div class="info-card-header d-flex align-items-center justify-content-between">
+                <span><i class="bx bx-group me-2 text-info"></i>Pengalaman Organisasi</span>
+                <button class="btn btn-primary btn-sm px-3" (click)="openOrganisasiModal()">
+                  <i class="bx bx-plus me-1"></i>Tambah
+                </button>
+              </div>
+              <div class="info-card-body px-3 py-2">
+                @if (organisasiLoading()) {
+                  <div class="text-center text-muted py-3">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                  </div>
+                }
+                @if (!organisasiLoading() && organisasiList().length === 0) {
+                  <div class="text-center text-muted py-5">
+                    <i class="bx bx-group fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0">Belum ada pengalaman organisasi.</p>
+                    <button class="btn btn-outline-primary btn-sm mt-3" (click)="openOrganisasiModal()">
+                      <i class="bx bx-plus me-1"></i>Tambah Pengalaman Organisasi
+                    </button>
+                  </div>
+                }
+                @if (!organisasiLoading() && organisasiList().length > 0) {
+                  <div class="file-identitas-table-wrap">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width:40px">#</th>
+                          <th>Nama Organisasi</th>
+                          <th>Jabatan / Posisi</th>
+                          <th>Periode</th>
+                          <th>Informasi Tambahan</th>
+                          <th class="text-end" style="width:90px">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (og of organisasiList(); track og.id; let i = $index) {
+                          <tr>
+                            <td class="text-muted small">{{ i + 1 }}</td>
+                            <td class="fw-semibold">{{ og.namaOrganisasi }}</td>
+                            <td>{{ og.jabatan || '—' }}</td>
+                            <td class="small text-muted" style="white-space:nowrap">
+                              {{ organisasiPeriode(og) }}
+                              @if (og.masihAktif) {
+                                <span class="badge bg-success ms-1" style="font-size:.7rem">Aktif</span>
+                              }
+                            </td>
+                            <td class="small text-muted" style="max-width:200px;white-space:pre-wrap">
+                              {{ og.deskripsi || '—' }}
+                            </td>
+                            <td class="text-end">
+                              <button class="btn btn-outline-primary btn-xs me-1"
+                                      (click)="openEditOrganisasiModal(og)" title="Edit">
+                                <i class="bx bx-edit"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-xs"
+                                      (click)="deleteOrganisasi(og.id)" title="Hapus">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+    }
+
+    <!-- ── Tab: Kepegawaian ──────────────────────────────── -->
+    @if (activeTab() === 'kepegawaian') {
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="info-card card border-0 shadow-sm h-100">
+            <div class="info-card-header">
+              <i class="bx bx-briefcase me-2 text-primary"></i>Data Kepegawaian
+            </div>
+            <div class="info-card-body">
+              <div class="info-row">
+                <span class="info-label">NIP</span>
+                <span class="info-value fw-mono fw-semibold">{{ k.nip }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Jabatan</span>
+                <span class="info-value">{{ k.namaJabatan || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Divisi</span>
+                <span class="info-value">{{ k.namaDivisi || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Status Kerja</span>
+                <span class="info-value">
+                  <span class="chip" [class]="statusKerjaBadgeClass(k.statusKerja)">
+                    {{ statusKerjaLabel(k.statusKerja) }}
+                  </span>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Tanggal Mulai Bekerja</span>
+                <span class="info-value">
+                  {{ k.tglMulaiBekerja ? (k.tglMulaiBekerja | date:'dd MMMM yyyy') : '—' }}
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Masa Kerja</span>
+                <span class="info-value fw-semibold text-primary">{{ masaKerja(k.tglMulaiBekerja) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="info-card card border-0 shadow-sm h-100">
+            <div class="info-card-header">
+              <i class="bx bx-leaf me-2 text-success"></i>Informasi Cuti
+            </div>
+            <div class="info-card-body">
+              <div class="info-row">
+                <span class="info-label">Sisa Cuti</span>
+                <span class="info-value">
+                  <span class="badge rounded-pill px-3 py-1"
+                        style="background:#dcfce7;color:#16a34a;font-size:.85rem">
+                    {{ k.sisaCuti }} hari
+                  </span>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Mulai Dapat Cuti</span>
+                <span class="info-value">
+                  {{ k.tglMulaiDapatCuti ? (k.tglMulaiDapatCuti | date:'dd MMMM yyyy') : '—' }}
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Cuti Berakhir</span>
+                <span class="info-value">
+                  {{ k.tglCutiBeakhir ? (k.tglCutiBeakhir | date:'dd MMMM yyyy') : '—' }}
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Zona Waktu</span>
+                <span class="info-value">{{ zonaWaktuLabel(k.zonaWaktu) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Timeline Karir ─────────────────────────────── -->
+        <div class="col-12">
+          <div class="info-card card border-0 shadow-sm">
+            <div class="info-card-header">
+              <i class="bx bx-time-five me-2 text-primary"></i>Timeline Karir
+            </div>
+            <div class="info-card-body px-4 py-3">
+
+              @if (kariTimelineItems().length === 0) {
+                <div class="text-center text-muted py-5">
+                  <i class="bx bx-history fs-1 d-block mb-2 opacity-25"></i>
+                  <p class="mb-0">Belum ada data untuk ditampilkan di timeline karir.</p>
+                </div>
+              }
+
+              @if (kariTimelineItems().length > 0) {
+                <div class="karir-timeline">
+                  @for (item of kariTimelineItems(); track item.id; let last = $last) {
+                    <div class="karir-timeline-item" [class.last]="last">
+                      <!-- Dot & line -->
+                      <div class="karir-timeline-left">
+                        <div class="karir-dot" [ngClass]="item.dotClass">
+                          <i class="bx" [ngClass]="item.icon"></i>
+                        </div>
+                        @if (!last) {
+                          <div class="karir-line"></div>
+                        }
+                      </div>
+
+                      <!-- Content -->
+                      <div class="karir-timeline-content">
+                        <div class="karir-date text-muted small mb-1">
+                          <i class="bx bx-calendar me-1"></i>{{ item.periode }}
+                        </div>
+                        <div class="karir-title fw-semibold">{{ item.title }}</div>
+                        @if (item.subtitle) {
+                          <div class="karir-subtitle text-muted small">{{ item.subtitle }}</div>
+                        }
+                        @if (item.badge) {
+                          <span class="chip mt-1" [class]="item.badgeClass">{{ item.badge }}</span>
+                        }
+                        @if (item.description) {
+                          <div class="karir-description text-muted small mt-1"
+                               style="white-space:pre-line">{{ item.description }}</div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    }
+
+    <!-- ── Tab: Pendidikan ───────────────────────────────── -->
+    @if (activeTab() === 'pendidikan') {
+      <div class="row g-4">
+
+        <!-- Ringkasan Pendidikan Terakhir (dari data karyawan) -->
+        <div class="col-lg-6">
+          <div class="info-card card border-0 shadow-sm">
+            <div class="info-card-header">
+              <i class="bx bx-graduation me-2 text-primary"></i>Pendidikan Terakhir
+            </div>
+            <div class="info-card-body">
+              <div class="info-row">
+                <span class="info-label">Jenjang Pendidikan</span>
+                <span class="info-value">{{ jenjangPendidikanLabel(k.jenjangPendidikan) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Jurusan</span>
+                <span class="info-value">{{ k.jurusan || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Nama Institusi</span>
+                <span class="info-value">{{ k.namaInstitusi || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Tahun Lulus</span>
+                <span class="info-value">{{ k.tahunLulus || '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Background Pendidikan CRUD -->
+        <div class="col-12">
+          <div class="info-card card border-0 shadow-sm">
+            <div class="info-card-header d-flex align-items-center justify-content-between">
+              <span><i class="bx bx-book-open me-2 text-primary"></i>Background Pendidikan</span>
+              <button class="btn btn-primary btn-sm px-3" (click)="openBgPendidikanModal()">
+                <i class="bx bx-plus me-1"></i>Tambah
+              </button>
+            </div>
+            <div class="info-card-body px-3 py-2">
+
+              @if (bgPendidikanLoading()) {
+                <div class="text-center text-muted py-3">
+                  <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                </div>
+              }
+
+              @if (!bgPendidikanLoading() && bgPendidikanList().length === 0) {
+                <div class="text-center text-muted py-5">
+                  <i class="bx bx-graduation fs-1 d-block mb-2 opacity-25"></i>
+                  <p class="mb-0 text-muted">Belum ada riwayat pendidikan.</p>
+                  <button class="btn btn-outline-primary btn-sm mt-3" (click)="openBgPendidikanModal()">
+                    <i class="bx bx-plus me-1"></i>Tambah Background Pendidikan
+                  </button>
+                </div>
+              }
+
+              @if (!bgPendidikanLoading() && bgPendidikanList().length > 0) {
+                <div class="file-identitas-table-wrap">
+                  <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width:40px">#</th>
+                        <th>Tingkat</th>
+                        <th>Nama Institusi</th>
+                        <th>Jurusan</th>
+                        <th>Tahun Masuk</th>
+                        <th>Tahun Lulus</th>
+                        <th>Nilai / IPK</th>
+                        <th class="text-end" style="width:90px">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (bp of bgPendidikanList(); track bp.id; let i = $index) {
+                        <tr>
+                          <td class="text-muted small">{{ i + 1 }}</td>
+                          <td><span class="chip chip-blue">{{ tingkatPendidikanLabel(bp.tingkatPendidikan) }}</span></td>
+                          <td class="fw-semibold">{{ bp.namaInstitusi }}</td>
+                          <td>{{ bp.jurusan || '—' }}</td>
+                          <td>{{ bp.tahunMasuk || '—' }}</td>
+                          <td>{{ bp.tahunLulus || '—' }}</td>
+                          <td>{{ bp.nilai || '—' }}</td>
+                          <td class="text-end">
+                            <button class="btn btn-outline-primary btn-xs me-1"
+                                    (click)="openEditBgPendidikanModal(bp)" title="Edit">
+                              <i class="bx bx-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-xs"
+                                    (click)="deleteBgPendidikan(bp.id)" title="Hapus">
+                              <i class="bx bx-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    }
+
+
+    <!-- ── Tab: Akun & Kontak ────────────────────────────── -->
+    @if (activeTab() === 'akun') {
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="info-card card border-0 shadow-sm">
+            <div class="info-card-header">
+              <i class="bx bx-user-circle me-2 text-primary"></i>Informasi Akun
+            </div>
+            <div class="info-card-body">
+              <div class="info-row">
+                <span class="info-label">Username</span>
+                <span class="info-value fw-mono">{{ k.username || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ k.email || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">ID Akun</span>
+                <span class="info-value text-muted fw-mono small">{{ k.userId || '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="info-card card border-0 shadow-sm">
+            <div class="info-card-header">
+              <i class="bx bx-phone me-2 text-success"></i>Kontak
+            </div>
+            <div class="info-card-body">
+              <div class="info-row">
+                <span class="info-label">No. Telepon</span>
+                <span class="info-value fw-mono">{{ k.noTelepon || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ k.email || '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kontak Darurat -->
+        <div class="col-12">
+          <div class="info-card card border-0 shadow-sm">
+            <div class="info-card-header d-flex align-items-center justify-content-between">
+              <span><i class="bx bx-phone-call me-2 text-danger"></i>Kontak Darurat</span>
+              <button class="btn btn-primary btn-sm px-3" (click)="openKontakDaruratModal()">
+                <i class="bx bx-plus me-1"></i>Tambah
+              </button>
+            </div>
+            <div class="info-card-body px-3 py-2">
+              @if (kontakDaruratLoading()) {
+                <div class="text-center text-muted py-3">
+                  <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+                </div>
+              }
+              @if (!kontakDaruratLoading() && kontakDaruratList().length === 0) {
+                <div class="text-center text-muted py-5">
+                  <i class="bx bx-phone-call fs-1 d-block mb-2 opacity-25"></i>
+                  <p class="mb-0">Belum ada kontak darurat.</p>
+                  <button class="btn btn-outline-primary btn-sm mt-3" (click)="openKontakDaruratModal()">
+                    <i class="bx bx-plus me-1"></i>Tambah Kontak Darurat
+                  </button>
+                </div>
+              }
+              @if (!kontakDaruratLoading() && kontakDaruratList().length > 0) {
+                <div class="file-identitas-table-wrap">
+                  <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width:40px">#</th>
+                        <th>Nama</th>
+                        <th>No. Telepon</th>
+                        <th class="text-end" style="width:90px">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (kd of kontakDaruratList(); track kd.id; let i = $index) {
+                        <tr>
+                          <td class="text-muted small">{{ i + 1 }}</td>
+                          <td class="fw-semibold">{{ kd.nama }}</td>
+                          <td class="fw-mono">{{ kd.noTelepon || '—' }}</td>
+                          <td class="text-end">
+                            <button class="btn btn-outline-primary btn-xs me-1"
+                                    (click)="openEditKontakDaruratModal(kd)" title="Edit">
+                              <i class="bx bx-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-xs"
+                                    (click)="deleteKontakDarurat(kd.id)" title="Hapus">
+                              <i class="bx bx-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+      </div>
+    }
+
+  }
+
+  <!-- ── Modal: Tambah File Identitas ──────────────────────── -->
+  @if (showFileIdentitasModal()) {
+    <div class="modal-backdrop-custom" (click)="closeFileIdentitasModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <!-- Header -->
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">Tambah File Identitas</h5>
+          <button type="button" class="btn-close" (click)="closeFileIdentitasModal()"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body-custom">
+
+          @if (fileIdentitasError()) {
+            <div class="alert alert-danger py-2 small">{{ fileIdentitasError() }}</div>
+          }
+
+          <!-- Jenis Identitas -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Jenis Identitas <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <select class="form-select" [(ngModel)]="fileForm.jenisIdentitas">
+                <option value="" disabled>Pilih</option>
+                @for (opt of jenisIdentitasOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Nomor -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nomor <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control" [(ngModel)]="fileForm.nomor"
+                     placeholder="Masukkan nomor identitas" />
+            </div>
+          </div>
+
+          <!-- File -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">File <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="file" class="form-control" (change)="onFileChange($event)"
+                     accept=".jpg,.jpeg,.png,.pdf" />
+              <div class="form-text text-muted" style="font-size:.75rem">Ukuran Maksimal 900kb</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="saveFileIdentitas()"
+                  [disabled]="fileIdentitasSaving()">
+            @if (fileIdentitasSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closeFileIdentitasModal()"
+                  [disabled]="fileIdentitasSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal: Tambah / Edit Pengalaman Kerja ─────────────── -->
+  @if (showPengalamanModal()) {
+    <div class="modal-backdrop-custom" (click)="closePengalamanModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <!-- Header -->
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">
+            {{ editingPengalamanId() ? 'Edit Pengalaman Kerja' : 'Tambah Pengalaman Kerja' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closePengalamanModal()"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body-custom">
+
+          @if (pengalamanError()) {
+            <div class="alert alert-danger py-2 small">{{ pengalamanError() }}</div>
+          }
+
+          <!-- Posisi / Jabatan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Posisi <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="pengalamanForm.jabatan"
+                     placeholder="Contoh: Frontend Developer" />
+            </div>
+          </div>
+
+          <!-- Nama Perusahaan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nama Perusahaan <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="pengalamanForm.namaPerusahaan"
+                     placeholder="Contoh: PT. Maju Bersama" />
+            </div>
+          </div>
+
+          <!-- Bulan & Tahun Mulai -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Bulan Mulai <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="month" class="form-control"
+                     [ngModel]="pengalamanForm.tanggalMulai ? pengalamanForm.tanggalMulai.substring(0,7) : ''"
+                     (ngModelChange)="pengalamanForm.tanggalMulai = $event ? $event + '-01' : null"
+                     placeholder="Tahun" />
+            </div>
+          </div>
+
+          <!-- Masih Bekerja -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Bulan Berakhir</label>
+            <div class="fi-form-control">
+              @if (!pengalamanForm.masihBekerja) {
+                <input type="month" class="form-control"
+                       [ngModel]="pengalamanForm.tanggalSelesai ? pengalamanForm.tanggalSelesai.substring(0,7) : ''"
+                       (ngModelChange)="pengalamanForm.tanggalSelesai = $event ? $event + '-01' : null"
+                       placeholder="Tahun" />
+              }
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="masihBekerja"
+                       [(ngModel)]="pengalamanForm.masihBekerja" />
+                <label class="form-check-label small" for="masihBekerja">Masih bekerja di sini</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informasi Tambahan / Deskripsi -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Informasi Tambahan</label>
+            <div class="fi-form-control">
+              <textarea class="form-control" rows="4"
+                        [(ngModel)]="pengalamanForm.deskripsi"
+                        placeholder="Deskripsi pekerjaan, tanggung jawab, dll."></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="savePengalamanKerja()"
+                  [disabled]="pengalamanSaving()">
+            @if (pengalamanSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closePengalamanModal()"
+                  [disabled]="pengalamanSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal: Tambah / Edit Background Pendidikan ──────────── -->
+  @if (showBgPendidikanModal()) {
+    <div class="modal-backdrop-custom" (click)="closeBgPendidikanModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <!-- Header -->
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">
+            {{ editingBgPendidikanId() ? 'Edit Background Pendidikan' : 'Tambah Background Pendidikan' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeBgPendidikanModal()"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body-custom">
+
+          @if (bgPendidikanError()) {
+            <div class="alert alert-danger py-2 small">{{ bgPendidikanError() }}</div>
+          }
+
+          <!-- Tingkat Pendidikan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Tingkat Pendidikan <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <select class="form-select" [(ngModel)]="bgPendidikanForm.tingkatPendidikan">
+                @for (opt of tingkatPendidikanOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Nama Institusi / Sekolah -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nama Institusi <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="bgPendidikanForm.namaInstitusi"
+                     placeholder="Contoh: Universitas Indonesia" />
+            </div>
+          </div>
+
+          <!-- Jurusan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Jurusan</label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="bgPendidikanForm.jurusan"
+                     placeholder="Contoh: Teknik Informatika" />
+            </div>
+          </div>
+
+          <!-- Tahun Masuk & Tahun Lulus -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Tahun Masuk</label>
+            <div class="fi-form-control">
+              <input type="number" class="form-control"
+                     [(ngModel)]="bgPendidikanForm.tahunMasuk"
+                     placeholder="Tahun" min="1950" [max]="2100" />
+            </div>
+          </div>
+
+          <div class="fi-form-row">
+            <label class="fi-form-label">Tahun Lulus</label>
+            <div class="fi-form-control">
+              <input type="number" class="form-control"
+                     [(ngModel)]="bgPendidikanForm.tahunLulus"
+                     placeholder="Tahun" min="1950" [max]="2100" />
+            </div>
+          </div>
+
+          <!-- Nilai / IPK -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nilai / IPK</label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="bgPendidikanForm.nilai"
+                     placeholder="Contoh: 3.85 atau A" />
+            </div>
+          </div>
+
+          <!-- Keterangan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Keterangan</label>
+            <div class="fi-form-control">
+              <textarea class="form-control" rows="3"
+                        [(ngModel)]="bgPendidikanForm.keterangan"
+                        placeholder="Informasi tambahan, prestasi, dll."></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="saveBgPendidikan()"
+                  [disabled]="bgPendidikanSaving()">
+            @if (bgPendidikanSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closeBgPendidikanModal()"
+                  [disabled]="bgPendidikanSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal: Tambah / Edit Portofolio ──────────────────── -->
+  @if (showPortofolioModal()) {
+    <div class="modal-backdrop-custom" (click)="closePortofolioModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <!-- Header -->
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">
+            {{ editingPortofolioId() ? 'Edit Portofolio' : 'Tambah Portofolio' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closePortofolioModal()"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body-custom">
+
+          @if (portofolioError()) {
+            <div class="alert alert-danger py-2 small">{{ portofolioError() }}</div>
+          }
+
+          <!-- Judul -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Judul <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="portofolioForm.judul"
+                     placeholder="Contoh: Aplikasi E-Commerce" />
+            </div>
+          </div>
+
+          <!-- Situs Portofolio / URL -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Situs Portofolio</label>
+            <div class="fi-form-control">
+              <input type="url" class="form-control"
+                     [(ngModel)]="portofolioForm.urlLink"
+                     placeholder="https://......" />
+            </div>
+          </div>
+
+          <!-- Informasi Tambahan / Deskripsi -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Informasi Tambahan</label>
+            <div class="fi-form-control">
+              <textarea class="form-control" rows="4"
+                        [(ngModel)]="portofolioForm.deskripsi"
+                        placeholder="Deskripsi singkat portofolio..."></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="savePortofolio()"
+                  [disabled]="portofolioSaving()">
+            @if (portofolioSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closePortofolioModal()"
+                  [disabled]="portofolioSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal: Tambah / Edit Penghargaan ─────────────────── -->
+  @if (showPenghargaanModal()) {
+    <div class="modal-backdrop-custom" (click)="closePenghargaanModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">
+            {{ editingPenghargaanId() ? 'Edit Penghargaan' : 'Tambah Penghargaan' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closePenghargaanModal()"></button>
+        </div>
+
+        <div class="modal-body-custom">
+          @if (penghargaanError()) {
+            <div class="alert alert-danger py-2 small">{{ penghargaanError() }}</div>
+          }
+
+          <!-- Judul Penghargaan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Judul Penghargaan <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="penghargaanForm.namaPenghargaan"
+                     placeholder="Contoh: Karyawan Terbaik" />
+            </div>
+          </div>
+
+          <!-- Judul Prestasi atau Kontribusi -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Judul Prestasi atau Kontribusi <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="penghargaanForm.penerbit"
+                     placeholder="Contoh: Meningkatkan penjualan 200%" />
+            </div>
+          </div>
+
+          <!-- Tahun -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Tahun <span class="text-danger">*</span></label>
+            <div class="fi-form-control" style="max-width:160px">
+              <input type="number" class="form-control"
+                     [(ngModel)]="penghargaanForm.tahun"
+                     placeholder="Tahun" min="1900" [max]="2100" />
+            </div>
+          </div>
+
+          <!-- Informasi Tambahan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Informasi Tambahan</label>
+            <div class="fi-form-control">
+              <textarea class="form-control" rows="4"
+                        [(ngModel)]="penghargaanForm.deskripsi"
+                        placeholder="Keterangan tambahan..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="savePenghargaan()"
+                  [disabled]="penghargaanSaving()">
+            @if (penghargaanSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closePenghargaanModal()"
+                  [disabled]="penghargaanSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal: Tambah / Edit Sertifikat ──────────────────── -->
+  @if (showSertifikatModal()) {
+    <div class="modal-backdrop-custom" (click)="closeSertifikatModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">
+            {{ editingSertifikatId() ? 'Edit Sertifikat' : 'Tambah Sertifikat' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeSertifikatModal()"></button>
+        </div>
+
+        <div class="modal-body-custom">
+          @if (sertifikatError()) {
+            <div class="alert alert-danger py-2 small">{{ sertifikatError() }}</div>
+          }
+
+          <!-- Nama Sertifikat -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nama Sertifikat <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="sertifikatForm.namaSertifikat"
+                     placeholder="Contoh: AWS Certified Developer" />
+            </div>
+          </div>
+
+          <!-- Penerbit / Lembaga -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Penerbit / Lembaga</label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="sertifikatForm.penerbit"
+                     placeholder="Contoh: Amazon Web Services" />
+            </div>
+          </div>
+
+          <!-- Nomor Sertifikat -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nomor Sertifikat</label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="sertifikatForm.nomorSertifikat"
+                     placeholder="Contoh: AWS-12345678" />
+            </div>
+          </div>
+
+          <!-- Tanggal Terbit -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Tanggal Terbit</label>
+            <div class="fi-form-control">
+              <input type="date" class="form-control"
+                     [(ngModel)]="sertifikatForm.tanggalTerbit" />
+            </div>
+          </div>
+
+          <!-- Tanggal Kadaluarsa -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Tanggal Kadaluarsa</label>
+            <div class="fi-form-control">
+              <input type="date" class="form-control"
+                     [(ngModel)]="sertifikatForm.tanggalKadaluarsa" />
+            </div>
+          </div>
+
+          <!-- File Sertifikat -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">File Sertifikat</label>
+            <div class="fi-form-control">
+              <input type="file" class="form-control"
+                     accept=".pdf,.jpg,.jpeg,.png"
+                     (change)="onSertifikatFileChange($event)" />
+              <div class="text-muted small mt-1">Format: PDF, JPG, PNG. Maks 5MB.</div>
+            </div>
+          </div>
+
+          <!-- Informasi Tambahan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Informasi Tambahan</label>
+            <div class="fi-form-control">
+              <textarea class="form-control" rows="3"
+                        [(ngModel)]="sertifikatForm.keterangan"
+                        placeholder="Keterangan tambahan..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="saveSertifikat()"
+                  [disabled]="sertifikatSaving()">
+            @if (sertifikatSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closeSertifikatModal()"
+                  [disabled]="sertifikatSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal: Tambah / Edit Pengalaman Organisasi ───────────── -->
+  @if (showOrganisasiModal()) {
+    <div class="modal-backdrop-custom" (click)="closeOrganisasiModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">
+            {{ editingOrganisasiId() ? 'Edit Pengalaman Organisasi' : 'Tambah Pengalaman Organisasi' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeOrganisasiModal()"></button>
+        </div>
+
+        <div class="modal-body-custom">
+          @if (organisasiError()) {
+            <div class="alert alert-danger py-2 small">{{ organisasiError() }}</div>
+          }
+
+          <!-- Nama Organisasi -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nama Organisasi <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="organisasiForm.namaOrganisasi"
+                     placeholder="Contoh: Himpunan Mahasiswa Teknik" />
+            </div>
+          </div>
+
+          <!-- Jabatan / Posisi -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Posisi <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="organisasiForm.jabatan"
+                     placeholder="Contoh: Ketua Umum" />
+            </div>
+          </div>
+
+          <!-- Bulan Mulai -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Bulan Mulai <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="month" class="form-control"
+                     [ngModel]="organisasiForm.tanggalMulai ? organisasiForm.tanggalMulai.substring(0,7) : ''"
+                     (ngModelChange)="organisasiForm.tanggalMulai = $event ? $event + '-01' : null" />
+            </div>
+          </div>
+
+          <!-- Bulan Berakhir -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Bulan Berakhir</label>
+            <div class="fi-form-control">
+              @if (!organisasiForm.masihAktif) {
+                <input type="month" class="form-control"
+                       [ngModel]="organisasiForm.tanggalSelesai ? organisasiForm.tanggalSelesai.substring(0,7) : ''"
+                       (ngModelChange)="organisasiForm.tanggalSelesai = $event ? $event + '-01' : null" />
+              }
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="masihAktif"
+                       [(ngModel)]="organisasiForm.masihAktif" />
+                <label class="form-check-label small" for="masihAktif">Masih aktif di organisasi ini</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informasi Tambahan -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Informasi Tambahan</label>
+            <div class="fi-form-control">
+              <textarea class="form-control" rows="4"
+                        [(ngModel)]="organisasiForm.deskripsi"
+                        placeholder="Deskripsi peran, program kerja, dll."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="saveOrganisasi()"
+                  [disabled]="organisasiSaving()">
+            @if (organisasiSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closeOrganisasiModal()"
+                  [disabled]="organisasiSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal: Tambah / Edit Kontak Darurat ──────────────── -->
+  @if (showKontakDaruratModal()) {
+    <div class="modal-backdrop-custom" (click)="closeKontakDaruratModal()"></div>
+    <div class="modal-dialog-custom">
+      <div class="modal-content-custom">
+
+        <div class="modal-header-custom">
+          <h5 class="modal-title-custom">
+            {{ editingKontakDaruratId() ? 'Edit Kontak Darurat' : 'Tambah Kontak Darurat' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeKontakDaruratModal()"></button>
+        </div>
+
+        <div class="modal-body-custom">
+          @if (kontakDaruratError()) {
+            <div class="alert alert-danger py-2 small">{{ kontakDaruratError() }}</div>
+          }
+
+          <!-- Nama -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nama <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="text" class="form-control"
+                     [(ngModel)]="kontakDaruratForm.nama"
+                     placeholder="Nama lengkap kontak darurat" />
+            </div>
+          </div>
+
+          <!-- No. Telepon -->
+          <div class="fi-form-row">
+            <label class="fi-form-label">Nomor Telepon <span class="text-danger">*</span></label>
+            <div class="fi-form-control">
+              <input type="tel" class="form-control"
+                     [(ngModel)]="kontakDaruratForm.noTelepon"
+                     placeholder="Contoh: 08123456789" />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <button class="btn btn-primary px-4"
+                  (click)="saveKontakDarurat()"
+                  [disabled]="kontakDaruratSaving()">
+            @if (kontakDaruratSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4"
+                  (click)="closeKontakDaruratModal()"
+                  [disabled]="kontakDaruratSaving()">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</app-layout>

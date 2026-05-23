@@ -1,0 +1,67 @@
+.jadwal-shift-wrapper {
+  max-height: calc(100vh - 320px);
+  overflow: auto;
+}
+
+.jadwal-shift-wrapper table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.jadwal-shift-wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #f8f9fa;
+}
+
+.sticky-col {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 2;
+  border-right: 2px solid #dee2e6;
+}
+
+.jadwal-shift-wrapper thead th.sticky-col {
+  z-index: 4;
+}
+
+.cell-shift {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color .15s;
+}
+
+.cell-shift:hover {
+  background-color: rgba(13, 110, 253, .08);
+}
+
+
+.shift-chip {
+  display: inline-block;
+  min-width: 80px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.repeat-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid #198754;
+  border-radius: 4px;
+  background: #f0fdf4;
+
+  .form-check-input {
+    margin-top: 0;
+  }
+  .form-check-label {
+    color: #166534;
+    cursor: pointer;
+  }
+}

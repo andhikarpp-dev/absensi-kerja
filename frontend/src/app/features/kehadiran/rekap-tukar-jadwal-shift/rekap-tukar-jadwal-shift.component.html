@@ -1,0 +1,271 @@
+<app-layout>
+  <!-- Breadcrumb -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h4 class="fw-bold mb-0">Rekap Tukar Jadwal Shift</h4>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0" style="font-size:.82rem">
+          <li class="breadcrumb-item"><a routerLink="/dashboard" class="text-primary text-decoration-none">Dasbor</a></li>
+          <li class="breadcrumb-item"><span class="text-primary">Kehadiran</span></li>
+          <li class="breadcrumb-item active">Rekap Tukar Jadwal Shift</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+
+      <!-- Filter Row -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <!-- Tanggal Dari -->
+        <input type="date" class="form-control form-control-sm" style="max-width:145px"
+          [value]="filterDari()"
+          (change)="filterDari.set($any($event.target).value)">
+        <span class="align-self-center text-muted">-</span>
+        <!-- Tanggal Sampai -->
+        <input type="date" class="form-control form-control-sm" style="max-width:145px"
+          [value]="filterSampai()"
+          (change)="filterSampai.set($any($event.target).value)">
+
+        <!-- Divisi -->
+        <select class="form-select form-select-sm" style="max-width:180px"
+          [value]="filterDivisi()"
+          (change)="filterDivisi.set($any($event.target).value)">
+          <option value="">--Divisi--</option>
+          <option *ngFor="let d of divisiList()" [value]="d.id">{{ d.namaDivisi }}</option>
+        </select>
+
+        <!-- Status -->
+        <select class="form-select form-select-sm" style="max-width:160px"
+          [value]="filterStatus()"
+          (change)="filterStatus.set($any($event.target).value)">
+          <option value="">--Status--</option>
+          <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+        </select>
+
+        <!-- Cari -->
+        <div class="d-flex gap-1">
+          <input type="text" class="form-control form-control-sm" placeholder="Cari"
+            style="max-width:170px"
+            [value]="filterCari()"
+            (input)="filterCari.set($any($event.target).value)">
+          <button class="btn btn-sm btn-primary px-3" (click)="load()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+
+        <!-- Ekspor Excel -->
+        <button class="btn btn-primary btn-sm px-3 ms-auto" (click)="openEksporModal()">
+          <i class="bx bx-spreadsheet me-1"></i> Ekspor Excel
+        </button>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error()" class="alert alert-danger py-2 mb-2">{{ error() }}</div>
+
+      <!-- DataTable controls -->
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Tampilkan</label>
+          <select class="form-select form-select-sm" style="width:70px"
+            [value]="dtPageSize()"
+            (change)="dtPageSize.set(+$any($event.target).value); dtPage.set(1)">
+            <option *ngFor="let n of pageSizeOptions" [value]="n">{{ n }}</option>
+          </select>
+          <span style="font-size:.83rem">data</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Cari:</label>
+          <input type="text" class="form-control form-control-sm" style="width:180px"
+            [value]="dtSearch()"
+            (input)="dtSearch.set($any($event.target).value); dtPage.set(1)"
+            placeholder="Ketik untuk mencari…">
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+          <thead style="background:#f0f2f5">
+            <tr>
+              <th style="cursor:pointer" (click)="sort('namaKaryawanPemohon')">
+                Karyawan Pemohon <i class="bx {{ sortIcon('namaKaryawanPemohon') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('jadwalPemohon')">
+                Jadwal Pemohon <i class="bx {{ sortIcon('jadwalPemohon') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('namaKaryawanTarget')">
+                Karyawan Target <i class="bx {{ sortIcon('namaKaryawanTarget') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('jadwalTarget')">
+                Jadwal Target <i class="bx {{ sortIcon('jadwalTarget') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('tanggalDibuat')">
+                Tanggal Dibuat <i class="bx {{ sortIcon('tanggalDibuat') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('status')">
+                Status <i class="bx {{ sortIcon('status') }}"></i>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Loading -->
+            <tr *ngIf="loading()">
+              <td colspan="6" class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat…
+              </td>
+            </tr>
+
+            <!-- Empty -->
+            <tr *ngIf="!loading() && filtered().length === 0">
+              <td colspan="6" class="text-center py-4">
+                <strong>Menampilkan 0 dari 0 total data</strong>
+              </td>
+            </tr>
+
+            <!-- Data rows -->
+            <ng-container *ngIf="!loading()">
+              <tr *ngFor="let r of paged()">
+                <td>{{ r.namaKaryawanPemohon }}</td>
+                <td>{{ r.jadwalPemohon }}</td>
+                <td>{{ r.namaKaryawanTarget }}</td>
+                <td>{{ r.jadwalTarget }}</td>
+                <td>{{ formatTanggal(r.tanggalDibuat) }}</td>
+                <td>
+                  <span [class]="badgeClass(r.status)">{{ badgeLabel(r.status) }}</span>
+                </td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer: info + pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="!loading()">
+        <small class="text-muted">
+          Menampilkan {{ filtered().length === 0 ? 0 : (dtPage()-1)*dtPageSize()+1 }}–{{ Math.min(dtPage()*dtPageSize(), filtered().length) }}
+          dari {{ filtered().length }} total data
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(1)">&laquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtPage()-1)">&lsaquo;</a>
+            </li>
+            <li *ngFor="let p of pageNumbers()" class="page-item" [class.active]="dtPage()===p">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(p)">{{ p }}</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===totalPages()">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtPage()+1)">&rsaquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===totalPages()">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(totalPages())">&raquo;</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal Ekspor Excel ──────────────────────────────── -->
+  <div *ngIf="showEksporModal()" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+      <div class="modal-content shadow">
+
+        <!-- Header -->
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Ekspor Excel</h5>
+          <button type="button" class="btn-close" (click)="closeEksporModal()"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+
+          <!-- Kata kunci -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">Kata kunci</label>
+            <div class="col-sm-8">
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="Cari"
+                  [value]="eksporCari()"
+                  (input)="eksporCari.set($any($event.target).value)">
+                <span class="input-group-text"><i class="bx bx-search"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tanggal -->
+          <div class="mb-1 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">
+              Tanggal <span class="text-danger">*</span>
+            </label>
+            <div class="col-sm-8">
+              <div class="d-flex align-items-center gap-2">
+                <input type="date" class="form-control form-control-sm"
+                  [value]="eksporDari()"
+                  (change)="eksporDari.set($any($event.target).value); eksporRangeError.set('')">
+                <span>-</span>
+                <input type="date" class="form-control form-control-sm"
+                  [value]="eksporSampai()"
+                  (change)="eksporSampai.set($any($event.target).value); eksporRangeError.set('')">
+              </div>
+            </div>
+          </div>
+
+          <!-- Range info/error -->
+          <div class="row mb-3">
+            <div class="col-sm-8 offset-sm-4">
+              <div *ngIf="eksporRangeError()" class="text-danger" style="font-size:.8rem">
+                {{ eksporRangeError() }}
+              </div>
+              <div *ngIf="!eksporRangeError()" class="rounded p-2 mt-1" style="background:#f8f9fa;font-size:.8rem;color:#6c757d">
+                Rentang waktu maksimal 60 hari.
+              </div>
+            </div>
+          </div>
+
+          <!-- Divisi -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">Divisi</label>
+            <div class="col-sm-8">
+              <select class="form-select form-select-sm"
+                [value]="eksporDivisi()"
+                (change)="eksporDivisi.set($any($event.target).value)">
+                <option value="">--Divisi--</option>
+                <option *ngFor="let d of divisiList()" [value]="d.id">{{ d.namaDivisi }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">Status</label>
+            <div class="col-sm-8">
+              <select class="form-select form-select-sm"
+                [value]="eksporStatus()"
+                (change)="eksporStatus.set($any($event.target).value)">
+                <option value="">--Status--</option>
+                <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm px-4" (click)="closeEksporModal()">Batal</button>
+          <button class="btn btn-primary btn-sm px-4" (click)="eksporExcel()">
+            <i class="bx bx-download me-1"></i> Unduh Excel
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</app-layout>

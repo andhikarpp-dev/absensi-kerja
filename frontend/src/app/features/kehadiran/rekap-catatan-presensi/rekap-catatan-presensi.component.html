@@ -1,0 +1,230 @@
+<app-layout>
+  <!-- Breadcrumb -->
+  <div class="mb-3">
+    <h4 class="fw-bold mb-0">Rekap Catatan Presensi</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0" style="font-size:.82rem">
+        <li class="breadcrumb-item"><a routerLink="/dashboard" class="text-primary text-decoration-none">Dasbor</a></li>
+        <li class="breadcrumb-item"><span class="text-primary">Kehadiran</span></li>
+        <li class="breadcrumb-item active">Rekap Catatan Presensi</li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-3">
+
+      <!-- Filter Row -->
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <!-- Divisi -->
+        <select class="form-select form-select-sm" style="max-width:180px"
+          [value]="filterDivisi()"
+          (change)="filterDivisi.set($any($event.target).value)">
+          <option value="">--Divisi--</option>
+          <option *ngFor="let d of divisiList()" [value]="d.id">{{ d.namaDivisi }}</option>
+        </select>
+
+        <!-- Cari -->
+        <div class="d-flex gap-1">
+          <input type="text" class="form-control form-control-sm" placeholder="Cari"
+            style="max-width:180px"
+            [value]="filterCari()"
+            (input)="filterCari.set($any($event.target).value)"
+            (keyup.enter)="cari()">
+          <button class="btn btn-sm btn-success px-3" (click)="cari()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigasi minggu -->
+      <div class="d-flex justify-content-center align-items-center gap-2 mb-3 flex-wrap">
+        <button class="btn btn-success btn-sm px-3" (click)="mingguSebelumnya()">
+          ← Minggu sebelumnya
+        </button>
+        <button class="btn btn-success btn-sm px-3" (click)="mingguBerikutnya()">
+          Minggu berikutnya →
+        </button>
+
+        <!-- Bulan & Tahun selector -->
+        <select class="form-select form-select-sm" style="width:130px"
+          [value]="selectedBulan()"
+          (change)="selectedBulan.set(+$any($event.target).value); onBulanTahunChange()">
+          <option *ngFor="let bln of bulanList; let i = index" [value]="i">{{ bln }}</option>
+        </select>
+        <select class="form-select form-select-sm" style="width:90px"
+          [value]="selectedTahun()"
+          (change)="selectedTahun.set(+$any($event.target).value); onBulanTahunChange()">
+          <option *ngFor="let thn of tahunList" [value]="thn">{{ thn }}</option>
+        </select>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error()" class="alert alert-danger py-2">{{ error() }}</div>
+
+      <!-- Loading -->
+      <div *ngIf="loading()" class="text-center py-5">
+        <div class="spinner-border text-success"></div>
+      </div>
+
+      <!-- DataTable controls -->
+      <div *ngIf="!loading() && data()" class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Tampilkan</label>
+          <select class="form-select form-select-sm" style="width:70px"
+            [value]="dtPageSize()"
+            (change)="dtPageSize.set(+$any($event.target).value); dtPage.set(1)">
+            <option *ngFor="let n of pageSizeOptions" [value]="n">{{ n }}</option>
+          </select>
+          <span style="font-size:.83rem">data</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Cari:</label>
+          <input type="text" class="form-control form-control-sm" style="width:180px"
+            [value]="dtSearch()"
+            (input)="dtSearch.set($any($event.target).value); dtPage.set(1)"
+            placeholder="Ketik untuk mencari…">
+        </div>
+      </div>
+
+      <!-- Matrix Table -->
+      <div *ngIf="!loading() && data()" class="table-responsive" style="overflow:auto">
+        <table class="table table-bordered align-middle mb-0" style="font-size:.8rem;min-width:900px">
+          <thead style="position:sticky;top:0;z-index:10;background:#fff">
+            <!-- Baris 1: Karyawan + Hari -->
+            <tr>
+              <th rowspan="2" class="text-center align-middle"
+                  style="min-width:180px;background:#f0f2f5;position:sticky;left:0;z-index:11">
+                Karyawan
+              </th>
+              <ng-container *ngFor="let hari of data()!.hariList">
+                <th colspan="2" class="text-center"
+                    [style.background]="hari.hariIni ? '#d1fae5' : hari.libur ? '#fee2e2' : '#f0f2f5'">
+                  {{ hari.namaHari }}, {{ formatTgl(hari.tanggal) }}
+                  <div *ngIf="hari.hariIni" style="font-size:.72rem;color:#059669">(Hari ini)</div>
+                  <div *ngIf="hari.libur && hari.keteranganLibur" style="font-size:.7rem;color:#dc2626">
+                    ({{ hari.keteranganLibur }})
+                  </div>
+                </th>
+              </ng-container>
+            </tr>
+            <!-- Baris 2: Presensi Masuk / Keluar per hari -->
+            <tr>
+              <ng-container *ngFor="let hari of data()!.hariList">
+                <th class="text-center" style="min-width:130px"
+                    [style.background]="hari.hariIni ? '#d1fae5' : hari.libur ? '#fee2e2' : '#f0f2f5'">
+                  Presensi Masuk
+                </th>
+                <th class="text-center" style="min-width:130px"
+                    [style.background]="hari.hariIni ? '#d1fae5' : hari.libur ? '#fee2e2' : '#f0f2f5'">
+                  Presensi Keluar
+                </th>
+              </ng-container>
+            </tr>
+          </thead>
+
+          <tbody>
+            <!-- Data rows (paged) -->
+            <ng-container *ngFor="let row of dtPaged()">
+              <tr>
+                <!-- Kolom Karyawan -->
+                <td style="position:sticky;left:0;background:#fff;z-index:5;min-width:180px">
+                  <div class="fw-semibold">{{ row.namaKaryawan }}</div>
+                  <div class="text-muted" style="font-size:.75rem">{{ row.namaDivisi }}</div>
+                </td>
+
+                <!-- Kolom per hari -->
+                <ng-container *ngFor="let hari of data()!.hariList">
+                  <ng-container [ngTemplateOutlet]="cellTpl"
+                    [ngTemplateOutletContext]="{ presensi: getPresensi(row, hari.tanggal), kolom: 'masuk', libur: hari.libur, hariIni: hari.hariIni }">
+                  </ng-container>
+                  <ng-container [ngTemplateOutlet]="cellTpl"
+                    [ngTemplateOutletContext]="{ presensi: getPresensi(row, hari.tanggal), kolom: 'keluar', libur: hari.libur, hariIni: hari.hariIni }">
+                  </ng-container>
+                </ng-container>
+              </tr>
+            </ng-container>
+
+            <!-- Kosong -->
+            <tr *ngIf="dtFiltered().length === 0">
+              <td [attr.colspan]="1 + (data()!.hariList.length * 2)" class="text-center py-4 text-muted fw-semibold">
+                Tidak ada data
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer: info + pagination -->
+      <div *ngIf="!loading() && data()" class="d-flex justify-content-between align-items-center mt-3">
+        <small class="text-muted">
+          Menampilkan
+          {{ dtFiltered().length === 0 ? 0 : (dtPage()-1)*dtPageSize()+1 }}–{{ Math.min(dtPage()*dtPageSize(), dtFiltered().length) }}
+          dari {{ dtFiltered().length }} total data
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(1)">&laquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtPage()-1)">&lsaquo;</a>
+            </li>
+            <li *ngFor="let p of pageNumbers()" class="page-item" [class.active]="dtPage()===p">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(p)">{{ p }}</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===dtTotalPages()">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtPage()+1)">&rsaquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===dtTotalPages()">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtTotalPages())">&raquo;</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+</app-layout>
+
+<!-- ── Cell Template ─────────────────────────────────── -->
+<ng-template #cellTpl let-presensi="presensi" let-kolom="kolom" let-libur="libur" let-hariIni="hariIni">
+  <td class="align-top text-center"
+      [style.background]="hariIni ? '#f0fdf4' : libur ? '#fff5f5' : ''">
+
+    <!-- Libur -->
+    <ng-container *ngIf="libur">
+      <span class="text-muted" style="font-size:.75rem">–</span>
+    </ng-container>
+
+    <!-- Tidak masuk -->
+    <ng-container *ngIf="!libur && presensi && presensi.tidakMasuk">
+      <span class="fw-semibold text-secondary" style="font-size:.78rem">Tidak/Belum Masuk</span>
+    </ng-container>
+
+    <!-- Ada data masuk -->
+    <ng-container *ngIf="!libur && presensi && !presensi.tidakMasuk && kolom === 'masuk'">
+      <div *ngIf="presensi.jamMasuk" class="fw-semibold">{{ presensi.jamMasuk }}</div>
+      <div *ngIf="presensi.catatanMasuk" class="text-muted mt-1" style="font-size:.73rem;word-break:break-word">
+        • {{ presensi.catatanMasuk }}
+      </div>
+      <div *ngIf="!presensi.jamMasuk && !presensi.catatanMasuk" class="text-muted" style="font-size:.75rem">–</div>
+    </ng-container>
+
+    <!-- Ada data keluar -->
+    <ng-container *ngIf="!libur && presensi && !presensi.tidakMasuk && kolom === 'keluar'">
+      <div *ngIf="presensi.jamKeluar" class="fw-semibold">{{ presensi.jamKeluar }}</div>
+      <div *ngIf="presensi.catatanKeluar" class="text-muted mt-1" style="font-size:.73rem;word-break:break-word">
+        • {{ presensi.catatanKeluar }}
+      </div>
+      <div *ngIf="!presensi.jamKeluar && !presensi.catatanKeluar" class="text-muted" style="font-size:.75rem">–</div>
+    </ng-container>
+
+    <!-- Belum ada data sama sekali (hari depan) -->
+    <ng-container *ngIf="!libur && !presensi">
+      <span></span>
+    </ng-container>
+
+  </td>
+</ng-template>

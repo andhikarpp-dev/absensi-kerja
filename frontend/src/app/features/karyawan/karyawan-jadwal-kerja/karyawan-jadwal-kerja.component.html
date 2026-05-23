@@ -1,0 +1,323 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          @if (karyawan()?.namaLengkap) {
+            <li class="breadcrumb-item">
+              <a [routerLink]="['/karyawan', karyawan()!.id]">{{ karyawan()!.namaLengkap }}</a>
+            </li>
+          }
+          <li class="breadcrumb-item active">Jadwal Kerja</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Info Bar -->
+  <div class="info-bar card border-0 shadow-sm mb-4 px-4 py-3 d-flex flex-row align-items-center gap-3">
+    @if (fotoUrl(karyawan()?.fotoProfil); as url) {
+      <img [src]="url" alt="Foto" class="rounded-circle"
+           style="width:44px;height:44px;object-fit:cover;border:2px solid #e9ecef;flex-shrink:0" />
+    } @else {
+      <div class="rounded-circle d-flex align-items-center justify-content-center"
+           style="width:44px;height:44px;background:#f3f4f6;color:#9ca3af;font-size:1.2rem;flex-shrink:0">
+        <i class="bx bx-user"></i>
+      </div>
+    }
+    <div class="flex-grow-1">
+      <div class="fw-semibold" style="font-size:.95rem">{{ karyawan()?.namaLengkap || '—' }}</div>
+      <div class="text-muted small">
+        {{ karyawan()?.namaDivisi || 'Belum ada divisi' }}
+        @if (karyawan()?.namaJabatan) { · {{ karyawan()!.namaJabatan }} }
+      </div>
+    </div>
+    <a [routerLink]="['/karyawan', karyawan()?.id]" class="btn btn-outline-secondary btn-sm px-3">
+      <i class="bx bx-arrow-back me-1"></i> Kembali
+    </a>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="card border-0 shadow-sm p-5 text-center text-muted">
+      <span class="spinner-border text-primary mb-3"></span>
+      <p class="mb-0">Memuat data jadwal kerja...</p>
+    </div>
+  }
+
+  @if (!loading()) {
+
+    <!-- Tidak ada pola kerja -->
+    @if (!polaKerja()) {
+      <div class="card border-0 shadow-sm p-5 text-center text-muted">
+        <i class="bx bx-calendar-x" style="font-size:3.5rem;opacity:.25"></i>
+        <p class="mt-3 fw-semibold mb-1">Belum ada pola kerja</p>
+        <p class="small mb-0">Karyawan ini belum masuk divisi atau divisinya belum memiliki pola kerja.</p>
+      </div>
+    }
+
+    @if (polaKerja()) {
+
+      <!-- Card: Sistem Kerja -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            <div class="text-muted small mb-1">Sistem Kerja</div>
+            <div class="fw-bold" style="font-size:1.05rem">{{ polaKerja()!.namaPolaKerja }}</div>
+            <span class="badge-sistem mt-1">{{ jenisJadwalLabel(polaKerja()!.jenisJadwal) }}</span>
+          </div>
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <div class="stat-chip">
+              <i class="bx bx-time-five me-1 text-primary"></i>
+              Toleransi {{ polaKerja()!.toleransiKeterlambatan }} menit
+            </div>
+            <div class="stat-chip">
+              <i class="bx bx-calendar me-1 text-success"></i>
+              {{ totalHariKerja() }} hari kerja / periode
+            </div>
+            <button class="btn btn-ubah btn-sm px-3" (click)="openModal()">
+              <i class="bx bx-pencil me-1"></i> Ubah Waktu Kerja
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Jadwal Hari per Minggu -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="jadwal-card-header">
+          <i class="bx bx-grid-alt me-2 text-primary"></i>
+          <span class="fw-semibold">Jadwal Per Hari</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Hari</th>
+                <th>Status</th>
+                <th>Jam Masuk</th>
+                <th>Jam Keluar</th>
+                <th>Istirahat</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (h of polaKerja()!.hariList; track h.hari) {
+                <tr>
+                  <td class="fw-semibold" style="font-size:.87rem">{{ h.hari }}</td>
+                  <td>
+                    @if (h.polaHari === 'HARI_KERJA') {
+                      <span class="chip-status chip-kerja">Hari Kerja</span>
+                    } @else if (h.polaHari === 'LIBUR') {
+                      <span class="chip-status chip-libur">Libur</span>
+                    } @else {
+                      <span class="chip-status chip-fleksibel">Fleksibel</span>
+                    }
+                  </td>
+                  <td style="font-size:.87rem">{{ h.jamMasuk || '—' }}</td>
+                  <td style="font-size:.87rem">{{ h.jamKeluar || '—' }}</td>
+                  <td style="font-size:.82rem;color:#6b7280">
+                    @if (h.mulaiIstirahat && h.selesaiIstirahat) {
+                      {{ h.mulaiIstirahat }} – {{ h.selesaiIstirahat }}
+                      <span class="text-muted">({{ h.maksMenitIstirahat }} menit)</span>
+                    } @else {
+                      —
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card: Jadwal Kerja Harian -->
+      <div class="card border-0 shadow-sm">
+        <div class="jadwal-card-header">
+          <i class="bx bx-calendar-week me-2 text-primary"></i>
+          <span class="fw-semibold">Jadwal Kerja Harian</span>
+        </div>
+
+        <!-- Filter Tanggal -->
+        <div class="px-4 py-3 border-bottom">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <input type="date" class="form-control form-control-sm" style="max-width:160px"
+                   [ngModel]="tglMulai()"
+                   (ngModelChange)="tglMulai.set($event)" />
+            <span class="text-muted">–</span>
+            <input type="date" class="form-control form-control-sm" style="max-width:160px"
+                   [ngModel]="tglSelesai()"
+                   (ngModelChange)="tglSelesai.set($event)" />
+          </div>
+        </div>
+
+        <!-- Info note -->
+        <div class="px-4 py-2 border-bottom" style="background:#f9fafb;font-size:.8rem;color:#6b7280">
+          <i class="bx bx-info-circle me-1 text-primary"></i>
+          Jadwal kerja harian karyawan sesuai pola kerja divisi yang ditetapkan.
+        </div>
+
+        <!-- Statistik -->
+        @if (jadwalHarian().length > 0) {
+          <div class="px-4 py-2 border-bottom stat-row-inline">
+            <span>Jadwal Kerja: <strong>{{ totalHariKerja() }}</strong></span>
+            <span class="mx-2 text-muted">|</span>
+            <span>Jadwal Libur: <strong>{{ totalJadwalLibur() }}</strong></span>
+            <span class="mx-2 text-muted">|</span>
+            <span>Total Hari: <strong>{{ totalHari() }}</strong></span>
+          </div>
+        }
+
+        <!-- List Harian -->
+        <div class="jadwal-list-wrap">
+          @if (jadwalHarian().length === 0) {
+            <div class="text-center text-muted py-5">
+              <i class="bx bx-calendar" style="font-size:3rem;opacity:.2"></i>
+              <p class="mt-2 mb-0 small">Pilih rentang tanggal untuk melihat jadwal.</p>
+            </div>
+          }
+
+          @for (item of jadwalHarian(); track item.tanggal.getTime()) {
+            <div class="jadwal-row" [class.jadwal-row--libur]="item.tipe === 'JADWAL_LIBUR'"
+                 [class.jadwal-row--kalender]="item.tipe === 'KALENDER_LIBUR'">
+              <div class="jadwal-tgl">{{ item.labelTanggal }}</div>
+              <div class="jadwal-ket">
+                @if (item.tipe === 'JADWAL_LIBUR') {
+                  <span class="text-libur">{{ item.keterangan }}</span>
+                } @else if (item.tipe === 'KALENDER_LIBUR') {
+                  <span class="text-kalender">{{ item.keterangan }}</span>
+                } @else {
+                  {{ item.keterangan }}
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+      </div>
+
+    }
+  }
+
+  <!-- ═══ Modal Ubah Waktu Kerja ═══════════════════════════ -->
+  @if (showModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055"
+         (click)="closeModal()">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+
+          <!-- Header -->
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bx-pencil me-2 text-primary"></i>Ubah Waktu Kerja
+            </h5>
+            <button type="button" class="btn-close" (click)="closeModal()"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body pt-3">
+
+            <!-- Error -->
+            @if (modalError()) {
+              <div class="alert alert-danger py-2 small mb-3">{{ modalError() }}</div>
+            }
+
+            <!-- Nama Karyawan -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small text-muted">Nama <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm"
+                     [value]="karyawan()?.namaLengkap || ''" readonly />
+            </div>
+
+            <!-- Pilih Pola Kerja -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small text-muted">Pola Kerja <span class="text-danger">*</span></label>
+              <div class="d-flex gap-2">
+                <select class="form-select form-select-sm"
+                        [ngModel]="selectedPolaId()"
+                        (ngModelChange)="selectedPolaId.set(+$event || null)">
+                  <option [ngValue]="null" disabled>— Pilih Pola Kerja —</option>
+                  @for (p of allPolaKerja(); track p.id) {
+                    <option [value]="p.id">{{ p.namaPolaKerja }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Preview Pola Terpilih -->
+            @if (selectedPolaPreview(); as prev) {
+              <div class="modal-preview-box">
+                <div class="mb-2 small text-muted fw-semibold">
+                  Toleransi Keterlambatan: {{ prev.toleransiKeterlambatan }} Menit
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered mb-0" style="font-size:.82rem">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Hari</th>
+                        <th>Pola Kerja</th>
+                        <th>Jam Masuk</th>
+                        <th>Jam Keluar</th>
+                        <th>Mulai Istirahat</th>
+                        <th>Selesai Istirahat</th>
+                        <th>Maks. Menit Istirahat</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (h of prev.hariList; track h.hari) {
+                        <tr [class.table-warning]="h.polaHari === 'LIBUR'">
+                          <td class="fw-semibold">{{ h.hari }}</td>
+                          <td>
+                            @if (h.polaHari === 'HARI_KERJA') { Hari Kerja }
+                            @else if (h.polaHari === 'LIBUR') { Jadwal Libur }
+                            @else { Fleksibel }
+                          </td>
+                          <td>{{ h.jamMasuk || '—' }}</td>
+                          <td>{{ h.jamKeluar || '—' }}</td>
+                          <td>{{ h.mulaiIstirahat || '—' }}</td>
+                          <td>{{ h.selesaiIstirahat || '—' }}</td>
+                          <td>{{ h.maksMenitIstirahat || '—' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="closeModal()"
+                    [disabled]="modalSaving()">
+              Tutup
+            </button>
+            <button class="btn btn-primary btn-sm px-4"
+                    (click)="savePolaKerja()"
+                    [disabled]="modalSaving() || !selectedPolaId()">
+              @if (modalSaving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Simpan
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

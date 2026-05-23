@@ -1,0 +1,813 @@
+<app-layout>
+<style>
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .5; transform: scale(.8); }
+  }
+</style>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Absensi</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item active">Absensi</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Alert sukses / error -->
+  @if (successMsg()) {
+    <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3">
+      <i class="bx bx-check-circle fs-5"></i> {{ successMsg() }}
+    </div>
+  }
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+      <button class="btn-close ms-auto" (click)="error.set('')"></button>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 : Card Status Hari Ini
+  ══════════════════════════════════════════════ -->
+  @if (loading()) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+      <div class="text-muted mt-2">Memuat data absensi...</div>
+    </div>
+  } @else {
+
+    <div class="row g-3 mb-4">
+
+      <!-- Kartu Jam & Info Hari Ini -->
+      <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100"
+             style="background: linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff">
+          <div class="card-body d-flex flex-column justify-content-between">
+
+            <!-- Jam live -->
+            <div class="text-center mb-3">
+              <div style="font-size:2.8rem;font-weight:700;letter-spacing:.05em;font-variant-numeric:tabular-nums">
+                {{ jamSekarang() }}
+              </div>
+              @if (hariIni()) {
+                <div style="font-size:1rem;opacity:.85">
+                  {{ hariLabel(hariIni()!.namaHari) }},
+                  {{ formatTanggal(hariIni()!.tanggal) }}
+                </div>
+              }
+            </div>
+
+            <!-- Info karyawan -->
+            @if (hariIni()) {
+              <div class="d-flex align-items-center gap-3 rounded-3 p-2 mb-3"
+                   style="background:rgba(255,255,255,.15)">
+                @if (hariIni()!.fotoProfil) {
+                  <img [src]="hariIni()!.fotoProfil" class="rounded-circle"
+                       style="width:44px;height:44px;object-fit:cover;border:2px solid rgba(255,255,255,.5)"
+                       onerror="this.style.display='none'">
+                } @else {
+                  <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                       style="width:44px;height:44px;background:rgba(255,255,255,.25);font-weight:700;font-size:1.1rem">
+                    {{ hariIni()!.namaKaryawan.charAt(0) }}
+                  </div>
+                }
+                <div>
+                  <div class="fw-semibold" style="font-size:.9rem">{{ hariIni()!.namaKaryawan }}</div>
+                  <div style="font-size:.78rem;opacity:.8">
+                    {{ hariIni()!.namaDivisi ?? '—' }}
+                    @if (hariIni()!.namaJabatan) {
+                      · {{ hariIni()!.namaJabatan }}
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Jadwal pola kerja hari ini -->
+              <div class="rounded-3 p-2" style="background:rgba(255,255,255,.12)">
+                <div style="font-size:.72rem;opacity:.75;margin-bottom:4px">
+                  <i class="bx bx-calendar-check me-1"></i>
+                  Jadwal Kerja Hari Ini
+                  @if (hariIni()!.namaPolaKerja) {
+                    — <span style="font-weight:600">{{ hariIni()!.namaPolaKerja }}</span>
+                  }
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                  <div class="text-center flex-grow-1">
+                    <div style="font-size:.68rem;opacity:.7">Mulai</div>
+                    <div style="font-size:1.1rem;font-weight:700">
+                      {{ hariIni()!.jamKerjaMulai ?? '—' }}
+                    </div>
+                  </div>
+                  <i class="bx bx-right-arrow-alt" style="opacity:.6;font-size:1.3rem"></i>
+                  <div class="text-center flex-grow-1">
+                    <div style="font-size:.68rem;opacity:.7">Selesai</div>
+                    <div style="font-size:1.1rem;font-weight:700">
+                      {{ hariIni()!.jamKerjaSelesai ?? '—' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Kartu Status Check-In / Check-Out -->
+      <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-0 pb-0 d-flex align-items-center gap-2">
+            <i class="bx bx-fingerprint text-primary fs-5"></i>
+            <h6 class="mb-0 fw-semibold">Presensi Hari Ini</h6>
+            @if (hariIni()?.status) {
+              <span class="badge ms-auto" [class]="'bg-' + statusClass(hariIni()!.status)">
+                {{ hariIni()!.status }}
+              </span>
+            }
+          </div>
+          <div class="card-body">
+
+            <!-- Summary check-in/out -->
+            <div class="row g-3 mb-4">
+              <div class="col-6">
+                <div class="rounded-3 p-3 text-center"
+                     [style.background]="sudahCheckIn() ? '#dcfce7' : '#f3f4f6'">
+                  <i class="bx bx-log-in fs-3"
+                     [style.color]="sudahCheckIn() ? '#16a34a' : '#9ca3af'"></i>
+                  <div class="fw-semibold mt-1" style="font-size:.82rem"
+                       [style.color]="sudahCheckIn() ? '#166534' : '#6b7280'">
+                    Check-In
+                  </div>
+                  <div class="fw-bold" style="font-size:1.4rem"
+                       [style.color]="sudahCheckIn() ? '#15803d' : '#9ca3af'">
+                    {{ hariIni()?.jamMasuk ? formatTime(hariIni()!.jamMasuk) : '—' }}
+                  </div>
+                  @if (hariIni()?.menitTerlambat && hariIni()!.menitTerlambat > 0) {
+                    <div class="badge bg-danger mt-1" style="font-size:.68rem">
+                      Terlambat {{ terlambatLabel(hariIni()!.menitTerlambat) }}
+                    </div>
+                  }
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="rounded-3 p-3 text-center"
+                     [style.background]="sudahCheckOut() ? '#dbeafe' : '#f3f4f6'">
+                  <i class="bx bx-log-out fs-3"
+                     [style.color]="sudahCheckOut() ? '#1d4ed8' : '#9ca3af'"></i>
+                  <div class="fw-semibold mt-1" style="font-size:.82rem"
+                       [style.color]="sudahCheckOut() ? '#1e40af' : '#6b7280'">
+                    Check-Out
+                  </div>
+                  <div class="fw-bold" style="font-size:1.4rem"
+                       [style.color]="sudahCheckOut() ? '#1d4ed8' : '#9ca3af'">
+                    {{ hariIni()?.jamKeluar ? formatTime(hariIni()!.jamKeluar) : '—' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form check-in -->
+            @if (!sudahCheckIn()) {
+              <div class="border rounded-3 p-3 mb-3" style="background:#fafafa">
+                <div class="fw-semibold mb-3 d-flex align-items-center gap-2"
+                     style="font-size:.88rem;color:#374151">
+                  <i class="bx bx-log-in text-success"></i> Form Check-In
+                </div>
+
+                <!-- ═══ Foto Absen Masuk ═══ -->
+                <div class="mb-3">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <label class="form-label mb-0 fw-semibold" style="font-size:.82rem">
+                      <i class="bx bx-camera text-primary me-1"></i> Foto Selfie
+                      <span class="text-danger ms-1">*</span>
+                    </label>
+                    <span class="badge bg-danger text-white" style="font-size:.68rem;font-weight:500">
+                      wajib
+                    </span>
+                  </div>
+
+                  <!-- Canvas tersembunyi untuk capture -->
+                  <canvas #canvasEl style="display:none"></canvas>
+
+                  <!-- ── Mode IDLE ── -->
+                  @if (fotoMode === 'idle') {
+
+                    @if (kameraError) {
+                      <div class="d-flex align-items-start gap-2 rounded-3 p-2 mb-2"
+                           style="background:#fff7ed;border:1px solid #fed7aa;font-size:.78rem;color:#9a3412">
+                        <i class="bx bx-error-circle mt-1 flex-shrink-0"></i>
+                        <span>{{ kameraError }}</span>
+                      </div>
+                    }
+
+                    <!-- Zona klik — desain card yang mengundang -->
+                    <div class="rounded-4 overflow-hidden position-relative"
+                         style="background:linear-gradient(135deg,#ede9fe,#dbeafe);
+                                border:2px dashed #a5b4fc;cursor:pointer;min-height:130px"
+                         (click)="bukaKamera()">
+
+                      <!-- Dekorasi lingkaran blur -->
+                      <div style="position:absolute;width:80px;height:80px;border-radius:50%;
+                                  background:rgba(99,102,241,.15);top:-20px;right:-20px"></div>
+                      <div style="position:absolute;width:50px;height:50px;border-radius:50%;
+                                  background:rgba(59,130,246,.12);bottom:-10px;left:10px"></div>
+
+                      <div class="d-flex flex-column align-items-center justify-content-center
+                                  gap-2 py-4 px-3 position-relative">
+                        <!-- Ikon kamera dengan animasi pulse -->
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;
+                                    background:linear-gradient(135deg,#6366f1,#3b82f6);
+                                    box-shadow:0 4px 15px rgba(99,102,241,.4)">
+                          <i class="bx bx-camera text-white" style="font-size:1.4rem"></i>
+                        </div>
+                        <div class="text-center">
+                          <div class="fw-semibold" style="font-size:.85rem;color:#4338ca">
+                            Tap untuk Buka Kamera
+                          </div>
+                          <div style="font-size:.72rem;color:#6366f1;opacity:.8">
+                            Ambil foto selfie langsung
+                          </div>
+                        </div>
+
+                        <!-- Atau pilih galeri -->
+                        <div class="d-flex align-items-center gap-2 w-100 mt-1">
+                          <div style="flex:1;height:1px;background:rgba(99,102,241,.2)"></div>
+                          <span style="font-size:.68rem;color:#818cf8">atau</span>
+                          <div style="flex:1;height:1px;background:rgba(99,102,241,.2)"></div>
+                        </div>
+
+
+                      </div>
+                    </div>
+
+                    <!-- Input file tersembunyi -->
+                    <input id="inputFotoMasuk" type="file" accept="image/*" class="d-none"
+                           (change)="onFotoChange($event)">
+                  }
+
+                  <!-- ── Mode CAMERA ── -->
+                  @if (fotoMode === 'camera') {
+                    <div class="rounded-4 overflow-hidden position-relative"
+                         style="background:#0f0f1a;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+
+                      <!-- Video feed -->
+                      <video #videoEl autoplay playsinline muted
+                             style="width:100%;max-height:300px;object-fit:cover;
+                                    display:block;transform:scaleX(-1)"></video>
+
+                      <!-- Overlay gradien bawah -->
+                      <div class="position-absolute bottom-0 start-0 end-0"
+                           style="height:80px;background:linear-gradient(to top,rgba(0,0,0,.7),transparent)">
+                      </div>
+
+                      <!-- Jam live — kiri atas -->
+                      <div class="position-absolute top-0 start-0 m-2 d-flex align-items-center gap-1
+                                  px-2 py-1 rounded-pill"
+                           style="background:rgba(0,0,0,.45);backdrop-filter:blur(6px);
+                                  color:#fff;font-size:.72rem;font-variant-numeric:tabular-nums">
+                        <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;
+                                     animation:pulse 1.5s infinite" class="flex-shrink-0"></span>
+                        {{ jamSekarang() }}
+                      </div>
+
+                      <!-- Tombol flip — kanan atas -->
+                      <button type="button"
+                              class="position-absolute top-0 end-0 m-2 rounded-circle
+                                     d-flex align-items-center justify-content-center border-0"
+                              style="width:38px;height:38px;background:rgba(255,255,255,.15);
+                                     backdrop-filter:blur(6px);color:#fff"
+                              (click)="flipKamera()" title="Flip kamera">
+                        <i class="bx bx-revision" style="font-size:1rem"></i>
+                      </button>
+
+                      <!-- Panduan frame wajah -->
+                      <div class="position-absolute top-50 start-50 translate-middle"
+                           style="width:150px;height:150px;border-radius:50%;
+                                  border:2px dashed rgba(255,255,255,.4);pointer-events:none">
+                      </div>
+
+                      <!-- Tombol aksi — bawah tengah -->
+                      <div class="position-absolute bottom-0 start-0 end-0 d-flex
+                                  align-items-center justify-content-center gap-4 pb-3">
+                        <!-- Batal -->
+                        <button type="button"
+                                class="rounded-circle d-flex align-items-center justify-content-center
+                                       border-0"
+                                style="width:40px;height:40px;background:rgba(255,255,255,.15);
+                                       backdrop-filter:blur(6px);color:#fff"
+                                (click)="ulangiKamera()">
+                          <i class="bx bx-x" style="font-size:1.2rem"></i>
+                        </button>
+
+                        <!-- Tombol capture utama -->
+                        <button type="button"
+                                class="rounded-circle d-flex align-items-center justify-content-center
+                                       border-0"
+                                style="width:64px;height:64px;
+                                       background:linear-gradient(135deg,#22c55e,#16a34a);
+                                       box-shadow:0 0 0 4px rgba(34,197,94,.3),
+                                                  0 4px 20px rgba(22,163,74,.5)"
+                                (click)="ambilFoto()">
+                          <i class="bx bx-aperture text-white" style="font-size:1.6rem"></i>
+                        </button>
+
+                        <!-- Flip (duplikat untuk layout simetris) -->
+                        <button type="button"
+                                class="rounded-circle d-flex align-items-center justify-content-center
+                                       border-0"
+                                style="width:40px;height:40px;background:rgba(255,255,255,.15);
+                                       backdrop-filter:blur(6px);color:#fff"
+                                (click)="flipKamera()">
+                          <i class="bx bx-camera" style="font-size:1.1rem"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="text-center mt-2" style="font-size:.72rem;color:#6b7280">
+                      <i class="bx bx-info-circle me-1"></i>
+                      Posisikan wajah di lingkaran, lalu tekan tombol hijau
+                    </div>
+                  }
+
+                  <!-- ── Mode PREVIEW ── -->
+                  @if (fotoMode === 'preview' && fotoPreview) {
+                    <div class="rounded-4 overflow-hidden position-relative"
+                         style="box-shadow:0 8px 24px rgba(0,0,0,.15)">
+
+                      <img [src]="fotoPreview" alt="Foto absen"
+                           style="width:100%;max-height:260px;object-fit:cover;display:block">
+
+                      <!-- Overlay gradien bawah -->
+                      <div class="position-absolute bottom-0 start-0 end-0 d-flex
+                                  align-items-center justify-content-between px-3 py-2"
+                           style="background:linear-gradient(to top,rgba(0,0,0,.75),transparent)">
+
+                        <div class="d-flex align-items-center gap-2" style="color:#fff">
+                          <div class="rounded-circle d-flex align-items-center justify-content-center"
+                               style="width:22px;height:22px;background:#22c55e;flex-shrink:0">
+                            <i class="bx bx-check" style="font-size:.75rem"></i>
+                          </div>
+                          <span style="font-size:.75rem;font-weight:500">Foto siap</span>
+                          @if (fotoFile) {
+                            <span class="badge rounded-pill"
+                                  style="background:rgba(255,255,255,.2);font-size:.65rem;
+                                         font-weight:400">
+                              {{ (fotoFile.size / 1024).toFixed(0) }} KB
+                            </span>
+                          }
+                        </div>
+
+                        <!-- Tombol hapus -->
+                        <button type="button"
+                                class="rounded-circle d-flex align-items-center justify-content-center
+                                       border-0"
+                                style="width:34px;height:34px;background:rgba(239,68,68,.8);color:#fff"
+                                (click)="removeFoto()">
+                          <i class="bx bx-trash" style="font-size:.9rem"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Ulangi foto -->
+                    <button type="button"
+                            class="btn w-100 mt-2 d-flex align-items-center
+                                   justify-content-center gap-2"
+                            style="background:#f1f5f9;color:#475569;font-size:.8rem;
+                                   border:none;border-radius:12px;padding:.5rem"
+                            (click)="ulangiKamera()">
+                      <i class="bx bx-refresh"></i> Ambil Ulang Foto
+                    </button>
+
+                    <!-- Status Lokasi GPS -->
+                    <div class="mt-2">
+                      @if (lokasiStatus === 'loading') {
+                        <div class="d-flex align-items-center gap-2 rounded-3 px-3 py-2"
+                             style="background:#eff6ff;font-size:.78rem;color:#2563eb">
+                          <span class="spinner-border spinner-border-sm"></span>
+                          Mengambil lokasi GPS...
+                        </div>
+                      }
+                      @if (lokasiStatus === 'ok' && lokasiMapsUrl) {
+                        <div class="d-flex align-items-center justify-content-between
+                                    rounded-3 px-3 py-2"
+                             style="background:#f0fdf4;font-size:.78rem;color:#15803d">
+                          <div class="d-flex align-items-center gap-2">
+                            <i class="bx bx-map-pin" style="font-size:1rem"></i>
+                            <span>Lokasi berhasil direkam</span>
+                          </div>
+                          <a [href]="lokasiMapsUrl" target="_blank" rel="noopener"
+                             class="btn btn-sm"
+                             style="background:#22c55e;color:#fff;font-size:.72rem;
+                                    border-radius:8px;padding:.2rem .6rem">
+                            <i class="bx bx-map me-1"></i>Lihat Maps
+                          </a>
+                        </div>
+                      }
+                      @if (lokasiStatus === 'error') {
+                        <div class="d-flex align-items-center justify-content-between
+                                    rounded-3 px-3 py-2"
+                             style="background:#fff7ed;font-size:.78rem;color:#c2410c">
+                          <div class="d-flex align-items-center gap-2">
+                            <i class="bx bx-error-circle" style="font-size:1rem"></i>
+                            <span>{{ lokasiError }}</span>
+                          </div>
+                          <button type="button" class="btn btn-sm"
+                                  style="background:#f97316;color:#fff;font-size:.72rem;
+                                         border-radius:8px;padding:.2rem .6rem"
+                                  (click)="dapatkanLokasi()">
+                            Coba Lagi
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Garis pemisah tipis -->
+                <div style="border-top:1px dashed #e5e7eb;margin:.5rem 0 1rem"></div>
+
+                <!-- Catatan -->
+                <div class="mb-3">
+                  <label class="form-label fw-semibold" style="font-size:.82rem">Catatan</label>
+                  <textarea class="form-control form-control-sm" rows="2"
+                            placeholder="Tambahkan catatan (opsional)..."
+                            [(ngModel)]="catatanCheckIn"></textarea>
+                </div>
+
+                @if (!fotoFile) {
+                  <div class="d-flex align-items-center gap-2 rounded-3 px-3 py-2 mb-2"
+                       style="background:#fff7ed;border:1px solid #fed7aa;font-size:.78rem;color:#9a3412">
+                    <i class="bx bx-camera flex-shrink-0"></i>
+                    <span>Ambil foto selfie terlebih dahulu untuk melanjutkan check-in.</span>
+                  </div>
+                }
+
+                <button class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2"
+                        (click)="doCheckIn()" [disabled]="saving() || !fotoFile">
+                  @if (saving()) {
+                    <span class="spinner-border spinner-border-sm"></span>
+                  } @else {
+                    <i class="bx bx-log-in"></i>
+                  }
+                  Check-In Sekarang
+                </button>
+              </div>
+            }
+
+            <!-- Form check-out -->
+            @if (sudahCheckIn() && !sudahCheckOut()) {
+              <div class="border rounded-3 p-3" style="background:#fafafa">
+                <div class="fw-semibold mb-3 d-flex align-items-center gap-2"
+                     style="font-size:.88rem;color:#374151">
+                  <i class="bx bx-log-out text-primary"></i> Form Check-Out
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold" style="font-size:.82rem">Catatan</label>
+                  <textarea class="form-control form-control-sm" rows="2"
+                            placeholder="Catatan saat pulang (opsional)..."
+                            [(ngModel)]="catatanCheckOut"></textarea>
+                </div>
+
+                <!-- Lokasi GPS untuk check-out -->
+                <div class="mb-3">
+                  <label class="form-label fw-semibold d-flex align-items-center gap-2"
+                         style="font-size:.82rem">
+                    <i class="bx bx-map-pin text-primary"></i> Lokasi
+                  </label>
+                  @if (lokasiStatus === 'idle') {
+                    <button type="button" class="btn btn-sm btn-outline-primary w-100"
+                            style="border-radius:10px;font-size:.8rem"
+                            (click)="dapatkanLokasi()">
+                      <i class="bx bx-current-location me-1"></i>Rekam Lokasi Saat Ini
+                    </button>
+                  }
+                  @if (lokasiStatus === 'loading') {
+                    <div class="d-flex align-items-center gap-2 rounded-3 px-3 py-2"
+                         style="background:#eff6ff;font-size:.78rem;color:#2563eb">
+                      <span class="spinner-border spinner-border-sm"></span>
+                      Mengambil lokasi GPS...
+                    </div>
+                  }
+                  @if (lokasiStatus === 'ok' && lokasiMapsUrl) {
+                    <div class="d-flex align-items-center justify-content-between
+                                rounded-3 px-3 py-2"
+                         style="background:#f0fdf4;font-size:.78rem;color:#15803d">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-map-pin" style="font-size:1rem"></i>
+                        <span>Lokasi berhasil direkam</span>
+                      </div>
+                      <a [href]="lokasiMapsUrl" target="_blank" rel="noopener"
+                         class="btn btn-sm"
+                         style="background:#22c55e;color:#fff;font-size:.72rem;
+                                border-radius:8px;padding:.2rem .6rem">
+                        <i class="bx bx-map me-1"></i>Lihat Maps
+                      </a>
+                    </div>
+                  }
+                  @if (lokasiStatus === 'error') {
+                    <div class="d-flex align-items-center justify-content-between
+                                rounded-3 px-3 py-2"
+                         style="background:#fff7ed;font-size:.78rem;color:#c2410c">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-error-circle" style="font-size:1rem"></i>
+                        <span>{{ lokasiError }}</span>
+                      </div>
+                      <button type="button" class="btn btn-sm"
+                              style="background:#f97316;color:#fff;font-size:.72rem;
+                                     border-radius:8px;padding:.2rem .6rem"
+                              (click)="dapatkanLokasi()">
+                        Coba Lagi
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                        (click)="doCheckOut()" [disabled]="saving()">
+                  @if (saving()) {
+                    <span class="spinner-border spinner-border-sm"></span>
+                  } @else {
+                    <i class="bx bx-log-out"></i>
+                  }
+                  Check-Out Sekarang
+                </button>
+              </div>
+            }
+
+            <!-- Sudah check-in & check-out -->
+            @if (sudahCheckIn() && sudahCheckOut()) {
+              <div class="text-center py-3">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                     style="width:56px;height:56px;background:#dcfce7">
+                  <i class="bx bx-check-double text-success" style="font-size:1.8rem"></i>
+                </div>
+                <div class="fw-semibold text-success">Presensi hari ini selesai</div>
+                <div class="text-muted" style="font-size:.82rem">
+                  Masuk: <strong>{{ formatTime(hariIni()?.jamMasuk) }}</strong> ·
+                  Keluar: <strong>{{ formatTime(hariIni()?.jamKeluar) }}</strong>
+                </div>
+                <!-- Foto masuk jika ada -->
+                @if (hariIni()?.fotoMasukUrl) {
+                  <div class="mt-2">
+                    <img [src]="hariIni()!.fotoMasukUrl" class="rounded-3 border"
+                         style="max-height:120px;object-fit:cover">
+                    <div class="text-muted mt-1" style="font-size:.72rem">Foto Absen Masuk</div>
+                  </div>
+                }
+                <!-- Lokasi masuk -->
+                @if (hariIni()?.lokasiMasukUrl) {
+                  <div class="mt-2">
+                    <a [href]="hariIni()!.lokasiMasukUrl" target="_blank" rel="noopener"
+                       class="btn btn-sm"
+                       style="background:#dcfce7;color:#15803d;font-size:.75rem;border-radius:10px">
+                      <i class="bx bx-map-pin me-1"></i>Lokasi Masuk
+                    </a>
+                  </div>
+                }
+                <!-- Lokasi keluar -->
+                @if (hariIni()?.lokasiKeluarUrl) {
+                  <div class="mt-1">
+                    <a [href]="hariIni()!.lokasiKeluarUrl" target="_blank" rel="noopener"
+                       class="btn btn-sm"
+                       style="background:#dbeafe;color:#1d4ed8;font-size:.75rem;border-radius:10px">
+                      <i class="bx bx-map-pin me-1"></i>Lokasi Keluar
+                    </a>
+                  </div>
+                }
+              </div>
+            }
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  } <!-- end !loading -->
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 : Riwayat Absensi
+  ══════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0 pb-0">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bx bx-history text-primary fs-5"></i>
+          <h6 class="mb-0 fw-semibold">Riwayat Absensi</h6>
+        </div>
+        <!-- Filter bulan & tahun -->
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <select class="form-select form-select-sm" style="max-width:130px" [(ngModel)]="filterBulan">
+            @for (b of listBulan; track b.val) {
+              <option [value]="b.val">{{ b.label }}</option>
+            }
+          </select>
+          <select class="form-select form-select-sm" style="max-width:90px" [(ngModel)]="filterTahun">
+            @for (y of listTahun; track y) {
+              <option [value]="y">{{ y }}</option>
+            }
+          </select>
+          <button class="btn btn-primary btn-sm px-3" (click)="onFilterRiwayat()" [disabled]="loadingRiwayat()">
+            <i class="bx bx-filter-alt me-1"></i>Tampilkan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body pt-2">
+
+      @if (loadingRiwayat()) {
+        <div class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-primary"></div>
+          <span class="ms-2 text-muted" style="font-size:.83rem">Memuat riwayat...</span>
+        </div>
+      } @else if (riwayat().length === 0) {
+        <div class="text-center py-5">
+          <i class="bx bx-calendar-x text-muted" style="font-size:2.5rem"></i>
+          <div class="text-muted mt-2" style="font-size:.88rem">
+            Tidak ada data absensi untuk
+            {{ namaBulanDari(filterBulan) }} {{ filterTahun }}
+          </div>
+        </div>
+      } @else {
+
+        <!-- Tabel riwayat -->
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size:.83rem">
+            <thead class="table-light">
+              <tr>
+                <th style="width:36px">#</th>
+                <th>Hari &amp; Tanggal</th>
+                <th>Bulan</th>
+                <th>Jam Kerja</th>
+                <th class="text-center">Masuk</th>
+                <th class="text-center">Keluar</th>
+                <th class="text-center">Status</th>
+                <th>Catatan</th>
+                <th class="text-center">Foto</th>
+                <th class="text-center">Lokasi GPS</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of riwayat(); track a.id; let i = $index) {
+                <tr>
+                  <!-- Nomor -->
+                  <td class="text-muted">{{ i + 1 }}</td>
+
+                  <!-- Hari & Tanggal -->
+                  <td>
+                    <div class="fw-semibold" style="font-size:.85rem">
+                      {{ hariLabel(a.namaHari) }}
+                    </div>
+                    <div class="text-muted" style="font-size:.75rem">
+                      {{ formatTanggal(a.tanggal) }}
+                    </div>
+                  </td>
+
+                  <!-- Bulan -->
+                  <td>
+                    <span class="badge bg-light text-dark border" style="font-size:.72rem">
+                      {{ namaBulanDari(a.bulan) }} {{ a.tahun }}
+                    </span>
+                  </td>
+
+                  <!-- Jam Kerja (dari pola) -->
+                  <td>
+                    @if (a.jamKerjaMulai) {
+                      <div class="d-flex align-items-center gap-1">
+                        <span class="badge bg-light text-dark border" style="font-size:.72rem">
+                          {{ a.jamKerjaMulai }}
+                        </span>
+                        <i class="bx bx-right-arrow-alt text-muted" style="font-size:.85rem"></i>
+                        <span class="badge bg-light text-dark border" style="font-size:.72rem">
+                          {{ a.jamKerjaSelesai ?? '—' }}
+                        </span>
+                      </div>
+                      @if (a.namaPolaKerja) {
+                        <div class="text-muted" style="font-size:.7rem">{{ a.namaPolaKerja }}</div>
+                      }
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+
+                  <!-- Jam Masuk -->
+                  <td class="text-center">
+                    @if (a.jamMasuk) {
+                      <div class="fw-semibold text-success" style="font-size:.88rem">
+                        {{ formatTime(a.jamMasuk) }}
+                      </div>
+                      @if (a.menitTerlambat > 0) {
+                        <div class="badge bg-danger" style="font-size:.65rem">
+                          +{{ terlambatLabel(a.menitTerlambat) }}
+                        </div>
+                      }
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+
+                  <!-- Jam Keluar -->
+                  <td class="text-center">
+                    @if (a.jamKeluar) {
+                      <div class="fw-semibold text-primary" style="font-size:.88rem">
+                        {{ formatTime(a.jamKeluar) }}
+                      </div>
+                    } @else {
+                      <span class="text-muted" style="font-size:.78rem">Belum keluar</span>
+                    }
+                  </td>
+
+                  <!-- Status -->
+                  <td class="text-center">
+                    <span class="badge" [class]="'bg-' + statusClass(a.status)"
+                          style="font-size:.72rem">
+                      {{ a.status }}
+                    </span>
+                  </td>
+
+                  <!-- Catatan -->
+                  <td style="max-width:180px">
+                    @if (a.catatanMasuk || a.catatanKeluar) {
+                      <div class="text-truncate" style="font-size:.78rem" title="{{ a.catatanMasuk }}">
+                        @if (a.catatanMasuk) {
+                          <span class="text-muted">Masuk:</span> {{ a.catatanMasuk }}
+                        }
+                        @if (a.catatanKeluar) {
+                          <br><span class="text-muted">Keluar:</span> {{ a.catatanKeluar }}
+                        }
+                      </div>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+
+                  <!-- Foto lampiran -->
+                  <td class="text-center">
+                    @if (a.fotoMasukUrl) {
+                      <a [href]="a.fotoMasukUrl" target="_blank" title="Lihat foto absen masuk">
+                        <img [src]="a.fotoMasukUrl" class="rounded-2 border"
+                             style="width:40px;height:40px;object-fit:cover"
+                             onerror="this.style.display='none'">
+                      </a>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+
+                  <!-- Lokasi GPS -->
+                  <td class="text-center">
+                    @if (a.lokasiMasukUrl || a.lokasiKeluarUrl) {
+                      <div class="d-flex flex-column gap-1 align-items-center">
+                        @if (a.lokasiMasukUrl) {
+                          <a [href]="a.lokasiMasukUrl" target="_blank" rel="noopener"
+                             class="btn btn-sm d-flex align-items-center gap-1"
+                             style="background:#dcfce7;color:#15803d;font-size:.68rem;
+                                    border-radius:8px;padding:.2rem .55rem;white-space:nowrap"
+                             title="Buka lokasi check-in di Google Maps">
+                            <i class="bx bx-map-pin" style="font-size:.8rem"></i> Masuk
+                          </a>
+                        }
+                        @if (a.lokasiKeluarUrl) {
+                          <a [href]="a.lokasiKeluarUrl" target="_blank" rel="noopener"
+                             class="btn btn-sm d-flex align-items-center gap-1"
+                             style="background:#dbeafe;color:#1d4ed8;font-size:.68rem;
+                                    border-radius:8px;padding:.2rem .55rem;white-space:nowrap"
+                             title="Buka lokasi check-out di Google Maps">
+                            <i class="bx bx-map-pin" style="font-size:.8rem"></i> Keluar
+                          </a>
+                        }
+                      </div>
+                    } @else {
+                      <span class="text-muted" style="font-size:.75rem">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Summary footer -->
+        <div class="d-flex gap-3 mt-3 flex-wrap" style="font-size:.78rem">
+          <span class="text-muted">
+            Total: <strong>{{ riwayat().length }}</strong> hari
+          </span>
+          <span class="text-warning">
+            Terlambat: <strong>{{ riwayat().filter(a => a.menitTerlambat > 0).length }}</strong>
+          </span>
+          <span class="text-danger">
+            Alpha/Tanpa Keterangan: <strong>{{ riwayat().filter(a => a.status === 'ALPHA').length }}</strong>
+          </span>
+        </div>
+
+      }
+    </div>
+  </div>
+
+</app-layout>

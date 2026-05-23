@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/lokasi/lokasi.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\n\r\nexport const lokasiRoutes: Routes = [\r\n  {\r\n    path: '',\r\n    loadComponent: () => import('./lokasi-list/lokasi-list.component')\r\n      .then(m => m.LokasiListComponent),\r\n  },\r\n  {\r\n    path: 'baru',\r\n    loadComponent: () => import('./lokasi-form/lokasi-form.component')\r\n      .then(m => m.LokasiFormComponent),\r\n  },\r\n  {\r\n    path: ':id/edit',\r\n    loadComponent: () => import('./lokasi-form/lokasi-form.component')\r\n      .then(m => m.LokasiFormComponent),\r\n  },\r\n];\r\n"],
+  "mappings": ";;;AAEO,IAAM,eAAuB;EAClC;IACE,MAAM;IACN,eAAe,MAAM,OAAO,qBAAqC,EAC9D,KAAK,OAAK,EAAE,mBAAmB;;EAEpC;IACE,MAAM;IACN,eAAe,MAAM,OAAO,qBAAqC,EAC9D,KAAK,OAAK,EAAE,mBAAmB;;EAEpC;IACE,MAAM;IACN,eAAe,MAAM,OAAO,qBAAqC,EAC9D,KAAK,OAAK,EAAE,mBAAmB;;;",
+  "names": []
+}

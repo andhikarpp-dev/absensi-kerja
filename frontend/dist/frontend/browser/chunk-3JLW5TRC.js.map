@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/izin/izin.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\n\r\nexport const izinRoutes: Routes = [\r\n  {\r\n    path: 'izin-hari',\r\n    loadComponent: () =>\r\n      import('./izin-hari/izin-hari.component').then(m => m.IzinHariComponent)\r\n  },\r\n  {\r\n    path: 'review-izin-jam',\r\n    loadComponent: () =>\r\n      import('./review-izin-jam/review-izin-jam.component').then(m => m.ReviewIzinJamComponent)\r\n  }\r\n];\r\n"],
+  "mappings": ";;;AAEO,IAAM,aAAqB;EAChC;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAAiC,EAAE,KAAK,OAAK,EAAE,iBAAiB;;EAE3E;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAA6C,EAAE,KAAK,OAAK,EAAE,sBAAsB;;;",
+  "names": []
+}

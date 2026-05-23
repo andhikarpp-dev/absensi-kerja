@@ -1,0 +1,431 @@
+<!-- ===== Sidebar compact tweaks ===== -->
+<style>
+  /* Item utama */
+  .sidebar-wrapper .metismenu > li > a {
+    padding: 6px 14px !important;
+    font-size: 13.5px;
+    line-height: 1.2;
+    border-radius: 6px;
+    margin: 1px 6px;
+  }
+  .sidebar-wrapper .metismenu > li {
+    margin: 0 !important;
+  }
+  .sidebar-wrapper .metismenu .parent-icon {
+    font-size: 18px;
+    line-height: 1;
+    margin-right: 8px;
+  }
+  .sidebar-wrapper .metismenu .menu-title {
+    line-height: 1.2;
+  }
+
+  /* Label section (Manajemen, Pola Kerja, dst.) */
+  .sidebar-wrapper .metismenu .menu-label {
+    padding: 10px 16px 4px !important;
+    margin: 0 !important;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  /* Submenu (accordion children) */
+  .sidebar-wrapper .metismenu ul li a {
+    padding: 5px 14px 5px 42px !important;
+    font-size: 12.5px;
+    line-height: 1.2;
+    border-radius: 5px;
+    margin: 1px 8px;
+  }
+  .sidebar-wrapper .metismenu ul li a i {
+    font-size: 14px;
+    margin-right: 6px;
+  }
+
+  /* Hilangkan jarak ekstra antar <ul> bawaan metismenu */
+  .sidebar-wrapper .metismenu ul.mm-collapse,
+  .sidebar-wrapper .metismenu ul {
+    padding: 2px 0 !important;
+  }
+
+  /* Aktifkan hover/active lebih halus */
+  .sidebar-wrapper .metismenu a:hover {
+    background: rgba(79, 70, 229, .08);
+  }
+</style>
+
+<!--wrapper-->
+<div class="wrapper">
+
+  <!-- ============ SIDEBAR ============ -->
+  <div class="sidebar-wrapper" data-simplebar="true">
+    <div class="sidebar-header">
+      <div>
+        <img src="assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
+      </div>
+      <div>
+        <h4 class="logo-text">AbsensiKerja</h4>
+      </div>
+      <div class="toggle-icon ms-auto">
+        <i class='bx bx-arrow-to-left'></i>
+      </div>
+    </div>
+
+    <!--navigation-->
+    <ul class="metismenu" id="menu">
+
+      <!-- Dashboard — hanya ADMIN & PEMILIK -->
+      <li [hidden]="!isAdminOrPemilik()">
+        <a routerLink="/dashboard" routerLinkActive="active">
+          <div class="parent-icon"><i class='bx bx-home-circle'></i></div>
+          <div class="menu-title">Dashboard</div>
+        </a>
+      </li>
+
+      <!-- Absensi — semua role kecuali PEMILIK -->
+      <li [hidden]="auth.currentUser()?.role === 'PEMILIK'">
+        <a routerLink="/absensi" routerLinkActive="active">
+          <div class="parent-icon"><i class='bx bx-fingerprint'></i></div>
+          <div class="menu-title">Absensi</div>
+        </a>
+      </li>
+
+      <!-- Izin — hanya KARYAWAN -->
+      <li [hidden]="!isKaryawan()">
+        <a [routerLink]="['/karyawan', auth.currentUser()?.karyawanId, 'izin']" routerLinkActive="active">
+          <div class="parent-icon"><i class='bx bx-calendar-exclamation'></i></div>
+          <div class="menu-title">Izin</div>
+        </a>
+      </li>
+
+      <!-- Cuti — hanya KARYAWAN -->
+      <li [hidden]="!isKaryawan()">
+        <a [routerLink]="['/karyawan', auth.currentUser()?.karyawanId, 'cuti']" routerLinkActive="active">
+          <div class="parent-icon"><i class='bx bx-sun'></i></div>
+          <div class="menu-title">Cuti</div>
+        </a>
+      </li>
+
+      <!-- Klaim — hanya KARYAWAN -->
+      <li [hidden]="!isKaryawan()">
+        <a [routerLink]="['/karyawan', auth.currentUser()?.karyawanId, 'klaim']" routerLinkActive="active">
+          <div class="parent-icon"><i class='bx bx-receipt'></i></div>
+          <div class="menu-title">Klaim</div>
+        </a>
+      </li>
+
+      <!-- Label Manajemen — hanya ADMIN & PEMILIK -->
+      <li class="menu-label" [hidden]="!isAdminOrPemilik()">Manajemen</li>
+
+      <!-- Kelola Karyawan accordion — hanya ADMIN & PEMILIK -->
+      <li [hidden]="!isAdminOrPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-group'></i></div>
+          <div class="menu-title">Kelola Karyawan</div>
+        </a>
+        <ul>
+          <li>
+            <a routerLink="/divisi" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Divisi
+            </a>
+          </li>
+          <li>
+            <a routerLink="/jabatan" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Jabatan
+            </a>
+          </li>
+          <li>
+            <a routerLink="/karyawan" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Data Karyawan
+            </a>
+          </li>
+          <li>
+            <a routerLink="/lokasi" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Lokasi Kehadiran
+            </a>
+          </li>
+          <li>
+            <a routerLink="/jadwal-hari-kerja" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Jadwal Hari Kerja
+            </a>
+          </li>
+          <li>
+            <a routerLink="/jadwal-shift" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Jadwal Shift
+            </a>
+          </li>
+          <li>
+            <a routerLink="/surat-peringatan" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Surat Peringatan
+            </a>
+          </li>
+          <li>
+            <a routerLink="/laporan/tidak-hadir-mingguan" routerLinkActive="active">
+              <i class='bx bx-right-arrow-alt'></i>Tidak Hadir 1 Minggu
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Laporan — hanya ADMIN & PEMILIK -->
+<!--      <li [hidden]="!isAdminOrPemilik()">-->
+<!--        <a href="javascript:;" class="has-arrow">-->
+<!--          <div class="parent-icon"><i class='bx bx-file'></i></div>-->
+<!--          <div class="menu-title">Laporan</div>-->
+<!--        </a>-->
+<!--        <ul>-->
+<!--          <li>-->
+<!--            <a routerLink="/laporan" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">-->
+<!--              <i class='bx bx-right-arrow-alt'></i>Semua Laporan-->
+<!--            </a>-->
+<!--          </li>-->
+<!--        </ul>-->
+<!--      </li>-->
+
+      <!-- ===== PEMILIK ONLY ===== -->
+
+      <!-- Pola Kerja -->
+      <li class="menu-label" [hidden]="!isPemilik()">Pola Kerja</li>
+      <li [hidden]="!isPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-calendar'></i></div>
+          <div class="menu-title">Pola Kerja</div>
+        </a>
+        <ul>
+          <li><a routerLink="/pola-kerja/hari-kerja" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Hari Kerja</a></li>
+          <li><a routerLink="/pola-kerja/shift" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Shift</a></li>
+          <li><a routerLink="/pola-kerja/openshift" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Openshift</a></li>
+        </ul>
+      </li>
+
+      <!-- Kehadiran -->
+      <li class="menu-label" [hidden]="!isPemilik()">Kehadiran</li>
+      <li [hidden]="!isPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-check-circle'></i></div>
+          <div class="menu-title">Kehadiran</div>
+        </a>
+        <ul>
+          <li><a routerLink="/kehadiran/harian" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Kehadiran Harian</a></li>
+          <li><a routerLink="/kehadiran/ringkasan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Ringkasan Kehadiran</a></li>
+          <li><a routerLink="/kehadiran/review" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Review Kehadiran</a></li>
+          <li><a routerLink="/kehadiran/revisi" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Revisi Kehadiran</a></li>
+          <li><a routerLink="/kehadiran/persetujuan-presensi" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Persetujuan Presensi</a></li>
+          <li><a routerLink="/kehadiran/persetujuan-perangkat" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Persetujuan Perangkat</a></li>
+          <li><a routerLink="/kehadiran/persetujuan-foto-profil" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Persetujuan Foto Profil</a></li>
+          <li><a routerLink="/kehadiran/rekap-tukar-jadwal-shift" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Rekap Tukar Jadwal Shift</a></li>
+          <li><a routerLink="/kehadiran/rekap-catatan-presensi" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Rekap Catatan Presensi</a></li>
+        </ul>
+      </li>
+
+      <!-- Lembur -->
+      <li class="menu-label" [hidden]="!isPemilik()">Lembur</li>
+      <li [hidden]="!isPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-timer'></i></div>
+          <div class="menu-title">Lembur</div>
+        </a>
+        <ul>
+          <li><a routerLink="/lembur/review" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Review Lembur</a></li>
+          <li><a routerLink="/lembur/jadwal" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Jadwal Lembur</a></li>
+          <li><a routerLink="/lembur/pengaturan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Pengaturan</a></li>
+        </ul>
+      </li>
+
+      <!-- Izin -->
+      <li class="menu-label" [hidden]="!isPemilik()">Izin</li>
+      <li [hidden]="!isPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-calendar-exclamation'></i></div>
+          <div class="menu-title">Izin</div>
+        </a>
+        <ul>
+          <li><a routerLink="/izin/izin-hari" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Izin Hari</a></li>
+          <li><a routerLink="/izin/review-izin-jam" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Review Izin Jam</a></li>
+        </ul>
+      </li>
+
+      <!-- Cuti -->
+      <li class="menu-label" [hidden]="!isAdminOrPemilik()">Cuti</li>
+      <li [hidden]="!isAdminOrPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-sun'></i></div>
+          <div class="menu-title">Cuti</div>
+        </a>
+        <ul>
+          <li><a routerLink="/cuti" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Permohonan Cuti</a></li>
+          <li><a routerLink="/cuti/laporan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Laporan</a></li>
+          <li><a routerLink="/cuti/pengaturan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Pengaturan</a></li>
+        </ul>
+      </li>
+
+      <!-- Klaim -->
+      <li class="menu-label" [hidden]="!isAdminOrPemilik()">Klaim</li>
+      <li [hidden]="!isAdminOrPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-receipt'></i></div>
+          <div class="menu-title">Klaim</div>
+        </a>
+        <ul>
+          <li><a routerLink="/klaim/pengajuan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Pengajuan Klaim</a></li>
+          <li><a routerLink="/klaim/jenis" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Jenis Klaim</a></li>
+        </ul>
+      </li>
+
+      <!-- Kunjungan Klien -->
+      <li class="menu-label" [hidden]="!isAdminOrPemilik()">Kunjungan Klien</li>
+      <li [hidden]="!isAdminOrPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-map-pin'></i></div>
+          <div class="menu-title">Kunjungan Klien</div>
+        </a>
+        <ul>
+          <li><a routerLink="/kunjungan/kunjungan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Kunjungan</a></li>
+          <li><a routerLink="/kunjungan/klien" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Klien</a></li>
+          <li [hidden]="!isPemilik()"><a routerLink="/kunjungan/visualisasi" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Visualisasi Kunjungan</a></li>
+          <li [hidden]="!isPemilik()"><a routerLink="/kunjungan/ringkasan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Ringkasan Kunjungan</a></li>
+          <li [hidden]="!isPemilik()"><a routerLink="/kunjungan/jadwal" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Jadwal Kunjungan</a></li>
+          <li [hidden]="!isPemilik()"><a routerLink="/kunjungan/sales-dasbor" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Sales Dasbor</a></li>
+          <li [hidden]="!isPemilik()"><a routerLink="/kunjungan/sales-produk" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Sales Produk</a></li>
+          <li [hidden]="!isPemilik()"><a routerLink="/kunjungan/laporan-penjualan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Laporan Penjualan</a></li>
+        </ul>
+      </li>
+
+      <!-- Timesheet -->
+      <li class="menu-label" [hidden]="!isPemilik()">Timesheet</li>
+      <li [hidden]="!isPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-spreadsheet'></i></div>
+          <div class="menu-title">Timesheet</div>
+        </a>
+        <ul>
+          <li><a routerLink="/timesheet/aktivitas" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Aktivitas</a></li>
+          <li><a routerLink="/timesheet/proyek" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Proyek</a></li>
+        </ul>
+      </li>
+
+      <!-- Broadcast -->
+      <li [hidden]="!isPemilik()">
+        <a routerLink="/broadcast" routerLinkActive="active">
+          <div class="parent-icon"><i class='bx bx-broadcast'></i></div>
+          <div class="menu-title">Broadcast</div>
+        </a>
+      </li>
+
+      <!-- Gaji -->
+      <li class="menu-label" [hidden]="!isPemilik()">Gaji</li>
+      <li [hidden]="!isPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-money'></i></div>
+          <div class="menu-title">Gaji</div>
+        </a>
+        <ul>
+          <li><a routerLink="/gaji/hitung" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Hitung</a></li>
+          <li><a routerLink="/gaji/pembayaran" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Pembayaran</a></li>
+          <li><a routerLink="/gaji/laporan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Laporan</a></li>
+          <li><a routerLink="/gaji/pengaturan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Pengaturan</a></li>
+        </ul>
+      </li>
+
+      <!-- Pengaturan -->
+      <li class="menu-label" [hidden]="!isPemilik()">Pengaturan</li>
+      <li [hidden]="!isPemilik()">
+        <a href="javascript:;" class="has-arrow">
+          <div class="parent-icon"><i class='bx bx-cog'></i></div>
+          <div class="menu-title">Pengaturan</div>
+        </a>
+        <ul>
+          <li><a routerLink="/pengaturan/perusahaan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Perusahaan</a></li>
+          <li><a routerLink="/pengaturan/aplikasi-mobile" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Aplikasi Mobile</a></li>
+          <li><a routerLink="/pengaturan/alur-persetujuan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Alur Persetujuan</a></li>
+          <li><a routerLink="/pengaturan/kalender-libur" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Kalender Libur</a></li>
+          <li><a routerLink="/pengaturan/langganan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Langganan</a></li>
+          <li><a routerLink="/pengaturan/admin" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Admin</a></li>
+          <li><a routerLink="/pengaturan/fitur-premium" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Fitur Premium</a></li>
+          <li><a routerLink="/pengaturan/integrasi" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Integrasi</a></li>
+          <li><a routerLink="/pengaturan/panduan-penggunaan" routerLinkActive="active"><i class='bx bx-right-arrow-alt'></i>Panduan Penggunaan</a></li>
+        </ul>
+      </li>
+
+    </ul>
+    <!--end navigation-->
+  </div>
+  <!-- ============ END SIDEBAR ============ -->
+
+  <!-- ============ TOP MENU ============ -->
+  <header>
+    <div class="topbar d-flex align-items-center">
+      <nav class="navbar navbar-expand">
+        <div class="mobile-toggle-menu"><i class='bx bx-menu'></i></div>
+
+        <!-- Nama Perusahaan -->
+        <div class="d-none d-sm-flex align-items-center gap-2 ms-3">
+          <div class="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
+               style="width:30px;height:30px;background:linear-gradient(135deg,#4f46e5,#7c3aed)">
+            <i class="bx bx-buildings text-white" style="font-size:.9rem"></i>
+          </div>
+          <div style="line-height:1.2">
+            <div class="fw-semibold text-dark" style="font-size:.85rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              {{ auth.currentUser()?.perusahaanNama ?? 'AbsensiKerja' }}
+            </div>
+            <div class="text-muted" style="font-size:.7rem">{{ auth.currentUser()?.role }}</div>
+          </div>
+        </div>
+
+        <div class="top-menu ms-auto">
+          <ul class="navbar-nav align-items-center gap-1">
+            <!-- User dropdown -->
+            <li class="nav-item dropdown">
+              <a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret"
+                 href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="assets/images/avatars/avatar-1.png" class="user-img" alt="user"
+                     onerror="this.src='assets/images/logo-icon.png'">
+                <div class="user-info ps-3">
+                  <p class="user-name mb-0">{{ auth.currentUser()?.namaLengkap ?? auth.currentUser()?.username }}</p>
+                  <p class="designattion mb-0">
+                    <span class="badge"
+                      [style.background]="auth.currentUser()?.role === 'PEMILIK' ? '#dcfce7' :
+                                          auth.currentUser()?.role === 'ADMIN'   ? '#dbeafe' : '#fef3c7'"
+                      [style.color]="auth.currentUser()?.role === 'PEMILIK' ? '#166534' :
+                                     auth.currentUser()?.role === 'ADMIN'   ? '#1e40af' : '#92400e'">
+                      {{ auth.currentUser()?.role }}
+                    </span>
+                  </p>
+                </div>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="bx bx-user"></i><span>Profil</span>
+                  </a>
+                </li>
+                <li><div class="dropdown-divider mb-0"></div></li>
+                <li>
+                  <a class="dropdown-item" href="#" (click)="logout()">
+                    <i class='bx bx-log-out-circle'></i><span>Logout</span>
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </header>
+  <!-- ============ END TOP MENU ============ -->
+
+  <!-- ============ PAGE CONTENT ============ -->
+  <div class="page-wrapper">
+    <div class="page-content">
+      <ng-content></ng-content>
+    </div>
+  </div>
+  <!-- ============ END PAGE CONTENT ============ -->
+
+  <div class="overlay toggle-icon"></div>
+  <a href="javascript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+
+</div>
+<!--end wrapper-->

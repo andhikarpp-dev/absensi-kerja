@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/izin/review-izin-jam/review-izin-jam.component.scss"],
+  "sourcesContent": [".review-izin-jam {\r\n  .badge-status { font-size: .75rem; padding: .35em .6em; }\r\n}\r\n"],
+  "mappings": ";AACE,CAAA,gBAAA,CAAA;AAAgB,aAAA;AAAmB,WAAA,OAAA;;",
+  "names": []
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/laporan/laporan.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\n\r\nexport const laporanRoutes: Routes = [\r\n  {\r\n    path: '',\r\n    loadComponent: () =>\r\n      import('./laporan-list/laporan-list.component').then(m => m.LaporanListComponent)\r\n  }\r\n];\r\n\r\n"],
+  "mappings": ";;;AAEO,IAAM,gBAAwB;EACnC;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAAuC,EAAE,KAAK,OAAK,EAAE,oBAAoB;;;",
+  "names": []
+}

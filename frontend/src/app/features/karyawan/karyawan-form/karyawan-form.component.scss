@@ -1,0 +1,210 @@
+:host { display: block; }
+
+.page-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ---- Header ---- */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  font-size: .875rem;
+  color: #1a56db;
+  text-decoration: none;
+  font-weight: 500;
+  &:hover { text-decoration: underline; }
+  .material-icons { font-size: 1rem; }
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  .material-icons { color: #1a56db; }
+}
+
+/* ---- Card ---- */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 8px rgba(0,0,0,.1);
+}
+
+/* ---- Alert ---- */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem 1rem;
+  border-radius: 8px;
+  font-size: .875rem;
+  margin-bottom: 1rem;
+  .material-icons { font-size: 1.1rem; }
+  &--danger { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+}
+
+/* ---- Form Grid ---- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: .25rem;
+}
+
+.form-label {
+  font-size: .875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: .4rem;
+}
+
+.required { color: #dc2626; }
+
+.form-input {
+  padding: .6rem .9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: .9rem;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+
+  &:focus { border-color: #1a56db; box-shadow: 0 0 0 3px rgba(26,86,219,.15); }
+  &--error { border-color: #dc2626; }
+}
+
+.form-error {
+  font-size: .78rem;
+  color: #dc2626;
+  margin-top: .25rem;
+}
+
+/* ---- Checkbox ---- */
+.form-group--checkbox {
+  margin-top: 1.25rem;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  cursor: pointer;
+  font-size: .9rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.checkbox-input { display: none; }
+
+.checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+}
+
+.checkbox-input:checked + .checkbox-custom {
+  background: #1a56db;
+  border-color: #1a56db;
+  &::after {
+    content: '';
+    width: 5px;
+    height: 9px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translate(-1px,-1px);
+    display: block;
+  }
+}
+
+/* ---- Actions ---- */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .75rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .6rem 1.4rem;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: opacity .2s, transform .1s;
+
+  &:active { transform: scale(.97); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+
+  .material-icons { font-size: 1.1rem; }
+
+  &--primary  { background: #1a56db; color: #fff; &:hover { background: #1647b8; } }
+  &--secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; &:hover { background: #e5e7eb; } }
+}
+
+/* ---- Spinner ---- */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Skeleton ---- */
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-line {
+  height: 16px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 400% 100%;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  animation: shimmer 1.4s infinite;
+  &.short { width: 50%; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}

@@ -1,0 +1,230 @@
+<app-layout>
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Dasbor</div>
+    <div class="ps-3"><nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 p-0">
+        <li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a></li>
+        <li class="breadcrumb-item"><a href="javascript:;">Kunjungan Klien</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Visualisasi Kunjungan</li>
+      </ol>
+    </nav></div>
+  </div>
+
+  <h6 class="mb-3 fw-bold">Visualisasi Kunjungan</h6>
+
+  <!-- Filter Bar -->
+  <div class="card mb-3">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-center">
+        <!-- Tanggal -->
+        <div class="col-auto">
+          <input type="date" class="form-control form-control-sm"
+                 [ngModel]="filterTanggal()"
+                 (ngModelChange)="filterTanggal.set($event)"
+                 placeholder="Tanggal Kunjungan"
+                 style="min-width:170px">
+        </div>
+        <!-- Divisi -->
+        <div class="col-auto">
+          <select class="form-select form-select-sm" style="min-width:160px"
+                  [ngModel]="filterDivisi()"
+                  (ngModelChange)="filterDivisi.set($event ? +$event : null)">
+            <option [ngValue]="null">Filter Divisi</option>
+            @for (d of divisiList(); track d.id) {
+              <option [value]="d.id">{{ d.namaDivisi }}</option>
+            }
+          </select>
+        </div>
+        <!-- Klien -->
+        <div class="col-auto">
+          <select class="form-select form-select-sm" style="min-width:160px"
+                  [ngModel]="filterKlien()"
+                  (ngModelChange)="filterKlien.set($event ? +$event : null)">
+            <option [ngValue]="null">Filter Klien</option>
+            @for (k of klienList(); track k.id) {
+              <option [value]="k.id">{{ k.namaKlien }}</option>
+            }
+          </select>
+        </div>
+        <!-- Cari -->
+        <div class="col-auto">
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control" placeholder="Cari"
+                   style="min-width:160px"
+                   [ngModel]="_cariInput()"
+                   (ngModelChange)="_cariInput.set($event)"
+                   (keyup.enter)="applyFilter()">
+            <button class="btn btn-outline-secondary" (click)="applyFilter()">
+              <i class="bx bx-search"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Cari button -->
+        <div class="col-auto">
+          <button class="btn btn-primary btn-sm px-4" (click)="applyFilter()">
+            <i class="bx bx-map-pin me-1"></i>Tampilkan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State: not yet searched -->
+  @if (!hasSearched()) {
+    <div class="card">
+      <div class="card-body">
+        <div class="alert alert-primary d-flex align-items-center gap-2 mb-0" style="border-radius:8px">
+          <i class="bx bx-info-circle fs-5"></i>
+          <span>Silakan pilih tanggal kunjungan terlebih dahulu</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- State: loading -->
+  @if (hasSearched() && loading()) {
+    <div class="card"><div class="card-body text-center py-5">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-2 text-muted">Memuat data...</p>
+    </div></div>
+  }
+
+  <!-- State: error -->
+  @if (hasSearched() && !loading() && error()) {
+    <div class="card"><div class="card-body">
+      <div class="alert alert-danger mb-0">{{ error() }}</div>
+    </div></div>
+  }
+
+  <!-- Main content: map + list -->
+  @if (hasSearched() && !loading() && !error()) {
+    <div class="row g-3">
+      <!-- Map -->
+      <div class="col-12 col-lg-8">
+        <div class="card h-100">
+          <div class="card-header d-flex align-items-center gap-2 py-2 px-3">
+            <i class="bx bx-map text-primary"></i>
+            <span class="fw-semibold">Peta Kunjungan</span>
+            <span class="badge bg-primary ms-auto">{{ filteredData.length }} kunjungan</span>
+          </div>
+          <div class="card-body p-0" style="position:relative">
+            @if (filteredData.length === 0) {
+              <div class="d-flex align-items-center justify-content-center" style="height:400px">
+                <div class="text-center text-muted">
+                  <i class="bx bx-map-pin" style="font-size:3rem;opacity:.3"></i>
+                  <p class="mt-2">Tidak ada data kunjungan</p>
+                </div>
+              </div>
+            } @else {
+              <!-- Legend -->
+              <div style="position:absolute;top:12px;right:12px;z-index:1000;background:white;border-radius:8px;padding:8px 12px;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:12px">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <div style="width:12px;height:12px;border-radius:50%;background:#4f46e5"></div>
+                  <span>Lokasi Mulai</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <div style="width:12px;height:12px;border-radius:50%;background:#16a34a"></div>
+                  <span>Lokasi Selesai</span>
+                </div>
+              </div>
+              <div #mapContainer style="height:480px;width:100%;border-radius:0 0 8px 8px"></div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- List Panel -->
+      <div class="col-12 col-lg-4">
+        <div class="card h-100">
+          <div class="card-header d-flex align-items-center gap-2 py-2 px-3">
+            <i class="bx bx-list-ul text-primary"></i>
+            <span class="fw-semibold">Daftar Kunjungan</span>
+          </div>
+          <div class="card-body p-0" style="overflow-y:auto;max-height:480px">
+            @if (filteredData.length === 0) {
+              <div class="text-center text-muted py-5">Tidak ada data</div>
+            }
+            @for (k of filteredData; track k.id) {
+              <div class="p-3 border-bottom visit-item"
+                   [class.visit-item--active]="selected()?.id === k.id"
+                   (click)="selected.set(k)"
+                   style="cursor:pointer;transition:background .15s">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <img [src]="fotoUrl(k.fotoProfil)"
+                       onerror="this.src='assets/images/avatars/avatar-1.png'"
+                       style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0">
+                  <div style="min-width:0">
+                    <div class="fw-semibold text-truncate" style="font-size:13px">{{ k.namaKaryawan }}</div>
+                    <div class="text-muted text-truncate" style="font-size:11px">{{ k.namaDivisi ?? '-' }}</div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-1 mb-1">
+                  <i class="bx bx-buildings text-muted" style="font-size:13px"></i>
+                  <span class="text-truncate" style="font-size:12px">{{ k.namaKlien }}</span>
+                </div>
+                <div class="d-flex gap-3" style="font-size:11px;color:#6b7280">
+                  <span><i class="bx bx-time-five"></i> {{ formatTime(k.waktuMulai) }} – {{ formatTime(k.waktuSelesai) }}</span>
+                  @if (k.totalJarak) {
+                    <span><i class="bx bx-map-alt"></i> {{ k.totalJarak | number:'1.1-1' }} km</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Panel -->
+    @if (selected()) {
+      <div class="card mt-3">
+        <div class="card-header d-flex align-items-center gap-2 py-2 px-3">
+          <i class="bx bx-detail text-primary"></i>
+          <span class="fw-semibold">Detail Kunjungan</span>
+          <button class="btn btn-sm btn-outline-secondary ms-auto" (click)="selected.set(null)">
+            <i class="bx bx-x"></i>
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tr><th style="width:140px;font-size:13px">Karyawan</th><td style="font-size:13px">{{ selected()!.namaKaryawan }}</td></tr>
+                <tr><th style="font-size:13px">Divisi</th><td style="font-size:13px">{{ selected()!.namaDivisi ?? '-' }}</td></tr>
+                <tr><th style="font-size:13px">Klien</th><td style="font-size:13px">{{ selected()!.namaKlien }}</td></tr>
+                <tr><th style="font-size:13px">Waktu Mulai</th><td style="font-size:13px">{{ formatTime(selected()!.waktuMulai) }}</td></tr>
+                <tr><th style="font-size:13px">Waktu Selesai</th><td style="font-size:13px">{{ formatTime(selected()!.waktuSelesai) }}</td></tr>
+                <tr><th style="font-size:13px">Durasi</th><td style="font-size:13px">{{ formatDuration(selected()!.waktuMulai, selected()!.waktuSelesai) }}</td></tr>
+                <tr><th style="font-size:13px">Total Jarak</th><td style="font-size:13px">{{ selected()!.totalJarak ? (selected()!.totalJarak! | number:'1.1-1') + ' km' : '-' }}</td></tr>
+                @if (selected()!.catatan) {
+                  <tr><th style="font-size:13px">Catatan</th><td style="font-size:13px">{{ selected()!.catatan }}</td></tr>
+                }
+              </table>
+            </div>
+            <div class="col-md-6">
+              <div class="row g-2">
+                @if (selected()!.fotoMulai) {
+                  <div class="col-6">
+                    <p class="text-muted mb-1" style="font-size:11px">Foto Mulai</p>
+                    <img [src]="fotoUrl('foto-absensi/' + selected()!.fotoMulai)"
+                         onerror="this.src='assets/images/avatars/avatar-1.png'"
+                         class="img-fluid rounded" style="max-height:140px;object-fit:cover">
+                  </div>
+                }
+                @if (selected()!.fotoSelesai) {
+                  <div class="col-6">
+                    <p class="text-muted mb-1" style="font-size:11px">Foto Selesai</p>
+                    <img [src]="fotoUrl('foto-absensi/' + selected()!.fotoSelesai)"
+                         onerror="this.src='assets/images/avatars/avatar-1.png'"
+                         class="img-fluid rounded" style="max-height:140px;object-fit:cover">
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+</app-layout>

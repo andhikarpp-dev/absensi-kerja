@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/surat-peringatan/surat-peringatan.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\nimport { authGuard } from '../../core/guards/auth.guard';\r\nimport { roleGuard } from '../../core/guards/role.guard';\r\n\r\nexport const suratPeringatanRoutes: Routes = [\r\n  {\r\n    path: '',\r\n    canActivate: [authGuard, roleGuard(['ADMIN', 'PEMILIK'])],\r\n    loadComponent: () =>\r\n      import('./surat-peringatan-list/surat-peringatan-list.component')\r\n        .then(m => m.SuratPeringatanListComponent),\r\n  },\r\n];\r\n"],
+  "mappings": ";;;;;;;;;;AAIO,IAAM,wBAAgC;EAC3C;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,SAAS,SAAS,CAAC,CAAC;IACxD,eAAe,MACb,OAAO,qBAAyD,EAC7D,KAAK,OAAK,EAAE,4BAA4B;;;",
+  "names": []
+}

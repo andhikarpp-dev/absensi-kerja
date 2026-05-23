@@ -1,0 +1,278 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/lokasi">Lokasi Kehadiran</a></li>
+          <li class="breadcrumb-item active" aria-current="page">
+            {{ isEdit() ? 'Edit' : 'Tambah' }}
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <h5 class="mb-3">
+    <i class="bx bx-map-pin me-2"></i>{{ isEdit() ? 'Edit Lokasi' : 'Tambah Lokasi' }}
+  </h5>
+
+  @if (error()) {
+    <div class="alert alert-danger small">{{ error() }}</div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      @if (loading()) {
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm me-2"></div>Memuat data…
+        </div>
+      } @else {
+        <!-- ── Informasi Umum ── -->
+        <h6 class="text-uppercase small fw-bold text-muted mb-3">Informasi Umum</h6>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-8">
+            <label class="form-label small">Nama Lokasi <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Contoh: Kantor Pusat Jakarta"
+                   [value]="form().namaLokasi"
+                   (input)="upd('namaLokasi', $any($event.target).value)">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small d-block">Status</label>
+            <div class="form-check form-switch mt-1">
+              <input type="checkbox" class="form-check-input" id="aktif"
+                     [checked]="form().aktif"
+                     (change)="upd('aktif', $any($event.target).checked)">
+              <label class="form-check-label small" for="aktif">
+                {{ form().aktif ? 'Aktif' : 'Nonaktif' }}
+              </label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Alamat</label>
+            <textarea class="form-control form-control-sm" rows="2"
+                      placeholder="Alamat lengkap lokasi"
+                      [value]="form().alamat ?? ''"
+                      (input)="upd('alamat', $any($event.target).value)"></textarea>
+          </div>
+        </div>
+
+        <!-- ── Geofence ── -->
+        <h6 class="text-uppercase small fw-bold text-muted mb-3">
+          Geofence (Presensi via Aplikasi)
+        </h6>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-4">
+            <label class="form-label small">Latitude</label>
+            <input type="number" step="0.0000001" class="form-control form-control-sm"
+                   placeholder="-6.2000000"
+                   [value]="form().latitude ?? ''"
+                   (input)="upd('latitude', $any($event.target).value === '' ? null : +$any($event.target).value)">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Longitude</label>
+            <input type="number" step="0.0000001" class="form-control form-control-sm"
+                   placeholder="106.8166700"
+                   [value]="form().longitude ?? ''"
+                   (input)="upd('longitude', $any($event.target).value === '' ? null : +$any($event.target).value)">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Radius (meter)</label>
+            <input type="number" min="0" class="form-control form-control-sm"
+                   [value]="form().radiusMeter ?? 100"
+                   (input)="upd('radiusMeter', $any($event.target).value === '' ? 0 : +$any($event.target).value)">
+          </div>
+          <div class="col-12 d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm"
+                    (click)="ambilLokasiSaya()">
+              <i class="bx bx-current-location"></i> Gunakan Lokasi Saya
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    [disabled]="form().latitude == null || form().longitude == null"
+                    (click)="bukaPeta()">
+              <i class="bx bx-map"></i> Lihat di Google Maps
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Mode Fingerspot ── -->
+        <hr class="my-4">
+        <h6 class="text-uppercase small fw-bold text-muted mb-3">
+          Karyawan Ditugaskan
+        </h6>
+
+        <div class="mb-3 d-flex flex-wrap gap-3">
+          <div class="form-check">
+            <input type="radio" class="form-check-input" id="tgtSemua" name="targetTipe"
+                   [checked]="form().targetTipe === 'SEMUA'"
+                   (change)="setTarget('SEMUA')">
+            <label class="form-check-label small" for="tgtSemua">Semua Karyawan</label>
+          </div>
+          <div class="form-check">
+            <input type="radio" class="form-check-input" id="tgtDivisi" name="targetTipe"
+                   [checked]="form().targetTipe === 'DIVISI'"
+                   (change)="setTarget('DIVISI')">
+            <label class="form-check-label small" for="tgtDivisi">Spesifik Divisi</label>
+          </div>
+          <div class="form-check">
+            <input type="radio" class="form-check-input" id="tgtKaryawan" name="targetTipe"
+                   [checked]="form().targetTipe === 'KARYAWAN'"
+                   (change)="setTarget('KARYAWAN')">
+            <label class="form-check-label small" for="tgtKaryawan">Spesifik Karyawan</label>
+          </div>
+        </div>
+
+        @if (form().targetTipe === 'DIVISI') {
+          <div class="border rounded p-3 mb-3" style="max-height:240px; overflow:auto">
+            @if (divisiList().length === 0) {
+              <div class="text-muted small">Tidak ada divisi tersedia.</div>
+            } @else {
+              <div class="row g-2">
+                @for (d of divisiList(); track d.id) {
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input"
+                             [id]="'div-' + d.id"
+                             [checked]="isDivisiChecked(d.id!)"
+                             (change)="toggleDivisi(d.id!, $any($event.target).checked)">
+                      <label class="form-check-label small" [for]="'div-' + d.id">
+                        {{ d.namaDivisi }}
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          @if ((form().divisiIds?.length ?? 0) > 0) {
+            <div class="small text-muted mb-3">
+              Terpilih: <strong>{{ form().divisiIds?.length }}</strong> divisi
+            </div>
+          }
+        }
+
+        @if (form().targetTipe === 'KARYAWAN') {
+          <input type="text" class="form-control form-control-sm mb-2"
+                 placeholder="Cari nama atau NIP karyawan…"
+                 [value]="karyawanKeyword()"
+                 (input)="karyawanKeyword.set($any($event.target).value)">
+          <div class="border rounded p-3 mb-2" style="max-height:280px; overflow:auto">
+            @if (filteredKaryawan().length === 0) {
+              <div class="text-muted small">Tidak ada karyawan cocok.</div>
+            } @else {
+              <div class="row g-2">
+                @for (k of filteredKaryawan(); track k.id) {
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input"
+                             [id]="'kar-' + k.id"
+                             [checked]="isKaryawanChecked(k.id!)"
+                             (change)="toggleKaryawan(k.id!, $any($event.target).checked)">
+                      <label class="form-check-label small" [for]="'kar-' + k.id">
+                        {{ k.namaLengkap }}
+                        @if (k.nip) { <span class="text-muted">· {{ k.nip }}</span> }
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          @if ((form().karyawanIds?.length ?? 0) > 0) {
+            <div class="mb-3">
+              <div class="small text-muted mb-1">
+                Terpilih: <strong>{{ form().karyawanIds?.length }}</strong> karyawan
+              </div>
+              <div class="d-flex flex-wrap gap-1">
+                @for (id of form().karyawanIds ?? []; track id) {
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                    {{ namaKaryawanById(id) }}
+                    <i class="bx bx-x ms-1" style="cursor:pointer"
+                       (click)="hapusKaryawanTerpilih(id)"></i>
+                  </span>
+                }
+              </div>
+            </div>
+          }
+        }
+
+        <!-- ── Mode Fingerspot ── -->
+        <hr class="my-4">
+        <h6 class="text-uppercase small fw-bold text-muted mb-3">
+          Pengaturan Mesin Fingerspot
+        </h6>
+
+        <div class="form-check form-switch mb-3">
+          <input type="checkbox" class="form-check-input" id="hanyaFingerspot"
+                 [checked]="form().hanyaFingerspot"
+                 (change)="upd('hanyaFingerspot', $any($event.target).checked)">
+          <label class="form-check-label small fw-semibold" for="hanyaFingerspot">
+            Presensi hanya dapat dilakukan melalui mesin Fingerspot
+          </label>
+          <div class="form-text small">
+            Jika diaktifkan, karyawan <strong>tidak dapat</strong> melakukan presensi
+            via aplikasi mobile/web pada lokasi ini — wajib menggunakan mesin
+            Fingerspot terdaftar di bawah.
+          </div>
+        </div>
+
+        @if (form().hanyaFingerspot) {
+          <div class="alert alert-warning py-2 small mb-3">
+            <i class="bx bx-info-circle"></i>
+            Pastikan mesin Fingerspot sudah terhubung ke jaringan dan
+            ter-sinkron dengan server (pull data presensi).
+          </div>
+        }
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label small">Serial Number (SN)</label>
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Contoh: FS-12345678"
+                   [value]="form().fingerspotSn ?? ''"
+                   (input)="upd('fingerspotSn', $any($event.target).value)">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">IP / Hostname</label>
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="192.168.1.100"
+                   [value]="form().fingerspotIp ?? ''"
+                   (input)="upd('fingerspotIp', $any($event.target).value)">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Port</label>
+            <input type="number" min="1" max="65535" class="form-control form-control-sm"
+                   placeholder="80"
+                   [value]="form().fingerspotPort ?? ''"
+                   (input)="upd('fingerspotPort', $any($event.target).value === '' ? null : +$any($event.target).value)">
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Catatan</label>
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Catatan tambahan untuk mesin (opsional)"
+                   [value]="form().fingerspotCatatan ?? ''"
+                   (input)="upd('fingerspotCatatan', $any($event.target).value)">
+          </div>
+        </div>
+
+        <!-- ── Footer ── -->
+        <hr class="my-4">
+        <div class="d-flex justify-content-end gap-2">
+          <a routerLink="/lokasi" class="btn btn-light border btn-sm px-4">Batal</a>
+          <button type="button" class="btn btn-primary btn-sm px-4"
+                  [disabled]="saving()" (click)="simpan()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            {{ isEdit() ? 'Simpan Perubahan' : 'Simpan' }}
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+</app-layout>

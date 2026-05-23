@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/auth/auth.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\n\r\nexport const authRoutes: Routes = [\r\n  {\r\n    path: 'login',\r\n    loadComponent: () =>\r\n      import('./login/login.component').then(m => m.LoginComponent)\r\n  },\r\n  {\r\n    path: 'register',\r\n    loadComponent: () =>\r\n      import('./register/register.component').then(m => m.RegisterComponent)\r\n  },\r\n  {\r\n    path: 'register-owner',\r\n    loadComponent: () =>\r\n      import('./company-register/company-register.component').then(m => m.CompanyRegisterComponent)\r\n  },\r\n  {\r\n    path: 'verify-email',\r\n    loadComponent: () =>\r\n      import('./verify-email/verify-email.component').then(m => m.VerifyEmailComponent)\r\n  },\r\n  { path: '', redirectTo: 'login', pathMatch: 'full' }\r\n];\r\n\r\n"],
+  "mappings": ";;;AAEO,IAAM,aAAqB;EAChC;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAAyB,EAAE,KAAK,OAAK,EAAE,cAAc;;EAEhE;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAA+B,EAAE,KAAK,OAAK,EAAE,iBAAiB;;EAEzE;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAA+C,EAAE,KAAK,OAAK,EAAE,wBAAwB;;EAEhG;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAAuC,EAAE,KAAK,OAAK,EAAE,oBAAoB;;EAEpF,EAAE,MAAM,IAAI,YAAY,SAAS,WAAW,OAAM;;",
+  "names": []
+}

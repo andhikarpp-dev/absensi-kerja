@@ -1,0 +1,293 @@
+<app-layout>
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Kehadiran</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/kehadiran/harian">Kehadiran</a></li>
+          <li class="breadcrumb-item active">Ringkasan Kehadiran</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <h6 class="fw-bold mb-4">Ringkasan Kehadiran</h6>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+
+      <!-- ── Filter Bar ──────────────────────────────────── -->
+      <div class="px-4 py-3 border-bottom d-flex flex-wrap align-items-center gap-3">
+        <!-- Rentang Tanggal -->
+        <div class="d-flex align-items-center gap-2">
+          <input type="date" class="form-control form-control-sm" style="width:150px"
+                 [(ngModel)]="dari" />
+          <span class="text-muted">-</span>
+          <input type="date" class="form-control form-control-sm" style="width:150px"
+                 [(ngModel)]="sampai" />
+        </div>
+        <!-- Divisi -->
+        <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="divisiId">
+          <option value="">--Divisi--</option>
+          @for (d of divisiList(); track d.id) {
+            <option [value]="d.id">{{ d.namaDivisi }}</option>
+          }
+        </select>
+        <!-- Cari -->
+        <div class="input-group input-group-sm" style="width:220px">
+          <input type="text" class="form-control" placeholder="Cari..."
+                 [(ngModel)]="cari" (ngModelChange)="onCariChange()" />
+          <button class="btn btn-outline-secondary" (click)="loadData()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+        <!-- Apply -->
+        <button class="btn btn-primary btn-sm ms-auto px-4" (click)="loadData()"
+                [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          } @else {
+            <i class="bx bx-filter-alt me-1"></i>
+          }
+          Terapkan
+        </button>
+        <!-- Ikon ekspor -->
+        <button class="btn btn-outline-secondary btn-sm" title="Ekspor Excel"
+                (click)="showEkspor.set(true)">
+          <i class="bx bx-file"></i>
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" title="Filter lanjutan">
+          <i class="bx bx-slider-alt"></i>
+        </button>
+      </div>
+
+      <!-- Error -->
+      @if (error()) {
+        <div class="alert alert-danger mx-4 mt-3 py-2"><i class="bx bx-error-circle me-1"></i>{{ error() }}</div>
+      }
+
+      <!-- ── DataTable Controls ──────────────────────────── -->
+      <div class="px-4 py-2 d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <label class="text-muted small mb-0">Tampilkan</label>
+          <select class="form-select form-select-sm" style="width:70px"
+                  [(ngModel)]="pageSize" (ngModelChange)="onPageSize()">
+            @for (n of pageSizeOptions; track n) {
+              <option [value]="n">{{ n }}</option>
+            }
+          </select>
+          <label class="text-muted small mb-0">entri</label>
+        </div>
+      </div>
+
+      <!-- ── Tabel ───────────────────────────────────────── -->
+      @if (loading()) {
+        <div class="text-center py-5 text-muted">
+          <span class="spinner-border text-primary me-2"></span>Memuat data...
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered align-middle mb-0"
+                 style="min-width:2800px;font-size:.8rem">
+            <thead class="table-light" style="position:sticky;top:0;z-index:2">
+              <tr>
+                <th style="min-width:220px;cursor:pointer;position:sticky;left:0;background:#f8f9fa;z-index:3"
+                    (click)="sortBy('namaKaryawan')">
+                  Karyawan <i class="bx {{ sortIcon('namaKaryawan') }}"></i>
+                </th>
+                <th style="min-width:160px;cursor:pointer" (click)="sortBy('namaPolaKerja')">
+                  Pola Kerja <i class="bx {{ sortIcon('namaPolaKerja') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalHariJadwalKerja')">
+                  Total Hari Jadwal Kerja <i class="bx {{ sortIcon('totalHariJadwalKerja') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalHariKehadiran')">
+                  Total Hari Kehadiran <i class="bx {{ sortIcon('totalHariKehadiran') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalHariTidakMasuk')">
+                  Total Hari Tidak Masuk <i class="bx {{ sortIcon('totalHariTidakMasuk') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalHariCuti')">
+                  Total Hari Cuti <i class="bx {{ sortIcon('totalHariCuti') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalHariIzin')">
+                  Total Hari Izin <i class="bx {{ sortIcon('totalHariIzin') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('persentaseKehadiran')">
+                  Persentase Kehadiran <i class="bx {{ sortIcon('persentaseKehadiran') }}"></i>
+                </th>
+                <th class="text-center">Target Kehadiran Jabatan</th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalMenitJadwalKerja')">
+                  Total Jam Jadwal Kerja <i class="bx {{ sortIcon('totalMenitJadwalKerja') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalMenitKerja')">
+                  Total Jam Kerja <i class="bx {{ sortIcon('totalMenitKerja') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('persentaseCapaianJamKerja')">
+                  Persentase Capaian Jam Kerja <i class="bx {{ sortIcon('persentaseCapaianJamKerja') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalMenitIstirahat')">
+                  Total Jam Istirahat <i class="bx {{ sortIcon('totalMenitIstirahat') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalMenitLembur')">
+                  Total Jam Lembur <i class="bx {{ sortIcon('totalMenitLembur') }}"></i>
+                </th>
+                <th class="text-center">Total Jam Openshift</th>
+                <th class="text-center">Total Hari Openshift</th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalMenitTerlambat')">
+                  Total Jam Terlambat <i class="bx {{ sortIcon('totalMenitTerlambat') }}"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortBy('totalHariTerlambat')">
+                  Total Hari Terlambat <i class="bx {{ sortIcon('totalHariTerlambat') }}"></i>
+                </th>
+                <th class="text-center">Total Denda Keterlambatan (Rp)</th>
+                <th class="text-center">Total Hari Terlambat Presensi Keluar</th>
+                <th class="text-center">Total Denda Terlambat Presensi Keluar (Rp)</th>
+                <th class="text-center">Total Jam Toleransi</th>
+                <th class="text-center">Total Hari Toleransi</th>
+                <th class="text-center">Total Jam Izin Jam</th>
+                <th class="text-center">Total Jam Izin Jam Belum Diganti</th>
+                <th class="text-center">Total Hari Presensi Keluar Otomatis</th>
+                <th class="text-center">Jam Kerja Tidak Terpenuhi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of paged(); track r.karyawanId) {
+                <tr>
+                  <!-- Karyawan (sticky) -->
+                  <td style="position:sticky;left:0;background:#fff;z-index:1">
+                    <div class="d-flex align-items-center gap-2">
+                      @if (fotoUrl(r.fotoProfil); as url) {
+                        <img [src]="url" class="rounded-circle flex-shrink-0"
+                             style="width:38px;height:38px;object-fit:cover;border:2px solid #e9ecef" />
+                      } @else {
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:38px;height:38px;background:#f3f4f6;color:#9ca3af">
+                          <i class="bx bx-user"></i>
+                        </div>
+                      }
+                      <div>
+                        <div class="fw-semibold" style="font-size:.82rem">{{ r.namaKaryawan }}</div>
+                        <div class="text-muted" style="font-size:.72rem">
+                          @if (r.namaJabatan) { {{ r.namaJabatan }} }
+                          @if (r.namaDivisi)  { | {{ r.namaDivisi }} }
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <!-- Pola Kerja -->
+                  <td class="text-muted">{{ r.namaPolaKerja || '-' }}</td>
+                  <!-- Numerik -->
+                  <td class="text-center">{{ r.ringkasan.totalHariJadwalKerja }}</td>
+                  <td class="text-center">
+                    <span class="text-primary fw-semibold" style="cursor:pointer">
+                      {{ r.ringkasan.totalHariKehadiran }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="text-primary fw-semibold" style="cursor:pointer">
+                      {{ r.ringkasan.totalHariTidakMasuk }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="text-primary fw-semibold" style="cursor:pointer">
+                      {{ r.ringkasan.totalHariCuti }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="text-primary fw-semibold" style="cursor:pointer">
+                      {{ r.ringkasan.totalHariIzin }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span [class.text-danger]="r.ringkasan.persentaseKehadiran < 80"
+                          [class.text-success]="r.ringkasan.persentaseKehadiran >= 100"
+                          class="fw-semibold">
+                      {{ r.ringkasan.persentaseKehadiran | number:'1.0-2' }}
+                    </span>
+                  </td>
+                  <td class="text-center text-muted">
+                    {{ r.ringkasan.targetKehadiranJabatan != null ? r.ringkasan.targetKehadiranJabatan : '' }}
+                  </td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitJadwalKerja) }}</td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitKerja) }}</td>
+                  <td class="text-center">
+                    <span [class.text-danger]="r.ringkasan.persentaseCapaianJamKerja < 80"
+                          [class.text-success]="r.ringkasan.persentaseCapaianJamKerja >= 100">
+                      {{ r.ringkasan.persentaseCapaianJamKerja | number:'1.0-2' }}
+                    </span>
+                  </td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitIstirahat) }}</td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitLembur) }}</td>
+                  <td class="text-center text-muted">0</td>
+                  <td class="text-center text-muted">{{ r.ringkasan.totalHariOpenshift }}</td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitTerlambat) }}</td>
+                  <td class="text-center">{{ r.ringkasan.totalHariTerlambat }}</td>
+                  <td class="text-center text-muted">{{ formatRp(r.ringkasan.totalDendaKeterlambatan) }}</td>
+                  <td class="text-center">{{ r.ringkasan.totalHariTerlambatPresensiKeluar }}</td>
+                  <td class="text-center text-muted">{{ formatRp(r.ringkasan.totalDendaTerlambatPresensiKeluar) }}</td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitToleransi) }}</td>
+                  <td class="text-center">{{ r.ringkasan.totalHariToleransi }}</td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitIzinJam) }}</td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.totalMenitIzinJamBelumDiganti) }}</td>
+                  <td class="text-center">{{ r.ringkasan.totalHariPresensiKeluarOtomatis }}</td>
+                  <td class="text-center">{{ menitKeJam(r.ringkasan.menitJamKerjaTidakTerpenuhi) }}</td>
+                </tr>
+              }
+              @if (paged().length === 0 && !loading()) {
+                <tr>
+                  <td colspan="27" class="text-center text-muted py-5">
+                    <i class="bx bx-calendar-x fs-2 d-block mb-2"></i>
+                    Tidak ada data pada rentang tanggal ini.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── Footer Pagination ─────────────────────────── -->
+        <div class="px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border-top">
+          <div class="text-muted small">{{ info() }}</div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0 gap-1">
+              <li class="page-item" [class.disabled]="page() === 1">
+                <button class="page-link rounded" (click)="page.set(page() - 1)"
+                        [disabled]="page() === 1">
+                  <i class="bx bx-chevron-left"></i>
+                </button>
+              </li>
+              @for (p of pagesArr(); track $index) {
+                @if (p === '...') {
+                  <li class="page-item disabled"><span class="page-link">…</span></li>
+                } @else {
+                  <li class="page-item" [class.active]="page() === p">
+                    <button class="page-link rounded" (click)="page.set(+p)">{{ p }}</button>
+                  </li>
+                }
+              }
+              <li class="page-item" [class.disabled]="page() === totalPages()">
+                <button class="page-link rounded" (click)="page.set(page() + 1)"
+                        [disabled]="page() === totalPages()">
+                  <i class="bx bx-chevron-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
+
+    </div>
+  </div>
+
+  <!-- ── Modal Ekspor Excel ──────────────────────────── -->
+  @if (showEkspor()) {
+    <app-ekspor-ringkasan-modal
+      [defaultDari]="dari"
+      [defaultSampai]="sampai"
+      (tutup)="showEkspor.set(false)" />
+  }
+
+</app-layout>

@@ -1,0 +1,162 @@
+<div class="lp-bg">
+  <div class="lp-container">
+
+    <!-- ── Left: Branding + Info ── -->
+    <aside class="lp-left">
+      <div class="lp-left__inner">
+
+        <div class="lp-logo">
+          <span class="lp-logo__icon material-icons">work_outline</span>
+          <span class="lp-logo__text">AbsensiKerja</span>
+        </div>
+
+        <h1 class="lp-left__headline">
+          Kelola Kehadiran<br/>Karyawan dengan <span class="lp-left__accent">Mudah &amp; Cepat</span>
+        </h1>
+        <p class="lp-left__desc">
+          Platform manajemen absensi modern untuk perusahaan Anda. Monitor WFO &amp; WFH dalam satu dasbor.
+        </p>
+
+        <ul class="lp-features">
+          <li class="lp-features__item">
+            <span class="material-icons lp-features__icon">check_circle</span>
+            Rekapitulasi otomatis setiap bulan
+          </li>
+          <li class="lp-features__item">
+            <span class="material-icons lp-features__icon">check_circle</span>
+            Laporan ekspor PDF &amp; Excel
+          </li>
+          <li class="lp-features__item">
+            <span class="material-icons lp-features__icon">check_circle</span>
+            Manajemen divisi &amp; jabatan fleksibel
+          </li>
+        </ul>
+
+        <div class="lp-testimonial">
+          <p class="lp-testimonial__text">
+            "Sangat membantu tim HR kami dalam memantau kehadiran karyawan secara real-time."
+          </p>
+          <div class="lp-testimonial__author">
+            <img
+              src="assets/images/avatars/default.png"
+              class="lp-testimonial__avatar"
+              alt="Avatar"
+              onerror="this.src='https://ui-avatars.com/api/?name=Nurul+Karlina&background=1e40af&color=fff&size=40'"
+            />
+            <div>
+              <strong>Nurul Karlina</strong>
+              <span>HRD &ndash; IDwebhost</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- decorative blobs -->
+      <div class="lp-blob lp-blob--1"></div>
+      <div class="lp-blob lp-blob--2"></div>
+    </aside>
+
+    <!-- ── Right: Login Form ── -->
+    <main class="lp-right">
+
+      <div class="lp-form-header">
+        <h2 class="lp-form-header__title">Selamat Datang 👋</h2>
+        <p class="lp-form-header__sub">Masuk ke akun anda untuk melanjutkan</p>
+      </div>
+
+      <!-- Verifikasi email status -->
+      @if (verifiedInfo(); as v) {
+        <div class="lp-alert" [style.background]="v.ok ? '#f0fdf4' : '#fef2f2'"
+             [style.color]="v.ok ? '#166534' : '#991b1b'"
+             [style.border]="'1px solid ' + (v.ok ? '#bbf7d0' : '#fecaca')">
+          <span class="material-icons">{{ v.ok ? 'check_circle' : 'error_outline' }}</span>
+          {{ v.msg }}
+        </div>
+      }
+
+      <!-- Error -->
+      @if (errorMessage()) {
+        <div class="lp-alert">
+          <span class="material-icons">warning_amber</span>
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="lp-form">
+
+        <div class="lp-field">
+          <label class="lp-field__label" for="username">Email</label>
+          <input
+            id="username"
+            type="email"
+            class="lp-field__input"
+            [class.lp-field__input--err]="f['username'].invalid && f['username'].touched"
+            formControlName="username"
+            placeholder="contoh@perusahaan.com"
+            autocomplete="email"
+          />
+          @if (f['username'].invalid && f['username'].touched) {
+            <span class="lp-field__error">Email tidak boleh kosong</span>
+          }
+        </div>
+
+        <div class="lp-field">
+          <label class="lp-field__label" for="password">Password</label>
+          <div class="lp-field__pw-wrap">
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              class="lp-field__input"
+              [class.lp-field__input--err]="f['password'].invalid && f['password'].touched"
+              formControlName="password"
+              placeholder="Minimal 6 karakter"
+              autocomplete="current-password"
+            />
+            <button type="button" class="lp-field__eye" (click)="showPassword.set(!showPassword())" tabindex="-1">
+              <span class="material-icons">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
+            </button>
+          </div>
+          @if (f['password'].invalid && f['password'].touched) {
+            <span class="lp-field__error">Password minimal 6 karakter</span>
+          }
+        </div>
+
+        <div class="lp-options">
+          <label class="lp-checkbox">
+            <input type="checkbox" /> <span>Ingat saya</span>
+          </label>
+          <a class="lp-options__forgot" href="#">Lupa password?</a>
+        </div>
+
+        <button type="submit" class="lp-btn lp-btn--primary" [disabled]="loading()">
+          @if (loading()) {
+            <span class="lp-spinner"></span> Memproses...
+          } @else {
+            <span class="material-icons">login</span> Masuk Sekarang
+          }
+        </button>
+
+        <div class="lp-or"><span>atau</span></div>
+
+        <button type="button" class="lp-btn lp-btn--google">
+          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Lanjutkan dengan Google
+        </button>
+
+      </form>
+
+      <p class="lp-register">
+        Belum punya akun? <a routerLink="/auth/register">Daftar Sekarang</a>
+      </p>
+
+    </main>
+
+  </div>
+</div>
+

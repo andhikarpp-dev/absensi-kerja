@@ -1,0 +1,479 @@
+<app-layout>
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <div>
+      <h5 class="mb-0 fw-semibold">Klaim</h5>
+      @if (karyawan()) {
+        <small class="text-muted">{{ karyawan()!.namaLengkap }}</small>
+      }
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      @if (isKaryawan()) {
+        <button class="btn btn-primary btn-sm px-3" (click)="openTambah()">
+          <i class="bx bx-plus me-1"></i> Tambah Klaim
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-3 p-3">
+
+    <!-- Tabs -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm px-3 rounded-pill"
+                [class.btn-primary]="statusTab()==='PENGAJUAN'"
+                [class.btn-outline-secondary]="statusTab()!=='PENGAJUAN'"
+                (click)="setTab('PENGAJUAN')">Pengajuan</button>
+        <button class="btn btn-sm px-3 rounded-pill"
+                [class.btn-primary]="statusTab()==='DISETUJUI'"
+                [class.btn-outline-secondary]="statusTab()!=='DISETUJUI'"
+                (click)="setTab('DISETUJUI')">Disetujui</button>
+        <button class="btn btn-sm px-3 rounded-pill"
+                [class.btn-primary]="statusTab()==='DITOLAK'"
+                [class.btn-outline-secondary]="statusTab()!=='DITOLAK'"
+                (click)="setTab('DITOLAK')">Ditolak</button>
+      </div>
+      <!-- Date range filter -->
+      <div class="d-flex align-items-center gap-2">
+        <input type="date" class="form-control form-control-sm" style="max-width:145px"
+               [value]="filterMulai()" (change)="filterMulai.set($any($event.target).value); page.set(1)"
+               placeholder="Tanggal Mulai">
+        <span class="text-muted">–</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:145px"
+               [value]="filterSelesai()" (change)="filterSelesai.set($any($event.target).value); page.set(1)"
+               placeholder="Tanggal Selesai">
+      </div>
+    </div>
+
+    <!-- Error -->
+    @if (error()) {
+      <div class="alert alert-danger py-2">{{ error() }}</div>
+    }
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="text-center py-4 text-muted">Memuat data…</div>
+    }
+
+    <!-- Table -->
+    @if (!loading()) {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+          <thead class="border-bottom">
+            <tr class="text-muted" style="font-size:.78rem;font-weight:600;letter-spacing:.04em">
+              <th class="py-2">Jenis Klaim</th>
+              <th class="py-2">Tgl. Pengajuan</th>
+              <th class="py-2">Jumlah Pengajuan (Rp)</th>
+              <th class="py-2">Detail Pengeluaran</th>
+              <th class="py-2">Deskripsi</th>
+              <th class="py-2">File</th>
+              @if (!isKaryawan()) {
+                <th class="py-2 text-center">Aksi</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (k of rows(); track k.id) {
+              <tr>
+                <td>
+                  {{ labelJenis(k.jenisKlaim) }}
+                </td>
+                <td>{{ formatDate(k.createdAt) }}</td>
+                <td class="fw-semibold">{{ formatRp(k.nominal) }}</td>
+                <td>
+                  @if (k.itemPengeluaran.length) {
+                    <button class="btn btn-link p-0 text-primary" style="font-size:.8rem" (click)="openDetail(k)">
+                      {{ k.itemPengeluaran.length }} item — lihat detail
+                    </button>
+                  } @else {
+                    <span class="text-muted">–</span>
+                  }
+                </td>
+                <td style="max-width:180px">
+                  <span class="text-truncate d-block" title="{{ k.keterangan }}">{{ k.keterangan || '–' }}</span>
+                </td>
+                <td>
+                  @if (k.lampiranUrl) {
+                    <a [href]="lampiranHref(k.lampiranUrl)" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2">
+                      <i class="bx bx-file me-1"></i>Lihat
+                    </a>
+                  } @else {
+                    <span class="text-muted">–</span>
+                  }
+                </td>
+                @if (!isKaryawan()) {
+                  <td class="text-center">
+                    <div class="d-flex gap-1 justify-content-center">
+                      @if (k.status === 'MENUNGGU') {
+                        <button class="btn btn-sm btn-success py-0 px-2" (click)="approve(k)" title="Setujui">
+                          <i class="bx bx-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger py-0 px-2" (click)="openTolak(k)" title="Tolak">
+                          <i class="bx bx-x"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary py-0 px-2" (click)="openEdit(k)" title="Edit">
+                          <i class="bx bx-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-2" (click)="confirmDelete(k.id)" title="Hapus">
+                          <i class="bx bx-trash"></i>
+                        </button>
+                      }
+                      @if (k.status === 'DISETUJUI') {
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-2" (click)="openRiwayat(k)" title="Riwayat Perubahan">
+                          <i class="bx bx-history me-1"></i>Riwayat
+                        </button>
+                        <button class="btn btn-sm btn-warning py-0 px-2" (click)="openBatalkan(k)" title="Batalkan Persetujuan">
+                          <i class="bx bx-undo me-1"></i>Batalkan
+                        </button>
+                      }
+                      @if (k.status === 'DITOLAK') {
+                        <button class="btn btn-sm btn-outline-primary py-0 px-2" (click)="openEdit(k)" title="Edit">
+                          <i class="bx bx-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-2" (click)="confirmDelete(k.id)" title="Hapus">
+                          <i class="bx bx-trash"></i>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td [colSpan]="isKaryawan() ? 6 : 7" class="text-center text-muted py-4">
+                  Tidak ada data klaim.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2" style="font-size:.82rem">
+        <span class="text-muted">
+          Menampilkan {{ infoStart() }} dari {{ total() }} total data
+        </span>
+        <nav>
+          <ul class="pagination pagination-sm mb-0 gap-1">
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link rounded-2" (click)="page.set(1)" [disabled]="page()===1">«</button>
+            </li>
+            @for (p of pageNumbers(); track p) {
+              <li class="page-item" [class.active]="page()===p">
+                <button class="page-link rounded-2" (click)="page.set(p)">{{ p }}</button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link rounded-2" (click)="page.set(totalPages())" [disabled]="page()===totalPages()">»</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    }
+  </div>
+
+  <!-- ══════════════ Modal Form Tambah/Edit ══════════════ -->
+  @if (showFormModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-semibold">
+              <i class="bx bx-receipt me-2 text-primary"></i>
+              {{ editId() ? 'Edit Klaim' : 'Tambah Klaim' }}
+            </h5>
+            <button type="button" class="btn-close" (click)="closeForm()"></button>
+          </div>
+          <div class="modal-body pt-2">
+
+            @if (errorForm()) {
+              <div class="alert alert-danger py-2 small">{{ errorForm() }}</div>
+            }
+
+            <!-- Jenis Klaim -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Pilih Jenis Klaim <span class="text-danger">*</span></label>
+              <div class="d-flex flex-wrap gap-2">
+                @for (opt of jenisKlaimOptions; track opt.value) {
+                  <button type="button"
+                          class="btn btn-sm px-3 rounded-pill"
+                          [class.btn-primary]="form().jenisKlaim === opt.value"
+                          [class.btn-outline-secondary]="form().jenisKlaim !== opt.value"
+                          (click)="form.set({...form(), jenisKlaim: opt.value})">
+                    {{ opt.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Nominal -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Jumlah Nominal Klaim (Rp) <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">Rp</span>
+                <input type="number" class="form-control" min="0"
+                       [value]="form().nominal"
+                       (input)="form.set({...form(), nominal: +$any($event.target).value})"
+                       placeholder="0">
+              </div>
+            </div>
+
+            <!-- Detail Pengeluaran -->
+            <div class="mb-3">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fw-semibold small mb-0">Detail Pengeluaran</label>
+                <div class="text-muted small">
+                  Total: <strong class="text-dark">{{ formatRp(totalPengeluaran()) }}</strong>
+                </div>
+              </div>
+
+              @for (item of items; track $index) {
+                <div class="d-flex gap-2 align-items-start mb-2">
+                  <input type="text" class="form-control form-control-sm"
+                         placeholder="Keterangan"
+                         [value]="item.keterangan"
+                         (input)="updateItem($index, 'keterangan', $any($event.target).value)">
+                  <div class="input-group input-group-sm" style="max-width:180px">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" class="form-control" placeholder="0" min="0"
+                           [value]="item.jumlah"
+                           (input)="updateItem($index, 'jumlah', $any($event.target).value)">
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger" (click)="removeItem($index)">
+                    <i class="bx bx-trash"></i>
+                  </button>
+                </div>
+              }
+
+              <button class="btn btn-sm btn-outline-primary mt-1" (click)="addItem()">
+                <i class="bx bx-plus me-1"></i> Tambah Pengeluaran
+              </button>
+            </div>
+
+            <!-- Keterangan -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Keterangan</label>
+              <textarea class="form-control" rows="3" placeholder="Tuliskan keterangan klaim..."
+                        [value]="form().keterangan"
+                        (input)="form.set({...form(), keterangan: $any($event.target).value})"></textarea>
+            </div>
+
+            <!-- Lampiran -->
+            <div class="mb-1">
+              <label class="form-label fw-semibold small">Upload File Lampiran</label>
+              <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png"
+                     (change)="onLampiranChange($event)">
+              @if (lampiranNama()) {
+                <div class="mt-1 small text-success"><i class="bx bx-check me-1"></i>{{ lampiranNama() }}</div>
+              }
+            </div>
+
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="closeForm()">Batal</button>
+            <button class="btn btn-primary btn-sm px-4" [disabled]="saving()" (click)="saveForm()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════ Modal Detail Pengeluaran ══════════════ -->
+  @if (showDetailModal() && detailItem()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-semibold">
+              <i class="bx bx-list-ul me-2 text-primary"></i> Detail Pengeluaran
+            </h5>
+            <button type="button" class="btn-close" (click)="closeDetail()"></button>
+          </div>
+          <div class="modal-body">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr class="text-muted" style="font-size:.8rem">
+                  <th>#</th>
+                  <th>Keterangan</th>
+                  <th class="text-end">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of detailItem()!.itemPengeluaran; track item.id; let i = $index) {
+                  <tr style="font-size:.85rem">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ item.keterangan }}</td>
+                    <td class="text-end">{{ formatRp(item.jumlah) }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr class="fw-semibold">
+                  <td colspan="2" class="text-end small">Total Pengeluaran:</td>
+                  <td class="text-end">
+                    {{ formatRp(detailItem()!.itemPengeluaran.reduce((s,i)=>s+i.jumlah,0)) }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="closeDetail()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════ Modal Tolak ══════════════ -->
+  @if (showTolakModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger">
+              <i class="bx bx-x-circle me-2"></i>Tolak Klaim
+            </h5>
+            <button type="button" class="btn-close" (click)="closeTolak()"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label small fw-semibold">Catatan Penolakan</label>
+            <textarea class="form-control" rows="3" placeholder="Tuliskan alasan penolakan..."
+                      [value]="catatanTolak()"
+                      (input)="catatanTolak.set($any($event.target).value)"></textarea>
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="closeTolak()">Batal</button>
+            <button class="btn btn-danger btn-sm px-4" (click)="submitTolak()">Tolak</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════ Modal Konfirmasi Hapus ══════════════ -->
+  @if (confirmDeleteId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger"><i class="bx bx-trash me-2"></i>Hapus Klaim?</h5>
+          </div>
+          <div class="modal-body text-muted" style="font-size:.9rem">
+            Data klaim ini akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="cancelDelete()">Batal</button>
+            <button class="btn btn-danger btn-sm px-4" (click)="doDelete()">
+              <i class="bx bx-trash me-1"></i> Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════ Modal Riwayat Perubahan ══════════════ -->
+  @if (showRiwayatModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-semibold">
+              <i class="bx bx-history me-2 text-primary"></i>Riwayat Perubahan
+            </h5>
+            <button type="button" class="btn-close" (click)="closeRiwayat()"></button>
+          </div>
+          <div class="modal-body pt-2">
+            @if (riwayatLoading()) {
+              <div class="text-center py-3 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat riwayat…
+              </div>
+            } @else if (riwayatList().length === 0) {
+              <div class="text-center text-muted py-3">Belum ada riwayat perubahan.</div>
+            } @else {
+              <div class="timeline">
+                @for (r of riwayatList(); track r.id) {
+                  <div class="d-flex gap-3 mb-3">
+                    <!-- Icon tipe -->
+                    <div class="flex-shrink-0 d-flex flex-column align-items-center">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center"
+                           style="width:32px;height:32px;font-size:.75rem"
+                           [ngClass]="badgeClass(r.tipe)">
+                        @if (r.tipe === 'DIBUAT') { <i class="bx bx-plus-circle"></i> }
+                        @else if (r.tipe === 'DIUBAH') { <i class="bx bx-edit"></i> }
+                        @else if (r.tipe === 'STATUS_DISETUJUI') { <i class="bx bx-check-circle"></i> }
+                        @else if (r.tipe === 'STATUS_DITOLAK') { <i class="bx bx-x-circle"></i> }
+                        @else { <i class="bx bx-refresh"></i> }
+                      </div>
+                    </div>
+                    <!-- Konten -->
+                    <div class="flex-grow-1" style="font-size:.85rem">
+                      <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="fw-semibold">{{ labelTipe(r.tipe) }}</span>
+                        <small class="text-muted">{{ formatDate(r.changedAt) }}</small>
+                      </div>
+                      @if (r.keterangan) {
+                        <div class="text-muted mt-1">{{ r.keterangan }}</div>
+                      }
+                      <small class="text-muted">
+                        <i class="bx bx-user me-1"></i>{{ r.changedBy || 'sistem' }}
+                      </small>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="closeRiwayat()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════ Modal Batalkan Persetujuan ══════════════ -->
+  @if (showBatalkanModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-warning fw-semibold">
+              <i class="bx bx-undo me-2"></i>Batalkan Persetujuan Klaim
+            </h5>
+            <button type="button" class="btn-close" (click)="closeBatalkan()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning py-2 small mb-3">
+              <i class="bx bx-error me-1"></i>
+              Status klaim akan dikembalikan menjadi <strong>Menunggu</strong> dan alasan pembatalan akan dicatat di riwayat perubahan.
+            </div>
+            <label class="form-label small fw-semibold">
+              Alasan Pembatalan <span class="text-danger">*</span>
+            </label>
+            <textarea class="form-control" rows="3"
+                      placeholder="Tuliskan alasan pembatalan persetujuan..."
+                      [value]="catatanBatalkan()"
+                      (input)="catatanBatalkan.set($any($event.target).value)"></textarea>
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="closeBatalkan()">Batal</button>
+            <button class="btn btn-warning btn-sm px-4"
+                    [disabled]="!catatanBatalkan().trim()"
+                    (click)="submitBatalkan()">
+              <i class="bx bx-undo me-1"></i>Batalkan Persetujuan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

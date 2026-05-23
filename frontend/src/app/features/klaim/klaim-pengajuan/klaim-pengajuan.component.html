@@ -1,0 +1,279 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Pengajuan Klaim</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/klaim/pengajuan">Klaim</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Pengajuan Klaim</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+
+      <!-- Tabs + Ekspor -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="d-flex" style="border-radius:8px;overflow:hidden;border:1px solid #dee2e6">
+          <button type="button" class="btn px-4"
+                  [style.background]="activeTab()==='PENGAJUAN' ? '#5c6bc0' : '#fff'"
+                  [style.color]="activeTab()==='PENGAJUAN' ? '#fff' : '#333'"
+                  (click)="setTab('PENGAJUAN')">Pengajuan</button>
+          <button type="button" class="btn px-4" style="border-left:1px solid #dee2e6;border-right:1px solid #dee2e6"
+                  [style.background]="activeTab()==='DISETUJUI' ? '#5c6bc0' : '#fff'"
+                  [style.color]="activeTab()==='DISETUJUI' ? '#fff' : '#333'"
+                  (click)="setTab('DISETUJUI')">Disetujui</button>
+          <button type="button" class="btn px-4"
+                  [style.background]="activeTab()==='DITOLAK' ? '#5c6bc0' : '#fff'"
+                  [style.color]="activeTab()==='DITOLAK' ? '#fff' : '#333'"
+                  (click)="setTab('DITOLAK')">Ditolak</button>
+        </div>
+
+        <button class="btn btn-sm" style="background:#5c6bc0;color:#fff">
+          <i class="bx bx-file me-1"></i>Ekspor Excel
+        </button>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-4">
+        <input type="date" class="form-control form-control-sm" style="max-width:155px"
+               placeholder="Tanggal Mulai"
+               [ngModel]="filterFrom()"
+               (ngModelChange)="filterFrom.set($event); page.set(1)">
+        <span class="text-muted">-</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:155px"
+               placeholder="Tanggal Selesai"
+               [ngModel]="filterTo()"
+               (ngModelChange)="filterTo.set($event); page.set(1)">
+
+        <select class="form-select form-select-sm" style="max-width:180px"
+                [ngModel]="filterDivisi()"
+                (ngModelChange)="filterDivisi.set($event ? +$event : null); page.set(1)">
+          <option [ngValue]="null">--Divisi--</option>
+          @for (d of divisiList(); track d.id) {
+            <option [value]="d.id">{{ d.namaDivisi }}</option>
+          }
+        </select>
+
+        <div class="input-group input-group-sm" style="max-width:220px">
+          <input type="text" class="form-control" placeholder="Cari"
+                 [ngModel]="_cariInput()"
+                 (ngModelChange)="_cariInput.set($event)"
+                 (keyup.enter)="applyFilter()">
+          <button class="btn btn-light border" (click)="applyFilter()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle" style="font-size:.88rem">
+          <thead>
+            <tr class="border-bottom">
+              <th class="fw-semibold py-3">Jenis Klaim</th>
+              <th class="fw-semibold py-3">Karyawan</th>
+              <th class="fw-semibold py-3">Tgl. Pengajuan</th>
+              <th class="fw-semibold py-3">Jumlah Pengajuan (Rp)</th>
+              <th class="fw-semibold py-3">Detail Pengeluaran</th>
+              <th class="fw-semibold py-3">Deskripsi</th>
+              <th class="fw-semibold py-3">File</th>
+              <th class="fw-semibold py-3 text-end">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="8" class="text-center text-muted py-5">Memuat data...</td></tr>
+            } @else if (pagedData().length === 0) {
+              <tr><td colspan="8" class="text-center text-muted py-5">Belum ada data klaim.</td></tr>
+            } @else {
+              @for (k of pagedData(); track k.id) {
+                <tr>
+                  <!-- Jenis Klaim -->
+                  <td>{{ labelJenis(k.jenisKlaim) }}</td>
+
+                  <!-- Karyawan -->
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <img [src]="fotoUrl(k.fotoProfil)"
+                           class="rounded-circle flex-shrink-0"
+                           style="width:38px;height:38px;object-fit:cover"
+                           onerror="this.src='assets/images/avatars/avatar-1.png'"
+                           alt="">
+                      <div>
+                        <div class="fw-semibold" style="line-height:1.3">{{ k.namaKaryawan }}</div>
+                        <div class="text-muted small" style="line-height:1.3">
+                          {{ k.namaJabatan ?? '-' }}
+                          @if (k.namaDivisi) { <span> | {{ k.namaDivisi }}</span> }
+                        </div>
+                        @if (k.zonaWaktu) {
+                          <div class="text-muted small" style="line-height:1.3">{{ k.zonaWaktu }} (UTC+7)</div>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Tgl Pengajuan -->
+                  <td>
+                    <div>{{ formatDateLine1(k.createdAt) }}</div>
+                    <div class="text-muted small">{{ formatDateLine2(k.createdAt) }}</div>
+                  </td>
+
+                  <!-- Jumlah -->
+                  <td class="fw-semibold">{{ formatRp(k.nominal) }}</td>
+
+                  <!-- Detail Pengeluaran -->
+                  <td>
+                    @if (k.itemPengeluaran && k.itemPengeluaran.length) {
+                      <span class="text-muted small">{{ k.itemPengeluaran.length }} item</span>
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+
+                  <!-- Deskripsi -->
+                  <td style="max-width:160px">
+                    <span class="text-truncate d-block" [title]="k.keterangan ?? ''">
+                      {{ k.keterangan || '-' }}
+                    </span>
+                  </td>
+
+                  <!-- File -->
+                  <td>
+                    @if (k.lampiranUrl) {
+                      <a [href]="lampiranUrl(k.lampiranUrl)" target="_blank"
+                         class="btn btn-sm btn-outline-secondary py-0 px-2">
+                        <i class="bx bx-file me-1"></i>Lihat
+                      </a>
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+
+                  <!-- Aksi -->
+                  <td class="text-end">
+                    <div class="position-relative">
+                      <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
+                              (click)="toggleDropdown(k.id, $event)">
+                        Aksi
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2" style="font-size:.83rem">
+        <span class="text-muted fw-semibold">
+          Menampilkan {{ infoStart() }} dari {{ filteredData().length }} total data
+        </span>
+        <nav>
+          <ul class="pagination pagination-sm mb-0 gap-1">
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link rounded-2" (click)="page.set(1)" [disabled]="page()===1">«</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link rounded-2" (click)="page.set(page()-1)" [disabled]="page()===1">‹</button>
+            </li>
+            @for (p of pageNumbers(); track p) {
+              <li class="page-item" [class.active]="page()===p">
+                <button class="page-link rounded-2" (click)="page.set(p)">{{ p }}</button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link rounded-2" (click)="page.set(page()+1)" [disabled]="page()===totalPages()">›</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link rounded-2" (click)="page.set(totalPages())" [disabled]="page()===totalPages()">»</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════ Custom Fixed Dropdown ══════════════ -->
+  @if (dropdownOpenId() !== null) {
+    <div style="position:fixed;inset:0;z-index:1040" (click)="closeDropdown()"></div>
+    <div class="dropdown-menu show shadow border-0"
+         [style.position]="'fixed'"
+         [style.z-index]="'1045'"
+         [style.top.px]="dropdownY()"
+         [style.left.px]="dropdownX()"
+         [style.transform]="'translateX(-100%)'">
+      @for (k of pagedData(); track k.id) {
+        @if (k.id === dropdownOpenId()) {
+          @if (k.status === 'MENUNGGU') {
+            <button class="dropdown-item" (click)="approve(k); closeDropdown()">
+              <i class="bx bx-check text-success me-2"></i>Setujui
+            </button>
+            <button class="dropdown-item" (click)="openTolak(k); closeDropdown()">
+              <i class="bx bx-x text-danger me-2"></i>Tolak
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item text-danger" (click)="hapus(k); closeDropdown()">
+              <i class="bx bx-trash me-2"></i>Hapus
+            </button>
+          }
+          @if (k.status === 'DISETUJUI') {
+            <button class="dropdown-item" (click)="openTolak(k); closeDropdown()">
+              <i class="bx bx-undo text-warning me-2"></i>Batalkan
+            </button>
+          }
+          @if (k.status === 'DITOLAK') {
+            <button class="dropdown-item" (click)="approve(k); closeDropdown()">
+              <i class="bx bx-check text-success me-2"></i>Setujui Ulang
+            </button>
+            <button class="dropdown-item text-danger" (click)="hapus(k); closeDropdown()">
+              <i class="bx bx-trash me-2"></i>Hapus
+            </button>
+          }
+        }
+      }
+    </div>
+  }
+
+  <!-- ══════════════ Modal Tolak ══════════════ -->
+  @if (showTolakModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0">
+            <h5 class="modal-title fw-semibold"><i class="bx bx-x-circle me-2 text-danger"></i>Tolak Klaim</h5>
+            <button type="button" class="btn-close" (click)="closeTolak()"></button>
+          </div>
+          <div class="modal-body pt-0">
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Catatan Penolakan</label>
+              <textarea class="form-control" rows="3" placeholder="Tuliskan alasan penolakan..."
+                        [ngModel]="tolakCatatan()"
+                        (ngModelChange)="tolakCatatan.set($event)"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-light" (click)="closeTolak()">Batal</button>
+            <button class="btn btn-danger" (click)="submitTolak()" [disabled]="tolakSaving()">
+              @if (tolakSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Tolak
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

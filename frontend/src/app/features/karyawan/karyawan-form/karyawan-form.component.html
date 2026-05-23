@@ -1,0 +1,446 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ isEdit ? 'Edit' : 'Tambah' }}</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <a routerLink="/karyawan" class="btn btn-light btn-sm"><i class="bx bx-arrow-back"></i></a>
+    <h5 class="mb-0">
+      <i class="bx me-1" [class.bx-user-plus]="!isEdit" [class.bx-edit]="isEdit"></i>
+      {{ isEdit ? 'Edit Karyawan' : 'Tambah Karyawan' }}
+    </h5>
+  </div>
+
+  <!-- Skeleton -->
+  @if (loading()) {
+    <div class="card"><div class="card-body placeholder-glow">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="col-md-6 mb-3">
+          <span class="placeholder col-4 mb-1"></span>
+          <span class="placeholder col-12 rounded" style="height:38px;display:block"></span>
+        </div>
+      }
+    </div></div>
+  }
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+      <i class="bx bx-error-circle me-2 fs-5"></i> {{ error() }}
+      <button type="button" class="btn-close ms-auto" (click)="error.set('')"></button>
+    </div>
+  }
+
+  @if (!loading()) {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="row g-3">
+
+        <!-- ══ Kolom Kiri: Foto Profil ══ -->
+        <div class="col-lg-3">
+          <div class="card h-100">
+            <div class="card-body text-center d-flex flex-column align-items-center justify-content-center gap-3">
+              <div style="width:120px;height:120px;border-radius:50%;overflow:hidden;background:#f0f0f0;display:flex;align-items:center;justify-content:center;border:2px dashed #ccc;">
+                @if (fotoPreview()) {
+                  <img [src]="fotoPreview()!" alt="Foto Profil" style="width:100%;height:100%;object-fit:cover;" />
+                } @else {
+                  <i class="bx bx-user" style="font-size:3rem;color:#aaa"></i>
+                }
+              </div>
+              <div>
+                <label class="btn btn-outline-primary btn-sm" for="fotoInput">
+                  <i class="bx bx-upload me-1"></i> Pilih Foto
+                </label>
+                <input id="fotoInput" type="file" accept="image/*" class="d-none" (change)="onFotoChange($event)" />
+                @if (fotoPreview()) {
+                  <button type="button" class="btn btn-outline-danger btn-sm ms-1" (click)="removeFoto()">
+                    <i class="bx bx-trash"></i>
+                  </button>
+                }
+              </div>
+              <small class="text-muted">JPG/PNG, maks 2MB</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ Kolom Kanan: Tab Form ══ -->
+        <div class="col-lg-9">
+          <div class="card">
+            <div class="card-header p-0 border-bottom">
+              <ul class="nav nav-tabs card-header-tabs ms-0" role="tablist">
+                @for (tab of [
+                  {id:'pribadi',     icon:'bx-user',       label:'Data Pribadi'},
+                  {id:'alamat',      icon:'bx-map',        label:'Alamat'},
+                  {id:'pendidikan',  icon:'bx-book',       label:'Pendidikan'},
+                  {id:'kepegawaian', icon:'bx-briefcase',  label:'Kepegawaian'},
+                  {id:'akun',        icon:'bx-lock',       label:'Akun'}
+                ]; track tab.id) {
+                  <li class="nav-item">
+                    <button type="button" class="nav-link px-3 py-2"
+                            [class.active]="activeTab() === tab.id"
+                            (click)="setTab(tab.id)">
+                      <i class="bx me-1" [ngClass]="tab.icon"></i>{{ tab.label }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </div>
+            <div class="card-body">
+
+              <!-- ─── Tab: Data Pribadi ─── -->
+              @if (activeTab() === 'pribadi') {
+                <div class="row g-3">
+
+                  <!-- Nama Lengkap -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="namaLengkap">Nama Lengkap <span class="text-danger">*</span></label>
+                    <input id="namaLengkap" type="text" class="form-control"
+                           [class.is-invalid]="f['namaLengkap'].invalid && f['namaLengkap'].touched"
+                           formControlName="namaLengkap" placeholder="Nama lengkap karyawan" />
+                    <div class="invalid-feedback">Nama lengkap wajib diisi.</div>
+                  </div>
+
+                  <!-- Tempat Lahir -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="tempatLahir">Tempat Lahir</label>
+                    <input id="tempatLahir" type="text" class="form-control"
+                           formControlName="tempatLahir" placeholder="Kota kelahiran" />
+                  </div>
+
+                  <!-- Tanggal Lahir -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="tanggalLahir">Tanggal Lahir</label>
+                    <input id="tanggalLahir" type="date" class="form-control" formControlName="tanggalLahir" />
+                  </div>
+
+                  <!-- Jenis Kelamin -->
+                  <div class="col-md-6">
+                    <label class="form-label">Jenis Kelamin <span class="text-danger">*</span></label>
+                    <select class="form-select"
+                            [class.is-invalid]="f['jenisKelamin'].invalid && f['jenisKelamin'].touched"
+                            formControlName="jenisKelamin">
+                      @for (opt of jenisKelaminOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Golongan Darah -->
+                  <div class="col-md-4">
+                    <label class="form-label">Golongan Darah</label>
+                    <select class="form-select" formControlName="golonganDarah">
+                      <option value="">-- Pilih --</option>
+                      @for (g of golonganDarahOptions; track g) {
+                        <option [value]="g">{{ golonganDarahLabels[g] }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Status Perkawinan -->
+                  <div class="col-md-4">
+                    <label class="form-label">Status Perkawinan</label>
+                    <select class="form-select" formControlName="statusPerkawinan">
+                      <option value="">-- Pilih --</option>
+                      @for (opt of statusPerkawinanOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Agama -->
+                  <div class="col-md-4">
+                    <label class="form-label">Agama</label>
+                    <select class="form-select" formControlName="agama">
+                      <option value="">-- Pilih --</option>
+                      @for (opt of agamaOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Jenis Identitas -->
+                  <div class="col-md-4">
+                    <label class="form-label">Jenis Identitas</label>
+                    <select class="form-select" formControlName="jenisIdentitas">
+                      <option value="">-- Pilih --</option>
+                      @for (opt of jenisIdentitasOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Nomor Identitas -->
+                  <div class="col-md-8">
+                    <label class="form-label" for="nomorIdentitas">Nomor Identitas</label>
+                    <input id="nomorIdentitas" type="text" class="form-control"
+                           formControlName="nomorIdentitas" placeholder="Nomor KTP / SIM / Paspor" />
+                  </div>
+
+                  <!-- No Telepon -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="noTelepon">Nomor Telepon</label>
+                    <input id="noTelepon" type="text" class="form-control"
+                           formControlName="noTelepon" placeholder="08xxxxxxxxxx" />
+                  </div>
+
+                  <!-- Zona Waktu -->
+                  <div class="col-md-6">
+                    <label class="form-label">Zona Waktu <span class="text-danger">*</span></label>
+                    <select class="form-select"
+                            [class.is-invalid]="f['zonaWaktu'].invalid && f['zonaWaktu'].touched"
+                            formControlName="zonaWaktu">
+                      @for (z of zonaWaktuOptions; track z) {
+                        <option [value]="z">{{ z }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Catatan -->
+                  <div class="col-12">
+                    <label class="form-label" for="catatan">Catatan</label>
+                    <textarea id="catatan" class="form-control" rows="3"
+                              formControlName="catatan" placeholder="Catatan tambahan..."></textarea>
+                  </div>
+
+                </div>
+              }
+
+              <!-- ─── Tab: Alamat ─── -->
+              @if (activeTab() === 'alamat') {
+                <div class="row g-3">
+
+                  <!-- Alamat KTP -->
+                  <div class="col-12">
+                    <label class="form-label" for="alamatKtp">Alamat KTP</label>
+                    <textarea id="alamatKtp" class="form-control" rows="3"
+                              formControlName="alamatKtp" placeholder="Sesuai KTP..."></textarea>
+                  </div>
+
+                  <!-- Provinsi -->
+                  <div class="col-md-6">
+                    <label class="form-label">Provinsi</label>
+                    <app-searchable-select
+                      formControlName="provinsiId"
+                      [options]="provinsiOptions()"
+                      placeholder="-- Pilih Provinsi --"
+                      searchPlaceholder="Cari provinsi...">
+                    </app-searchable-select>
+                  </div>
+
+                  <!-- Kabupaten / Kota -->
+                  <div class="col-md-6">
+                    <label class="form-label">Kabupaten / Kota</label>
+                    <app-searchable-select
+                      formControlName="kabupatenKotaId"
+                      [options]="kabupatenKotaOptions()"
+                      placeholder="-- Pilih Kabupaten/Kota --"
+                      searchPlaceholder="Cari kabupaten/kota..."
+                      [disabled]="kabupatenKotaList().length === 0">
+                    </app-searchable-select>
+                  </div>
+
+                  <!-- Alamat Domisili -->
+                  <div class="col-12">
+                    <label class="form-label" for="alamatDomisili">Alamat Domisili</label>
+                    <textarea id="alamatDomisili" class="form-control" rows="3"
+                              formControlName="alamatDomisili" placeholder="Alamat tempat tinggal saat ini..."></textarea>
+                  </div>
+
+                </div>
+              }
+
+              <!-- ─── Tab: Pendidikan ─── -->
+              @if (activeTab() === 'pendidikan') {
+                <div class="row g-3">
+
+                  <!-- Jenjang -->
+                  <div class="col-md-4">
+                    <label class="form-label">Jenjang Pendidikan</label>
+                    <select class="form-select" formControlName="jenjangPendidikan">
+                      <option value="">-- Pilih --</option>
+                      @for (opt of jenjangOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Jurusan -->
+                  <div class="col-md-8">
+                    <label class="form-label" for="jurusan">Jurusan</label>
+                    <input id="jurusan" type="text" class="form-control"
+                           formControlName="jurusan" placeholder="Jurusan / Program studi" />
+                  </div>
+
+                  <!-- Nama Institusi -->
+                  <div class="col-md-8">
+                    <label class="form-label" for="namaInstitusi">Nama Institusi Pendidikan</label>
+                    <input id="namaInstitusi" type="text" class="form-control"
+                           formControlName="namaInstitusi" placeholder="Universitas / Sekolah" />
+                  </div>
+
+                  <!-- Tahun Lulus -->
+                  <div class="col-md-4">
+                    <label class="form-label" for="tahunLulus">Tahun Lulus</label>
+                    <input id="tahunLulus" type="number" class="form-control"
+                           formControlName="tahunLulus" placeholder="2020" min="1900" max="2100" />
+                  </div>
+
+                </div>
+              }
+
+              <!-- ─── Tab: Kepegawaian ─── -->
+              @if (activeTab() === 'kepegawaian') {
+                <div class="row g-3">
+
+                  <!-- NIP -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="nip">Nomor Induk Karyawan (NIP) <span class="text-danger">*</span></label>
+                    <input id="nip" type="text" class="form-control"
+                           [class.is-invalid]="f['nip'].invalid && f['nip'].touched"
+                           formControlName="nip" placeholder="NIP unik" />
+                    <div class="invalid-feedback">NIP wajib diisi, maksimal 20 karakter.</div>
+                  </div>
+
+                  <!-- Status Kerja -->
+                  <div class="col-md-6">
+                    <label class="form-label">Status Kerja <span class="text-danger">*</span></label>
+                    <select class="form-select"
+                            [class.is-invalid]="f['statusKerja'].invalid && f['statusKerja'].touched"
+                            formControlName="statusKerja">
+                      @for (opt of statusKerjaOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Jabatan -->
+                  <div class="col-md-6">
+                    <label class="form-label">Jabatan</label>
+                    <select class="form-select" formControlName="jabatanId">
+                      <option [value]="null">-- Pilih Jabatan --</option>
+                      @for (j of jabatanList(); track j.id) {
+                        <option [value]="j.id">{{ j.namaJabatan }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Divisi -->
+                  <div class="col-md-6">
+                    <label class="form-label">Divisi</label>
+                    <select class="form-select" formControlName="divisiId">
+                      <option [value]="null">-- Pilih Divisi --</option>
+                      @for (d of divisiList(); track d.id) {
+                        <option [value]="d.id">{{ d.namaDivisi }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Tgl Mulai Bekerja -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="tglMulaiBekerja">Tgl. Mulai Bekerja</label>
+                    <input id="tglMulaiBekerja" type="date" class="form-control" formControlName="tglMulaiBekerja" />
+                  </div>
+
+                  <!-- Tgl Mulai Dapat Cuti -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="tglMulaiDapatCuti">Tgl. Mulai Dapat Cuti</label>
+                    <input id="tglMulaiDapatCuti" type="date" class="form-control" formControlName="tglMulaiDapatCuti" />
+                  </div>
+
+                  <!-- Sisa Cuti -->
+                  <div class="col-md-4">
+                    <label class="form-label" for="sisaCuti">Sisa Cuti (hari)</label>
+                    <input id="sisaCuti" type="number" class="form-control"
+                           formControlName="sisaCuti" min="0" placeholder="0" />
+                  </div>
+
+                  <!-- Tgl Cuti Berakhir -->
+                  <div class="col-md-8">
+                    <label class="form-label" for="tglCutiBeakhir">Tgl. Cuti Berakhir</label>
+                    <input id="tglCutiBeakhir" type="date" class="form-control" formControlName="tglCutiBeakhir" />
+                  </div>
+
+                </div>
+              }
+
+              <!-- ─── Tab: Akun ─── -->
+              @if (activeTab() === 'akun') {
+                <div class="row g-3">
+
+                  <!-- Email -->
+                  <div class="col-12">
+                    <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                    <input id="email" type="email" class="form-control"
+                           [class.is-invalid]="f['email'].invalid && f['email'].touched"
+                           formControlName="email" placeholder="email@perusahaan.com" />
+                    <div class="invalid-feedback">Email wajib diisi dengan format yang valid.</div>
+                    <div class="form-text text-muted">Email ini digunakan sebagai username login.</div>
+                  </div>
+
+                  <!-- Password -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="password">
+                      Kata Sandi
+                      @if (!isEdit) { <span class="text-danger">*</span> }
+                      @if (isEdit) { <small class="text-muted">(kosongkan jika tidak ingin mengubah)</small> }
+                    </label>
+                    <input id="password" type="password" class="form-control"
+                           [class.is-invalid]="f['password'].invalid && f['password'].touched"
+                           formControlName="password" placeholder="Minimal 6 karakter" />
+                    <div class="invalid-feedback">Minimal 6 karakter.</div>
+                  </div>
+
+                  <!-- Konfirmasi Password -->
+                  <div class="col-md-6">
+                    <label class="form-label" for="konfirmasiPassword">
+                      Ulangi Kata Sandi
+                      @if (!isEdit) { <span class="text-danger">*</span> }
+                    </label>
+                    <input id="konfirmasiPassword" type="password" class="form-control"
+                           [class.is-invalid]="(f['konfirmasiPassword'].invalid && f['konfirmasiPassword'].touched) || passwordMismatch"
+                           formControlName="konfirmasiPassword" placeholder="Ulangi kata sandi" />
+                    @if (passwordMismatch) {
+                      <div class="text-danger small mt-1"><i class="bx bx-error-circle me-1"></i>Kata sandi tidak cocok.</div>
+                    }
+                  </div>
+
+                </div>
+              }
+
+            </div><!-- card-body -->
+          </div><!-- card -->
+        </div><!-- col-lg-9 -->
+
+      </div><!-- row -->
+
+      <!-- Actions -->
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <a routerLink="/karyawan" class="btn btn-secondary btn-sm px-4">
+          <i class="bx bx-x me-1"></i> Batal
+        </a>
+        <button type="submit" class="btn btn-primary btn-sm px-4" [disabled]="saving()">
+          @if (saving()) {
+            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+            Menyimpan...
+          } @else {
+            <i class="bx bx-save me-1"></i> {{ isEdit ? 'Perbarui' : 'Simpan' }}
+          }
+        </button>
+      </div>
+
+    </form>
+  }
+
+</app-layout>
+

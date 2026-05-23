@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/karyawan/karyawan-payroll/karyawan-payroll.component.scss"],
+  "sourcesContent": [".border-bottom.border-3 {\r\n  border-bottom-width: 3px !important;\r\n}\r\n"],
+  "mappings": ";AAAA,CAAA,aAAA,CAAA;AACE,uBAAA;;",
+  "names": []
+}

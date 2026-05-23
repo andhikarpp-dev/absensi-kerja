@@ -1,0 +1,215 @@
+<div class="cr-bg">
+
+  <!-- ── Navbar ── -->
+  <header class="cr-nav">
+    <div class="cr-nav__brand">
+      <span class="material-icons cr-nav__icon">fingerprint</span>
+      <span class="cr-nav__name">Absensi<strong>Kerja</strong></span>
+    </div>
+    <div class="cr-nav__actions">
+      <a routerLink="/auth/login" class="cr-nav__link">Login</a>
+      <a href="#" class="cr-nav__btn cr-nav__btn--outline">Hubungi Kami</a>
+      <a href="#" class="cr-nav__btn cr-nav__btn--solid">Jadwalkan Demo</a>
+    </div>
+  </header>
+
+  <!-- ── Decorative floating icons ── -->
+  <div class="cr-deco cr-deco--tl">
+    <span class="material-icons">alarm</span>
+  </div>
+  <div class="cr-deco cr-deco--bl">
+    <span class="material-icons">assignment</span>
+  </div>
+  <div class="cr-deco cr-deco--tr">
+    <span class="material-icons">calendar_month</span>
+  </div>
+  <div class="cr-deco cr-deco--br">
+    <span class="material-icons">schedule</span>
+  </div>
+
+  <!-- ── Form Card ── -->
+  <main class="cr-main">
+    <div class="cr-card">
+
+      <h1 class="cr-card__title">Registrasi <span>Perusahaan</span></h1>
+      <p class="cr-card__sub">
+        Daftarkan perusahaan Anda untuk mulai menggunakan AbsensiKerja.
+        <span class="cr-badge">GRATIS 14 Hari!</span>
+      </p>
+
+      <!-- Error -->
+      @if (errorMessage()) {
+        <div class="cr-alert">
+          <span class="material-icons">warning_amber</span>
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="cr-form">
+
+        <!-- Nama Lengkap -->
+        <div class="cr-field">
+          <label class="cr-field__label">Nama Lengkap</label>
+          <input
+            type="text"
+            class="cr-field__input"
+            [class.cr-field__input--err]="f['namaLengkap'].invalid && f['namaLengkap'].touched"
+            formControlName="namaLengkap"
+            placeholder="Masukkan nama lengkap Anda"
+          />
+          @if (f['namaLengkap'].invalid && f['namaLengkap'].touched) {
+            <span class="cr-field__error">Nama lengkap tidak boleh kosong</span>
+          }
+        </div>
+
+        <!-- Nama Perusahaan -->
+        <div class="cr-field">
+          <label class="cr-field__label">Nama Perusahaan</label>
+          <input
+            type="text"
+            class="cr-field__input"
+            [class.cr-field__input--err]="f['namaPerusahaan'].invalid && f['namaPerusahaan'].touched"
+            formControlName="namaPerusahaan"
+            placeholder="Nama perusahaan / instansi Anda"
+          />
+          @if (f['namaPerusahaan'].invalid && f['namaPerusahaan'].touched) {
+            <span class="cr-field__error">Nama perusahaan tidak boleh kosong</span>
+          }
+        </div>
+
+        <!-- Jabatan (dropdown) -->
+        <div class="cr-field">
+          <label class="cr-field__label">Jabatan Anda</label>
+          <select
+            class="cr-field__input cr-field__input--select"
+            [class.cr-field__input--err]="f['jabatan'].invalid && f['jabatan'].touched"
+            formControlName="jabatan"
+          >
+            <option value="Owner">Owner</option>
+            <option value="CEO">CEO</option>
+            <option value="Direktur">Direktur</option>
+            <option value="Manajer HR">Manajer HR</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+
+        <!-- Jabatan Lainnya (free text) -->
+        @if (f['jabatan'].value === 'Lainnya') {
+          <div class="cr-field cr-field--animate">
+            <label class="cr-field__label">Tulis Jabatan Anda</label>
+            <input
+              type="text"
+              class="cr-field__input"
+              [class.cr-field__input--err]="f['jabatanLainnya'].invalid && f['jabatanLainnya'].touched"
+              formControlName="jabatanLainnya"
+              placeholder="Contoh: Kepala Divisi, Admin, dll."
+            />
+            @if (f['jabatanLainnya'].invalid && f['jabatanLainnya'].touched) {
+              <span class="cr-field__error">Jabatan tidak boleh kosong</span>
+            }
+          </div>
+        }
+
+        <!-- Email -->
+        <div class="cr-field">
+          <label class="cr-field__label">Email</label>
+          <input
+            type="email"
+            class="cr-field__input"
+            [class.cr-field__input--err]="f['email'].invalid && f['email'].touched"
+            formControlName="email"
+            placeholder="contoh@perusahaan.com"
+            autocomplete="email"
+          />
+          @if (f['email'].invalid && f['email'].touched) {
+            <span class="cr-field__error">Masukkan email yang valid</span>
+          }
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="cr-field">
+          <label class="cr-field__label">Nomor WhatsApp</label>
+          <input
+            type="tel"
+            class="cr-field__input"
+            [class.cr-field__input--err]="f['whatsapp'].invalid && f['whatsapp'].touched"
+            formControlName="whatsapp"
+            placeholder="Contoh: 08123456789"
+          />
+          @if (f['whatsapp'].invalid && f['whatsapp'].touched) {
+            <span class="cr-field__error">Nomor WhatsApp tidak valid</span>
+          }
+        </div>
+
+        <!-- Zona Waktu (dropdown) -->
+        <div class="cr-field">
+          <label class="cr-field__label">Zona Waktu</label>
+          <select
+            class="cr-field__input cr-field__input--select"
+            formControlName="zonaWaktu"
+          >
+            <option value="WIB">WIB (UTC+7) – Waktu Indonesia Barat</option>
+            <option value="WITA">WITA (UTC+8) – Waktu Indonesia Tengah</option>
+            <option value="WIT">WIT (UTC+9) – Waktu Indonesia Timur</option>
+          </select>
+        </div>
+
+        <!-- Password -->
+        <div class="cr-field">
+          <label class="cr-field__label">Password</label>
+          <div class="cr-field__pw-wrap">
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              class="cr-field__input"
+              [class.cr-field__input--err]="f['password'].invalid && f['password'].touched"
+              formControlName="password"
+              placeholder="Minimal 6 karakter"
+              autocomplete="new-password"
+            />
+            <button type="button" class="cr-field__eye" (click)="showPassword.set(!showPassword())" tabindex="-1">
+              <span class="material-icons">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
+            </button>
+          </div>
+          @if (f['password'].invalid && f['password'].touched) {
+            <span class="cr-field__error">Password minimal 6 karakter</span>
+          }
+        </div>
+
+        <!-- Kebutuhan Fitur (textarea) -->
+        <div class="cr-field">
+          <label class="cr-field__label">Kebutuhan Fitur <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b">(opsional)</span></label>
+          <textarea
+            class="cr-field__input cr-field__input--textarea"
+            formControlName="fiturKebutuhan"
+            placeholder="Ceritakan fitur apa yang Anda butuhkan..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <!-- ToS notice -->
+        <p class="cr-tos">
+          Dengan mengklik tombol registrasi, Anda menyetujui
+          <a href="#">Syarat &amp; Ketentuan</a> dan
+          <a href="#">Kebijakan Privasi</a> AbsensiKerja.
+        </p>
+
+        <!-- Submit -->
+        <button type="submit" class="cr-btn" [disabled]="loading()">
+          @if (loading()) {
+            <span class="cr-spinner"></span> Memproses...
+          } @else {
+            Daftar Sekarang
+          }
+        </button>
+
+      </form>
+
+      <p class="cr-login-link">
+        Sudah punya akun? <a routerLink="/auth/login">Login di sini</a>
+      </p>
+
+    </div>
+  </main>
+
+</div>

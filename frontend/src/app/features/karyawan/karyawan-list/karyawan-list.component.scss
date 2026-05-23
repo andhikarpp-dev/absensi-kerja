@@ -1,0 +1,174 @@
+:host { display: block; }
+
+/* ══════════════════════════════════════════════
+   DataTable Wrapper & Controls
+══════════════════════════════════════════════ */
+:host ::ng-deep {
+
+  /* ── Length + Search bar ── */
+  .dataTables_wrapper {
+    padding: 0;
+
+    .dataTables_length,
+    .dataTables_filter {
+      padding: 16px 20px 12px;
+
+      label {
+        font-size: .82rem;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+      }
+    }
+
+    .dataTables_filter { text-align: right; }
+
+    .dataTables_length select,
+    .dataTables_filter input {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: .83rem;
+      color: #374151;
+      background: #fff;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+
+      &:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+      }
+    }
+
+    .dataTables_filter input {
+      min-width: 200px;
+      padding-left: 32px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 10px center;
+    }
+
+    /* ── Info + Pagination row ── */
+    .dataTables_info {
+      font-size: .78rem;
+      color: #9ca3af;
+      padding: 12px 20px 16px;
+    }
+
+    .dataTables_paginate {
+      padding: 8px 20px 16px;
+      text-align: right;
+
+      span { display: inline-flex; align-items: center; gap: 2px; }
+
+      .paginate_button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px !important;
+        border-radius: 7px !important;
+        border: 1px solid transparent !important;
+        font-size: .82rem;
+        color: #374151 !important;
+        cursor: pointer;
+        transition: background .15s, color .15s;
+        background: transparent !important;
+
+        &:hover:not(.disabled):not(.current) {
+          background: #f3f4f6 !important;
+          color: #6366f1 !important;
+          border-color: #e5e7eb !important;
+        }
+
+        &.current, &.current:hover {
+          background: #6366f1 !important;
+          color: #fff !important;
+          border-color: #6366f1 !important;
+          font-weight: 600;
+        }
+
+        &.disabled, &.disabled:hover {
+          color: #d1d5db !important;
+          cursor: default;
+          background: transparent !important;
+        }
+
+        &.previous, &.next {
+          font-size: .75rem;
+          letter-spacing: .02em;
+        }
+      }
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     Table head
+  ══════════════════════════════════════════ */
+  #tabelKaryawan {
+    thead tr th {
+      background: #f9fafb !important;
+      border-top: none !important;
+      border-bottom: 2px solid #f1f3f5 !important;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: #9ca3af;
+      text-transform: uppercase;
+      padding: 13px 16px;
+      white-space: nowrap;
+
+      &.sorting       { cursor: pointer; }
+      &.sorting::before,
+      &.sorting::after,
+      &.sorting_asc::before,
+      &.sorting_desc::before { display: none; }
+
+      &.sorting_asc::after  { color: #6366f1; opacity: 1; }
+      &.sorting_desc::after { color: #6366f1; opacity: 1; }
+    }
+
+    /* ══════════════════════════════════════════
+       Table body
+    ══════════════════════════════════════════ */
+    tbody tr {
+      border-bottom: 1px solid #f3f4f6 !important;
+      transition: background .1s;
+
+      td {
+        padding: 10px 16px;
+        vertical-align: middle;
+        border-top: none !important;
+        background: transparent;
+      }
+
+      &:hover td { background: #fafafe !important; }
+      &:last-child td { border-bottom: none !important; }
+    }
+
+    /* Remove Bootstrap striping */
+    &.table-striped > tbody > tr:nth-of-type(odd) > * {
+      background-color: transparent;
+    }
+  }
+
+  /* ── Divider inside dropdown ── */
+  .aksi-dropdown {
+    a, button {
+      transition: background .12s;
+      &:hover { background: #f5f3ff !important; }
+    }
+  }
+
+  /* ── Fix: dropdown tidak terpotong oleh table-responsive ── */
+  .table-responsive {
+    overflow: visible !important;
+  }
+
+  .dataTables_wrapper {
+    overflow: visible !important;
+  }
+}

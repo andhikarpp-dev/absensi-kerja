@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/karyawan/karyawan-surat-peringatan/karyawan-surat-peringatan.component.scss"],
+  "sourcesContent": [".jenis-option:hover {\r\n  background-color: #f3f4f6;\r\n}\r\n\r\n.riwayat-table {\r\n  thead th {\r\n    background: #fafafa;\r\n    font-weight: 600;\r\n    border-bottom: 1px solid #dee2e6;\r\n  }\r\n  tbody tr + tr td {\r\n    border-top: 1px solid #e9ecef;\r\n  }\r\n  tbody td {\r\n    vertical-align: top;\r\n  }\r\n  a {\r\n    color: #3b7ddd;\r\n    cursor: default;\r\n  }\r\n}\r\n"],
+  "mappings": ";AAAA,CAAA,YAAA;AACE,oBAAA;;AAIA,CAAA,cAAA,MAAA;AACE,cAAA;AACA,eAAA;AACA,iBAAA,IAAA,MAAA;;AAEF,CALA,cAKA,MAAA,GAAA,EAAA,GAAA;AACE,cAAA,IAAA,MAAA;;AAEF,CARA,cAQA,MAAA;AACE,kBAAA;;AAEF,CAXA,cAWA;AACE,SAAA;AACA,UAAA;;",
+  "names": []
+}

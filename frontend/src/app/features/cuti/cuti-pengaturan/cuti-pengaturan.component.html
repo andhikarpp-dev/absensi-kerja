@@ -1,0 +1,797 @@
+<app-layout>
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Dasbor</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/cuti">Cuti</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Pengaturan Cuti</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <h6 class="mb-3 fw-bold fs-5">Pengaturan Cuti</h6>
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="alert alert-{{ toastType() }} alert-dismissible fade show py-2 mb-3" role="alert">
+      {{ toastMsg() }}
+    </div>
+  }
+
+  <!-- Tabs -->
+  <div class="card mb-3">
+    <div class="card-body py-2 px-3">
+      <ul class="nav nav-pills gap-1 flex-wrap">
+        <li class="nav-item">
+          <button class="nav-link px-3 py-2"
+                  [class.active]="activeTab() === 'kuota'"
+                  (click)="activeTab.set('kuota')">
+            Kuota Cuti Tahunan
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link px-3 py-2"
+                  [class.active]="activeTab() === 'divisi'"
+                  (click)="activeTab.set('divisi')">
+            Divisi
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link px-3 py-2"
+                  [class.active]="activeTab() === 'khusus'"
+                  (click)="activeTab.set('khusus')">
+            Cuti Khusus
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link px-3 py-2"
+                  [class.active]="activeTab() === 'setengahHari'"
+                  (click)="activeTab.set('setengahHari')">
+            Cuti Setengah Hari
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB: Kuota Cuti Tahunan ═══════════ -->
+  @if (activeTab() === 'kuota') {
+
+    <!-- Filter -->
+    <div class="card mb-3">
+      <div class="card-body py-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-auto">
+            <select class="form-select form-select-sm"
+                    [ngModel]="filterDivisi()"
+                    (ngModelChange)="filterDivisi.set($event); onDivisiChange()">
+              <option [ngValue]="null">--Filter Divisi--</option>
+              @for (d of divisiList(); track d.id) {
+                <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-auto">
+            <select class="form-select form-select-sm"
+                    [ngModel]="filterJabatan()"
+                    (ngModelChange)="filterJabatan.set($event); onJabatanChange()">
+              <option [ngValue]="null">--Filter Jabatan--</option>
+              @for (j of jabatanList(); track j.id) {
+                <option [ngValue]="j.id">{{ j.namaJabatan }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-auto d-flex gap-1">
+            <input class="form-control form-control-sm" placeholder="Search"
+                   [ngModel]="searchInput()" (ngModelChange)="searchInput.set($event)"
+                   (keyup.enter)="applyFilter()" style="min-width:200px">
+            <button class="btn btn-sm btn-outline-secondary" (click)="applyFilter()">
+              <i class="bx bx-search"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DataTable Card -->
+    <div class="card">
+      <div class="card-body p-0">
+
+        @if (loading()) {
+          <div class="text-center py-5">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+          </div>
+        } @else if (error()) {
+          <div class="alert alert-danger m-3">{{ error() }}</div>
+        } @else {
+
+          <!-- Toolbar -->
+          <div class="dt-toolbar d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="small text-muted">Tampilkan</span>
+              <select class="form-select form-select-sm dt-pagesize"
+                      [ngModel]="pageSize()"
+                      (ngModelChange)="pageSize.set(+$event); onPageSizeChange()">
+                @for (n of pageSizeOptions; track n) {
+                  <option [ngValue]="n">{{ n }}</option>
+                }
+              </select>
+              <span class="small text-muted">entri</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+              <span class="small text-muted">Cari:</span>
+              <input class="form-control form-control-sm dt-search"
+                     [ngModel]="searchInput()"
+                     (ngModelChange)="searchInput.set($event); applyFilter()"
+                     placeholder="">
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover dt-table mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="dt-th" style="min-width:200px" (click)="setSort('namaLengkap')">
+                    Karyawan <i class="bx {{ sortIcon('namaLengkap') }} ms-1"></i>
+                  </th>
+                  <th class="dt-th" style="width:140px" (click)="setSort('tglMulaiBekerja')">
+                    Tgl. Mulai Bekerja <i class="bx {{ sortIcon('tglMulaiBekerja') }} ms-1"></i>
+                  </th>
+                  <th class="dt-th" style="width:160px" (click)="setSort('tglMulaiDapatCuti')">
+                    Tgl. Mulai Dapat Cuti <i class="bx {{ sortIcon('tglMulaiDapatCuti') }} ms-1"></i>
+                  </th>
+                  <th class="dt-th" style="width:110px" (click)="setSort('sisaCuti')">
+                    Sisa Cuti <i class="bx {{ sortIcon('sisaCuti') }} ms-1"></i>
+                  </th>
+                  <th class="dt-th" style="width:140px" (click)="setSort('tglCutiBeakhir')">
+                    Tgl. Cuti Berakhir <i class="bx {{ sortIcon('tglCutiBeakhir') }} ms-1"></i>
+                  </th>
+                  <th style="width:100px" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (k of pagedData(); track k.id) {
+                  <tr>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div>
+                          <a [routerLink]="['/karyawan', k.id]"
+                             class="text-primary fw-semibold text-decoration-none">
+                            {{ k.namaLengkap }}
+                          </a>
+                          <div class="small text-muted">{{ divisiJabatanLabel(k) }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="small align-middle">{{ fmtDateDash(k.tglMulaiBekerja) }}</td>
+
+                    <!-- Tgl. Mulai Dapat Cuti (editable) -->
+                    <td class="align-middle">
+                      @if (editKaryawanId() === k.id) {
+                        <input type="date" class="form-control form-control-sm"
+                               [ngModel]="editTglMulai()"
+                               (ngModelChange)="editTglMulai.set($event)"
+                               style="min-width:130px">
+                      } @else {
+                        <span class="small">{{ fmtDateDash(k.tglMulaiDapatCuti) }}</span>
+                      }
+                    </td>
+
+                    <!-- Sisa Cuti (editable) -->
+                    <td class="align-middle">
+                      @if (editKaryawanId() === k.id) {
+                        <input type="number" class="form-control form-control-sm text-end"
+                               [ngModel]="editSisaCuti()"
+                               (ngModelChange)="editSisaCuti.set(+$event)"
+                               min="0" style="width:80px">
+                      } @else {
+                        <span class="fw-semibold">
+                          {{ k.sisaCuti != null ? k.sisaCuti : '' }}
+                        </span>
+                      }
+                    </td>
+
+                    <!-- Tgl. Cuti Berakhir (editable) -->
+                    <td class="align-middle">
+                      @if (editKaryawanId() === k.id) {
+                        <input type="date" class="form-control form-control-sm"
+                               [ngModel]="editTglBerakhir()"
+                               (ngModelChange)="editTglBerakhir.set($event)"
+                               style="min-width:130px">
+                      } @else {
+                        <span class="small">{{ fmtDateDash(k.tglCutiBeakhir) }}</span>
+                      }
+                    </td>
+
+                    <!-- Aksi -->
+                    <td class="text-center align-middle">
+                      @if (editKaryawanId() === k.id) {
+                        <button class="btn btn-sm btn-success border-0 me-1"
+                                [disabled]="editSaving()"
+                                (click)="saveEdit(k)" title="Simpan">
+                          @if (editSaving()) {
+                            <span class="spinner-border spinner-border-sm"></span>
+                          } @else {
+                            <i class="bx bx-check fs-5"></i>
+                          }
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary border-0"
+                                (click)="cancelEdit()" title="Batal">
+                          <i class="bx bx-x fs-5"></i>
+                        </button>
+                      } @else {
+                        <button class="btn btn-sm btn-outline-secondary border-0 me-1"
+                                title="Riwayat Transaksi Cuti"
+                                (click)="openRiwayat(k)">
+                          <i class="bx bx-history fs-5"></i>
+                        </button>
+                        <button class="btn btn-sm border-0"
+                                [class.btn-success]="k.pembaruanCutiAktif"
+                                [class.btn-outline-secondary]="!k.pembaruanCutiAktif"
+                                title="Pengaturan Pembaruan Otomatis"
+                                (click)="openPembaruan(k)">
+                          <i class="bx bx-cog fs-5"></i>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+                @empty {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Tidak ada data.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Footer Pagination -->
+          <div class="dt-footer d-flex justify-content-between align-items-center px-3 py-2">
+            <div class="small text-muted">{{ showingInfo() }}</div>
+            <nav>
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="page()===1">
+                  <button class="page-link" (click)="goPage(1)">«</button>
+                </li>
+                <li class="page-item" [class.disabled]="page()===1">
+                  <button class="page-link" (click)="goPage(page()-1)">‹</button>
+                </li>
+                @for (p of pageNumbers(); track p) {
+                  <li class="page-item" [class.active]="p===page()">
+                    <button class="page-link" (click)="goPage(p)">{{ p }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="page()===totalPages()">
+                  <button class="page-link" (click)="goPage(page()+1)">›</button>
+                </li>
+                <li class="page-item" [class.disabled]="page()===totalPages()">
+                  <button class="page-link" (click)="goPage(totalPages())">»</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+
+        }
+      </div>
+    </div>
+
+  }
+
+  <!-- ═══════════ TAB: Divisi ═══════════ -->
+  @if (activeTab() === 'divisi') {
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3">Pengaturan Cuti per Divisi</h6>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Divisi</th>
+                <th style="width:140px" class="text-center">Kuota Cuti Tahunan</th>
+                <th style="width:160px" class="text-center">Cuti Khusus Diizinkan</th>
+                <th style="width:160px" class="text-center">Cuti Setengah Hari</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of divisiList(); track d.id) {
+                <tr>
+                  <td class="fw-semibold">{{ d.namaDivisi }}</td>
+                  <td class="text-center">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3">12 hari</span>
+                  </td>
+                  <td class="text-center">
+                    <i class="bx bx-check-circle text-success fs-5"></i>
+                  </td>
+                  <td class="text-center">
+                    <i class="bx bx-check-circle text-success fs-5"></i>
+                  </td>
+                </tr>
+              }
+              @empty {
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">Tidak ada divisi.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="small text-muted mt-3 mb-0">
+          <i class="bx bx-info-circle me-1"></i>
+          Pengaturan lebih lanjut per divisi akan segera tersedia.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════ TAB: Cuti Khusus ═══════════ -->
+  @if (activeTab() === 'khusus') {
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-semibold mb-0">Pengaturan Cuti Khusus</h6>
+          <button class="btn btn-primary btn-sm px-3" (click)="openTambahCutiKhusus()">
+            <i class="bx bx-plus me-1"></i> Tambah
+          </button>
+        </div>
+        @if (cutiKhususLoading()) {
+          <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+        } @else {
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover mb-0" style="font-size:0.875rem">
+            <thead class="table-light">
+              <tr>
+                <th>Jenis Cuti Khusus</th>
+                <th style="width:160px" class="text-center">Maks. Hari / Request</th>
+                <th style="width:160px" class="text-center">Maks. Request / Tahun</th>
+                <th style="width:160px" class="text-center">Maks. Hari / Tahun</th>
+                <th style="width:90px" class="text-center">Status</th>
+                <th style="width:90px" class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of cutiKhususList(); track item.id) {
+                <tr>
+                  <td class="align-middle">{{ item.nama }}</td>
+                  <td class="text-center align-middle">
+                    @if (item.maksHariPerRequest != null) {
+                      <span class="badge bg-info-subtle text-info rounded-pill px-3">{{ item.maksHariPerRequest }} hari</span>
+                    } @else { <span class="text-muted small">–</span> }
+                  </td>
+                  <td class="text-center align-middle">
+                    @if (item.maksRequestPerTahun != null) {
+                      <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">{{ item.maksRequestPerTahun }}x</span>
+                    } @else { <span class="text-muted small">–</span> }
+                  </td>
+                  <td class="text-center align-middle">
+                    @if (item.maksHariPerTahun != null) {
+                      <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">{{ item.maksHariPerTahun }} hari</span>
+                    } @else { <span class="text-muted small">–</span> }
+                  </td>
+                  <td class="text-center align-middle">
+                    <div class="form-check form-switch d-flex justify-content-center align-items-center gap-2 mb-0">
+                      <input class="form-check-input" type="checkbox"
+                             [id]="'aktif-' + item.id"
+                             [ngModel]="item.aktif"
+                             (ngModelChange)="toggleAktifCutiKhusus(item.id)"
+                             style="cursor:pointer">
+                      <label class="form-check-label small mb-0"
+                             [for]="'aktif-' + item.id"
+                             [class.text-success]="item.aktif"
+                             [class.text-muted]="!item.aktif"
+                             style="cursor:pointer">
+                        {{ item.aktif ? 'Aktif' : 'Tidak Aktif' }}
+                      </label>
+                    </div>
+                  </td>
+                  <td class="text-center align-middle">
+                    <button class="btn btn-sm btn-outline-primary border-0 me-1"
+                            title="Edit" (click)="openEditCutiKhusus(item)">
+                      <i class="bx bx-edit fs-5"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger border-0"
+                            title="Hapus" (click)="hapusCutiKhusus(item.id)">
+                      <i class="bx bx-trash fs-5"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @empty {
+                <tr><td colspan="6" class="text-center text-muted py-4">Belum ada cuti khusus.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        } <!-- end @else loading -->
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════ TAB: Cuti Setengah Hari ═══════════ -->
+  @if (activeTab() === 'setengahHari') {
+    <div class="card">
+      <div class="card-body">
+
+        @if (shLoading()) {
+          <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+        } @else {
+
+        <!-- Keterangan -->
+        <div class="keterangan-box p-3 mb-4">
+          <p class="fw-bold mb-2">KETERANGAN:</p>
+          <ul class="mb-0 small" style="padding-left:1.2rem; line-height:1.8">
+            <li>Cuti setengah hari merupakan cuti tahunan yang dapat digunakan setengah hari dari pagi s/d siang, atau siang s/d sore;
+              <i class="bx bx-help-circle text-secondary ms-1" title="Informasi lebih lanjut"></i>
+            </li>
+            <li>Karyawan tidak dinyatakan terlambat jika cuti setengah hari pagi dan melakukan presensi masuk sebelum batas paling lambat presensi masuk sesuai pengaturan;</li>
+            <li>Karyawan tidak dinyatakan pulang lebih cepat jika cuti setengah hari siang dan melakukan presensi keluar setelah batas paling cepat presensi keluar sesuai pengaturan;</li>
+            <li>Karyawan tidak dinyatakan kekurangan jam kerja karena cuti setengah hari;</li>
+            <li>Cuti setengah hari hanya berlaku untuk karyawan non shift.</li>
+          </ul>
+        </div>
+
+        <!-- Form -->
+        <div style="max-width:700px">
+
+          <!-- Aktif -->
+          <div class="row align-items-center mb-4">
+            <div class="col-sm-5 small fw-semibold">Karyawan dapat mengajukan cuti setengah hari</div>
+            <div class="col-sm-7 d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="shYa"
+                       [checked]="shAktif()" (change)="shAktif.set(true)">
+                <label class="form-check-label small" for="shYa">YA</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="shTidak"
+                       [checked]="!shAktif()" (change)="shAktif.set(false)">
+                <label class="form-check-label small" for="shTidak">TIDAK</label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Presensi Masuk Pagi -->
+          <div class="row align-items-start mb-4">
+            <div class="col-sm-5 small" style="color:#6c63ff; font-weight:600; padding-top:6px">
+              Presensi Masuk paling lambat untuk cuti setengah hari pagi
+            </div>
+            <div class="col-sm-7">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="shMasuk" id="shMasukManual"
+                       [checked]="shPresensiMasukMode() === 'manual'"
+                       (change)="shPresensiMasukMode.set('manual')">
+                <label class="form-check-label small d-flex align-items-center gap-2" for="shMasukManual">
+                  <input type="time" class="form-control form-control-sm sh-time-input"
+                         [disabled]="shPresensiMasukMode() !== 'manual'"
+                         [ngModel]="shPresensiMasukJam()"
+                         (ngModelChange)="shPresensiMasukJam.set($event)"
+                         placeholder="Input Jam">
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="shMasuk" id="shMasukJadwal"
+                       [checked]="shPresensiMasukMode() === 'jadwal'"
+                       (change)="shPresensiMasukMode.set('jadwal')">
+                <label class="form-check-label small" for="shMasukJadwal">
+                  Sesuai <span style="color:#6c63ff">jam selesai istirahat</span> pada jadwal
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Presensi Keluar Siang -->
+          <div class="row align-items-start mb-4">
+            <div class="col-sm-5 small" style="color:#6c63ff; font-weight:600; padding-top:6px">
+              Presensi Keluar paling cepat untuk cuti setengah hari siang
+            </div>
+            <div class="col-sm-7">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="shKeluar" id="shKeluarManual"
+                       [checked]="shPresensiKeluarMode() === 'manual'"
+                       (change)="shPresensiKeluarMode.set('manual')">
+                <label class="form-check-label small d-flex align-items-center gap-2" for="shKeluarManual">
+                  <input type="time" class="form-control form-control-sm sh-time-input"
+                         [disabled]="shPresensiKeluarMode() !== 'manual'"
+                         [ngModel]="shPresensiKeluarJam()"
+                         (ngModelChange)="shPresensiKeluarJam.set($event)"
+                         placeholder="Input Jam">
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="shKeluar" id="shKeluarJadwal"
+                       [checked]="shPresensiKeluarMode() === 'jadwal'"
+                       (change)="shPresensiKeluarMode.set('jadwal')">
+                <label class="form-check-label small" for="shKeluarJadwal">
+                  Sesuai <span style="color:#6c63ff">jam mulai istirahat</span> pada jadwal
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Simpan -->
+          <div class="pt-1">
+            <button class="btn btn-primary px-4"
+                    [disabled]="shSaving()"
+                    (click)="simpanSetengahHari()">
+              @if (shSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Simpan
+            </button>
+          </div>
+
+        </div>
+
+        } <!-- end @else loading -->
+      </div>
+    </div>
+  }
+
+</app-layout>
+
+<!-- ══════ Modal Tambah / Edit Cuti Khusus ══════ -->
+@if (showCutiKhususModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            {{ cutiKhususEditId() !== null ? 'Edit Cuti Khusus' : 'Tambah Cuti Khusus' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="showCutiKhususModal.set(false)"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Jenis -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label small fw-semibold">
+              Jenis <span class="text-danger">*</span>
+            </label>
+            <div class="col-sm-8">
+              <input type="text" class="form-control form-control-sm"
+                     placeholder="Contoh: Cuti Menikah"
+                     [ngModel]="cutiKhususForm().nama"
+                     (ngModelChange)="cutiKhususForm.update(f => ({...f, nama: $event}))">
+            </div>
+          </div>
+
+          <!-- Maks. Hari Per Request -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label small fw-semibold">
+              Maks. Hari Per Request <span class="text-danger">*</span>
+              <i class="bx bx-help-circle text-secondary ms-1 small" title="Jumlah hari maksimal per pengajuan"></i>
+            </label>
+            <div class="col-sm-8">
+              <div class="input-group input-group-sm">
+                <input type="number" class="form-control"
+                       [ngModel]="cutiKhususForm().maksHariPerRequest"
+                       (ngModelChange)="cutiKhususForm.update(f => ({...f, maksHariPerRequest: $event ? +$event : null}))"
+                       min="1" placeholder="">
+                <span class="input-group-text">Hari</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Maks. Request Per Tahun -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label small fw-semibold">
+              Maks. Request Per Tahun
+              <i class="bx bx-help-circle text-secondary ms-1 small" title="Kosongkan jika tidak dibatasi"></i>
+            </label>
+            <div class="col-sm-8">
+              <div class="input-group input-group-sm">
+                <input type="number" class="form-control"
+                       [ngModel]="cutiKhususForm().maksRequestPerTahun"
+                       (ngModelChange)="cutiKhususForm.update(f => ({...f, maksRequestPerTahun: $event ? +$event : null}))"
+                       min="1" placeholder="">
+                <span class="input-group-text">Kali</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Maks. Hari Per Tahun -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label small fw-semibold">
+              Maks. Hari Per Tahun
+              <i class="bx bx-help-circle text-secondary ms-1 small" title="Kosongkan jika tidak dibatasi"></i>
+            </label>
+            <div class="col-sm-8">
+              <div class="input-group input-group-sm">
+                <input type="number" class="form-control"
+                       [ngModel]="cutiKhususForm().maksHariPerTahun"
+                       (ngModelChange)="cutiKhususForm.update(f => ({...f, maksHariPerTahun: $event ? +$event : null}))"
+                       min="1" placeholder="">
+                <span class="input-group-text">Hari</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="mb-1 row align-items-center">
+            <label class="col-sm-4 col-form-label small fw-semibold">Status</label>
+            <div class="col-sm-8 d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ckAktif"
+                       [checked]="cutiKhususForm().aktif"
+                       (change)="cutiKhususForm.update(f => ({...f, aktif: true}))">
+                <label class="form-check-label small" for="ckAktif">Aktif</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ckTidakAktif"
+                       [checked]="!cutiKhususForm().aktif"
+                       (change)="cutiKhususForm.update(f => ({...f, aktif: false}))">
+                <label class="form-check-label small" for="ckTidakAktif">Tidak Aktif</label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer justify-content-center gap-2">
+          <button class="btn btn-primary px-4"
+                  [disabled]="!cutiKhususForm().nama.trim() || cutiKhususSaving()"
+                  (click)="simpanCutiKhusus()">
+            @if (cutiKhususSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Simpan
+          </button>
+          <button class="btn btn-outline-secondary px-4" (click)="showCutiKhususModal.set(false)">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+@if (showRiwayatModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal d-block" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            Riwayat Transaksi Cuti
+            @if (riwayatKaryawan()) { — {{ riwayatKaryawan()!.namaLengkap }} }
+          </h5>
+          <button type="button" class="btn-close" (click)="closeRiwayat()"></button>
+        </div>
+        <div class="modal-body p-0">
+          @if (riwayatLoading()) {
+            <div class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+          } @else {
+            <table class="table table-bordered mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Deskripsi</th>
+                  <th class="text-end">Jumlah</th>
+                  <th class="text-end">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of riwayatList(); track r.id) {
+                  <tr>
+                    <td class="small text-nowrap">{{ fmtDate(r.tanggal) }}</td>
+                    <td class="small">{{ r.deskripsi }}</td>
+                    <td class="text-end fw-semibold"
+                        [class.text-success]="r.jumlah > 0"
+                        [class.text-danger]="r.jumlah < 0">
+                      {{ r.jumlah > 0 ? '+' : '' }}{{ r.jumlah }}
+                    </td>
+                    <td class="text-end">{{ r.saldo }}</td>
+                  </tr>
+                }
+                @empty {
+                  <tr>
+                    <td colspan="4" class="text-center text-muted py-4">Belum ada riwayat.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="closeRiwayat()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════ Modal Pengaturan Pembaruan Cuti Otomatis ══════ -->
+@if (showPembaruanModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pengaturan Pembaruan Cuti Otomatis</h5>
+          <button type="button" class="btn-close" (click)="closePembaruan()"></button>
+        </div>
+        <div class="modal-body">
+          @if (pembaruanLoading()) {
+            <div class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+          } @else {
+            @if (mulaiBekerjaInfo()) {
+              <div class="alert alert-light border small mb-3">
+                <strong>Info</strong><br>{{ mulaiBekerjaInfo() }}
+              </div>
+            }
+            @if (pembaruanError()) {
+              <div class="alert alert-danger small py-2">{{ pembaruanError() }}</div>
+            }
+            <div class="mb-3 row align-items-start">
+              <label class="col-sm-5 col-form-label small fw-semibold">Periode Pembaruan Otomatis</label>
+              <div class="col-sm-7">
+                <select class="form-select form-select-sm"
+                        [ngModel]="fPeriode()" (ngModelChange)="fPeriode.set(+$event)">
+                  @for (p of periodeOptions; track p) {
+                    <option [ngValue]="p">{{ p }} Bulan</option>
+                  }
+                </select>
+                @if (pembaruanInfo()) {
+                  <div class="alert alert-light border small mt-2 mb-0 py-2">
+                    <strong>Info</strong><br>{{ pembaruanInfo() }}
+                  </div>
+                }
+              </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+              <label class="col-sm-5 col-form-label small fw-semibold">Jumlah Cuti Pembaruan</label>
+              <div class="col-sm-7">
+                <input type="number" class="form-control form-control-sm"
+                       [ngModel]="fJumlah()" (ngModelChange)="fJumlah.set(+$event)"
+                       min="1" max="365">
+              </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+              <label class="col-sm-5 col-form-label small fw-semibold">Sisa Cuti Sebelumnya</label>
+              <div class="col-sm-7">
+                <select class="form-select form-select-sm"
+                        [ngModel]="fSisaSebelumnya()" (ngModelChange)="fSisaSebelumnya.set($event)">
+                  <option value="tambahkan">Tambahkan</option>
+                  <option value="hapus">Hapus</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+              <label class="col-sm-5 col-form-label small fw-semibold">Aktifkan Pengaturan</label>
+              <div class="col-sm-7 d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="aktifYa"
+                         [checked]="fAktif()" (change)="fAktif.set(true)">
+                  <label class="form-check-label small" for="aktifYa">Ya</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="aktifTidak"
+                         [checked]="!fAktif()" (change)="fAktif.set(false)">
+                  <label class="form-check-label small" for="aktifTidak">Tidak</label>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary btn-sm px-4"
+                  [disabled]="pembaruanSaving() || pembaruanLoading()"
+                  (click)="savePembaruan()">
+            @if (pembaruanSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Proses
+          </button>
+          <button class="btn btn-secondary btn-sm" (click)="closePembaruan()">Batal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,331 @@
+<!-- ─── NOISE OVERLAY ────────────────────────────────────── -->
+<div class="noise"></div>
+
+<!-- ─── NAVBAR ─────────────────────────────────────────────── -->
+<nav class="navbar" [class.navbar--open]="menuOpen()">
+  <div class="navbar__brand">
+    <div class="navbar__logo">
+      <span class="material-icons">fingerprint</span>
+    </div>
+    <span class="navbar__title">Absensi <span class="navbar__title--accent">Kerja</span></span>
+  </div>
+  <nav class="navbar__links">
+    <a class="navbar__link" href="#features" (click)="menuOpen.set(false)">Fitur Utama</a>
+    <a class="navbar__link" href="#pricing" (click)="menuOpen.set(false)">Harga</a>
+    <a class="navbar__link" href="#faq" (click)="menuOpen.set(false)">FAQ</a>
+    <a class="navbar__link" href="#blog" (click)="menuOpen.set(false)">Blog</a>
+  </nav>
+
+  <div class="navbar__actions">
+
+    <button class="btn-nav btn-nav--outline" (click)="goToLogin()">
+      Masuk
+      <span class="material-icons">arrow_forward</span>
+    </button>
+    <button class="btn-nav btn-nav--register" (click)="goToRegister()">
+      Daftar <strong>Gratis</strong>
+    </button>
+    <!-- Hamburger -->
+    <button class="navbar__burger" (click)="menuOpen.set(!menuOpen())" aria-label="Menu">
+      <span class="navbar__burger-bar"></span>
+      <span class="navbar__burger-bar"></span>
+      <span class="navbar__burger-bar"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile drawer -->
+<div class="mobile-drawer" [class.mobile-drawer--open]="menuOpen()">
+  <a class="mobile-drawer__link" href="#features" (click)="menuOpen.set(false)">Fitur Utama</a>
+  <a class="mobile-drawer__link" href="#pricing" (click)="menuOpen.set(false)">Harga</a>
+  <a class="mobile-drawer__link" href="#faq" (click)="menuOpen.set(false)">FAQ</a>
+  <a class="mobile-drawer__link" href="#blog" (click)="menuOpen.set(false)">Blog</a>
+  <button class="btn-nav mobile-drawer__cta" (click)="goToLogin(); menuOpen.set(false)">
+    Masuk <span class="material-icons">arrow_forward</span>
+  </button>
+  <button class="btn-nav btn-nav--register mobile-drawer__cta" (click)="goToRegister(); menuOpen.set(false)">
+    Daftar <strong>Gratis</strong>
+  </button>
+</div>
+<div class="mobile-overlay" [class.mobile-overlay--show]="menuOpen()" (click)="menuOpen.set(false)"></div>
+
+<!-- ─── HERO ──────────────────────────────────────────────── -->
+<section class="hero">
+  <!-- Background blobs -->
+  <div class="blob blob--1"></div>
+  <div class="blob blob--2"></div>
+  <div class="blob blob--3"></div>
+
+  <div class="hero__inner">
+    <div class="hero__content">
+      <div class="hero__pill">
+        <span class="hero__pill-dot"></span>
+        Sistem Absensi Generasi Baru — Absensi Kerja
+      </div>
+
+      <h1 class="hero__title">
+        Kelola Absensi
+        <span class="hero__title--gradient">Lebih Cerdas</span>
+        &amp; Efisien
+      </h1>
+
+      <p class="hero__subtitle">
+        Platform digital end-to-end untuk mencatat, memantau, dan menganalisis
+        kehadiran karyawan — kapan saja, di mana saja, secara real-time.
+      </p>
+
+      <div class="hero__actions">
+        <button class="btn-primary" (click)="goToLogin()">
+          <span>Mulai Sekarang</span>
+          <span class="material-icons">east</span>
+        </button>
+        <a class="btn-secondary" href="http://localhost:8080/swagger-ui/index.html" target="_blank">
+          <span class="material-icons">terminal</span>
+          <span>Lihat API Docs</span>
+        </a>
+      </div>
+
+      <!-- Stats row -->
+
+    </div>
+
+    <!-- Card Visual -->
+    <div class="hero__visual">
+      <!-- Floating attendance card -->
+      <div class="card-main">
+        <div class="card-main__header">
+          <div class="card-main__avatar">BS</div>
+          <div>
+            <div class="card-main__name">Budi Santoso</div>
+            <div class="card-main__role">Backend Developer · IT</div>
+          </div>
+          <div class="card-main__badge">Hadir</div>
+        </div>
+        <div class="card-main__divider"></div>
+        <div class="card-main__times">
+          <div class="card-main__time-item">
+            <span class="material-icons card-main__time-icon card-main__time-icon--in">login</span>
+            <div>
+              <div class="card-main__time-label">Check In</div>
+              <div class="card-main__time-value">08:02 AM</div>
+            </div>
+          </div>
+          <div class="card-main__time-arrow material-icons">east</div>
+          <div class="card-main__time-item">
+            <span class="material-icons card-main__time-icon card-main__time-icon--out">logout</span>
+            <div>
+              <div class="card-main__time-label">Check Out</div>
+              <div class="card-main__time-value">17:05 PM</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-main__progress">
+          <div class="card-main__progress-bar">
+            <div class="card-main__progress-fill" style="width: 75%"></div>
+          </div>
+          <span class="card-main__progress-lbl">9 jam 3 menit bekerja</span>
+        </div>
+      </div>
+
+      <!-- Floating mini cards -->
+      <div class="card-float card-float--tl">
+        <span class="material-icons">people</span>
+        <div>
+          <div class="card-float__num">128</div>
+          <div class="card-float__lbl">Karyawan Aktif</div>
+        </div>
+      </div>
+      <div class="card-float card-float--br">
+        <span class="material-icons">bar_chart</span>
+        <div>
+          <div class="card-float__num">98.4%</div>
+          <div class="card-float__lbl">Tingkat Kehadiran</div>
+        </div>
+      </div>
+
+      <!-- API response mini card -->
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="features__label">Kenapa Absensi Kerja?</div>
+  <h2 class="features__title">Semua yang Anda Butuhkan,<br><span>Dalam Satu Platform</span></h2>
+
+  <div class="features__grid">
+    @for (feat of features; track feat.title) {
+      <div class="feat-card">
+        <div class="feat-card__glow"></div>
+        <div class="feat-card__icon">
+          <span class="material-icons">{{ feat.icon }}</span>
+        </div>
+        <h3 class="feat-card__title">{{ feat.title }}</h3>
+        <p class="feat-card__desc">{{ feat.desc }}</p>
+        <div class="feat-card__arrow material-icons">arrow_forward</div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- ─── HOW IT WORKS ──────────────────────────────────────── -->
+<section class="how">
+  <div class="how__label">Cara Kerja</div>
+  <h2 class="how__title">Mudah dalam 3 Langkah</h2>
+  <div class="how__steps">
+    <div class="how__step">
+      <div class="how__step-num">01</div>
+      <div class="how__step-icon material-icons">login</div>
+      <h3 class="how__step-title">Login</h3>
+      <p class="how__step-desc">Masuk dengan akun karyawan yang diberikan admin.</p>
+    </div>
+    <div class="how__connector">
+      <div class="how__connector-line"></div>
+      <span class="material-icons">east</span>
+    </div>
+    <div class="how__step">
+      <div class="how__step-num">02</div>
+      <div class="how__step-icon material-icons">fingerprint</div>
+      <h3 class="how__step-title">Absen</h3>
+      <p class="how__step-desc">Tekan tombol check-in saat tiba dan check-out saat pulang.</p>
+    </div>
+    <div class="how__connector">
+      <div class="how__connector-line"></div>
+      <span class="material-icons">east</span>
+    </div>
+    <div class="how__step">
+      <div class="how__step-num">03</div>
+      <div class="how__step-icon material-icons">bar_chart</div>
+      <h3 class="how__step-title">Pantau</h3>
+      <p class="how__step-desc">Admin melihat laporan dan statistik kehadiran real-time.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PRICING ───────────────────────────────────────────── -->
+<section class="pricing" id="pricing">
+  <div class="pricing__inner">
+    <div class="section-label">Harga</div>
+    <h2 class="section-title">Pilih Paket yang <span>Sesuai Kebutuhan</span></h2>
+    <div class="pricing__grid">
+      <!-- Starter -->
+      <div class="price-card">
+        <div class="price-card__name">Starter</div>
+        <div class="price-card__price">Gratis</div>
+        <div class="price-card__period">Selamanya</div>
+        <ul class="price-card__list">
+          <li><span class="material-icons">check_circle</span> Hingga 10 karyawan</li>
+          <li><span class="material-icons">check_circle</span> Check-in &amp; check-out</li>
+          <li><span class="material-icons">check_circle</span> Laporan dasar</li>
+          <li class="price-card__list-off"><span class="material-icons">cancel</span> Ekspor PDF/Excel</li>
+          <li class="price-card__list-off"><span class="material-icons">cancel</span> Multi-departemen</li>
+        </ul>
+        <button class="btn-secondary btn-secondary--full" (click)="goToLogin()">Mulai Gratis</button>
+      </div>
+      <!-- Pro (popular) -->
+      <div class="price-card price-card--featured">
+        <div class="price-card__badge">Populer</div>
+        <div class="price-card__name">Pro</div>
+        <div class="price-card__price">Rp 199k</div>
+        <div class="price-card__period">per bulan</div>
+        <ul class="price-card__list">
+          <li><span class="material-icons">check_circle</span> Hingga 100 karyawan</li>
+          <li><span class="material-icons">check_circle</span> Check-in &amp; check-out</li>
+          <li><span class="material-icons">check_circle</span> Laporan lengkap</li>
+          <li><span class="material-icons">check_circle</span> Ekspor PDF/Excel</li>
+          <li class="price-card__list-off"><span class="material-icons">cancel</span> Multi-departemen</li>
+        </ul>
+        <button class="btn-primary btn-primary--full" (click)="goToLogin()">Coba 14 Hari Gratis</button>
+      </div>
+      <!-- Enterprise -->
+      <div class="price-card">
+        <div class="price-card__name">Enterprise</div>
+        <div class="price-card__price">Custom</div>
+        <div class="price-card__period">hubungi kami</div>
+        <ul class="price-card__list">
+          <li><span class="material-icons">check_circle</span> Karyawan tak terbatas</li>
+          <li><span class="material-icons">check_circle</span> Check-in &amp; check-out</li>
+          <li><span class="material-icons">check_circle</span> Laporan lengkap</li>
+          <li><span class="material-icons">check_circle</span> Ekspor PDF/Excel</li>
+          <li><span class="material-icons">check_circle</span> Multi-departemen</li>
+        </ul>
+        <button class="btn-secondary btn-secondary--full" (click)="goToLogin()">Hubungi Kami</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FAQ ───────────────────────────────────────────────── -->
+<section class="faq" id="faq">
+  <div class="faq__inner">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Pertanyaan yang <span>Sering Diajukan</span></h2>
+    <div class="faq__list">
+      @for (item of faqItems; track item.q; let i = $index) {
+        <div class="faq__item" [class.faq__item--open]="openFaq() === i" (click)="toggleFaq(i)">
+          <div class="faq__question">
+            <span>{{ item.q }}</span>
+            <span class="material-icons faq__chevron">expand_more</span>
+          </div>
+          <div class="faq__answer">{{ item.a }}</div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ─── BLOG ──────────────────────────────────────────────── -->
+<section class="blog" id="blog">
+  <div class="blog__inner">
+    <div class="section-label">Blog</div>
+    <h2 class="section-title">Artikel &amp; <span>Tips Terbaru</span></h2>
+    <div class="blog__grid">
+      @for (post of blogPosts; track post.title) {
+        <article class="blog-card">
+          <div class="blog-card__img">
+            <span class="material-icons">{{ post.icon }}</span>
+          </div>
+          <div class="blog-card__body">
+            <span class="blog-card__tag">{{ post.tag }}</span>
+            <h3 class="blog-card__title">{{ post.title }}</h3>
+            <p class="blog-card__excerpt">{{ post.excerpt }}</p>
+            <div class="blog-card__meta">
+              <span class="material-icons">calendar_today</span>{{ post.date }}
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ───────────────────────────────────────────────── -->
+<section class="cta">
+  <div class="cta__blob"></div>
+  <div class="cta__inner">
+    <div class="cta__icon material-icons">rocket_launch</div>
+    <h2 class="cta__title">Siap Memulai Perjalanan?</h2>
+    <p class="cta__subtitle">
+      Bergabung dan rasakan kemudahan mengelola absensi karyawan secara digital.
+    </p>
+    <div class="cta__actions">
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ───────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer__brand">
+    <span class="material-icons">fingerprint</span>
+    <span>Absensi <strong>Kerja</strong></span>
+  </div>
+  <div class="footer__copy">
+    &copy; {{ year }} AbsensiKerja
+  </div>
+  <div class="footer__stack">
+
+  </div>
+</footer>
+

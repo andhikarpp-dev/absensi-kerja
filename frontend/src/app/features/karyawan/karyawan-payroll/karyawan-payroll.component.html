@@ -1,0 +1,969 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Karyawan</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a href="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a href="/ak/karyawan">Karyawan</a></li>
+          <li class="breadcrumb-item active">Payroll</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="mb-0 fw-semibold">Payroll</h5>
+    @if (karyawan()) {
+      <small class="text-muted">{{ karyawan()!.namaLengkap }}</small>
+    }
+  </div>
+
+  <!-- Tabs -->
+  <div class="border-bottom mb-4">
+    <div class="d-flex gap-1 flex-wrap">
+      @for (tab of tabs; track tab.key) {
+        <button class="btn btn-sm px-3 py-2 rounded-0 border-0 border-bottom border-3"
+                [class.border-primary]="activeTab() === tab.key"
+                [class.text-primary]="activeTab() === tab.key"
+                [class.fw-semibold]="activeTab() === tab.key"
+                [class.text-muted]="activeTab() !== tab.key"
+                [style.border-bottom-color]="activeTab() === tab.key ? '#6366f1' : 'transparent !important'"
+                (click)="setTab(tab.key)">
+          @if (activeTab() === tab.key) {
+            <span class="d-inline-block px-3 py-1 rounded-2 text-white" style="background:#6366f1;font-size:.82rem">
+              {{ tab.label }}
+            </span>
+          } @else {
+            <span style="font-size:.82rem">{{ tab.label }}</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Alert sukses -->
+  @if (saved()) {
+    <div class="alert alert-success py-2 small d-flex align-items-center gap-2">
+      <i class="bx bx-check-circle"></i> Data berhasil disimpan.
+    </div>
+  }
+  @if (error()) {
+    <div class="alert alert-danger py-2 small">{{ error() }}</div>
+  }
+
+  <!-- ══════════════ TAB: GAJI DASAR ══════════════ -->
+  @if (activeTab() === 'GAJI_DASAR') {
+    <div class="card border-0 shadow-sm rounded-3 p-4" style="max-width:900px">
+
+      <!-- Samakan dengan Karyawan Lain -->
+      <div class="row mb-4">
+        <div class="col-md-4"></div>
+        <div class="col-md-8">
+          <button class="btn btn-primary btn-sm px-4" style="background:#6366f1;border-color:#6366f1"
+                  (click)="openSamakan()">
+            Samakan dengan Karyawan Lain
+          </button>
+        </div>
+      </div>
+
+      <!-- Tipe Gaji -->
+      <div class="row align-items-start mb-4">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Tipe Gaji <span class="text-danger">*</span></label>
+        </div>
+        <div class="col-md-8">
+          <select class="form-select form-select-sm" style="max-width:280px"
+                  [value]="tipeGaji()"
+                  (change)="tipeGaji.set($any($event.target).value)">
+            @for (opt of tipeGajiOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <!-- Rincian Gaji -->
+      <div class="row align-items-start mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Rincian Gaji <span class="text-danger">*</span></label>
+        </div>
+        <div class="col-md-8">
+          @for (item of rincianGaji(); track $index; let i = $index) {
+            <div class="d-flex gap-2 align-items-center mb-2">
+              <input type="text" class="form-control form-control-sm" style="min-width:150px"
+                     placeholder="Nama komponen"
+                     [value]="item.nama"
+                     (input)="updateRincian(i, 'nama', $any($event.target).value)">
+              <div class="input-group input-group-sm" style="max-width:180px">
+                <span class="input-group-text">Rp</span>
+                <input type="number" class="form-control" min="0"
+                       [value]="item.jumlah"
+                       (input)="updateRincian(i, 'jumlah', $any($event.target).value)">
+              </div>
+              <select class="form-select form-select-sm" style="max-width:130px"
+                      [value]="item.periode"
+                      (change)="updateRincian(i, 'periode', $any($event.target).value)">
+                @for (p of periodeOptions; track p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              </select>
+              <button class="btn btn-sm btn-link text-danger p-0" (click)="removeRincian(i)" title="Hapus">
+                ×
+              </button>
+            </div>
+          }
+
+          <!-- Total Gaji -->
+          <div class="d-flex align-items-center justify-content-between mt-2 mb-2 px-1">
+            <span class="fw-semibold small">Total Gaji</span>
+            <span class="fw-semibold">{{ formatRp(totalGaji()) }}</span>
+          </div>
+
+          <!-- Tombol Tambah -->
+          <button class="btn btn-sm btn-outline-secondary w-100 py-2" (click)="addRincian()">
+            <i class="bx bx-plus me-1"></i> Tambah
+          </button>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <!-- Upah Lembur -->
+      <div class="row align-items-start mb-4">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Upah Lembur <span class="text-danger">*</span></label>
+        </div>
+        <div class="col-md-8">
+          <!-- Tipe + Satuan -->
+          <div class="d-flex gap-2 mb-3">
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Tipe Upah Lembur"
+                   [value]="tipeUpahLembur()"
+                   (input)="tipeUpahLembur.set($any($event.target).value)">
+            <select class="form-select form-select-sm" style="max-width:130px"
+                    [value]="satuanLembur()"
+                    (change)="satuanLembur.set($any($event.target).value)">
+              @for (opt of satuanLemburOptions; track opt) {
+                <option [value]="opt">{{ opt }}</option>
+              }
+            </select>
+          </div>
+          <!-- Baris per hari -->
+          <div class="d-flex gap-2 align-items-center mb-2">
+            <input type="text" class="form-control form-control-sm" value="Hari Kerja" readonly style="background:#f9fafb">
+            <div class="input-group input-group-sm" style="max-width:220px">
+              <span class="input-group-text">Rp</span>
+              <input type="number" class="form-control" min="0"
+                     [value]="lemburHariKerja()"
+                     (input)="lemburHariKerja.set(+$any($event.target).value)">
+              <span class="input-group-text">Per Jam</span>
+            </div>
+          </div>
+          <div class="d-flex gap-2 align-items-center mb-2">
+            <input type="text" class="form-control form-control-sm" value="Sabtu" readonly style="background:#f9fafb">
+            <div class="input-group input-group-sm" style="max-width:220px">
+              <span class="input-group-text">Rp</span>
+              <input type="number" class="form-control" min="0"
+                     [value]="lemburSabtu()"
+                     (input)="lemburSabtu.set(+$any($event.target).value)">
+              <span class="input-group-text">Per Jam</span>
+            </div>
+          </div>
+          <div class="d-flex gap-2 align-items-center mb-2">
+            <input type="text" class="form-control form-control-sm" value="Minggu" readonly style="background:#f9fafb">
+            <div class="input-group input-group-sm" style="max-width:220px">
+              <span class="input-group-text">Rp</span>
+              <input type="number" class="form-control" min="0"
+                     [value]="lemburMinggu()"
+                     (input)="lemburMinggu.set(+$any($event.target).value)">
+              <span class="input-group-text">Per Jam</span>
+            </div>
+          </div>
+          <div class="d-flex gap-2 align-items-center mb-2">
+            <input type="text" class="form-control form-control-sm" value="Kalender Libur" readonly style="background:#f9fafb">
+            <div class="input-group input-group-sm" style="max-width:220px">
+              <span class="input-group-text">Rp</span>
+              <input type="number" class="form-control" min="0"
+                     [value]="lemburKalenderLibur()"
+                     (input)="lemburKalenderLibur.set(+$any($event.target).value)">
+              <span class="input-group-text">Per Jam</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <!-- Potongan Izin Jam -->
+      <div class="row align-items-center mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Potongan Izin Jam <span class="text-danger">*</span></label>
+        </div>
+        <div class="col-md-8">
+          <div class="input-group input-group-sm" style="max-width:220px">
+            <span class="input-group-text">Rp</span>
+            <input type="number" class="form-control" min="0"
+                   [value]="potonganIzinJam()"
+                   (input)="potonganIzinJam.set(+$any($event.target).value)">
+            <span class="input-group-text">Per Jam</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Potongan Jam Kerja Tidak Terpenuhi -->
+      <div class="row align-items-start mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Potongan Jam Kerja Tidak Terpenuhi</label>
+        </div>
+        <div class="col-md-8">
+          <div class="input-group input-group-sm mb-2" style="max-width:220px">
+            <span class="input-group-text">Rp</span>
+            <input type="number" class="form-control" min="0"
+                   [value]="potonganJamKerjaTidakTerpenuhi()"
+                   (input)="potonganJamKerjaTidakTerpenuhi.set(+$any($event.target).value)">
+            <span class="input-group-text">Per Jam</span>
+          </div>
+          <div class="rounded-2 px-3 py-2 small text-white" style="background:#a855f7;max-width:420px">
+            Jika sudah terdenda karena terlambat maka potongan ini tidak diterapkan.
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <!-- Potongan Absen Per Hari -->
+      <div class="row align-items-center mb-4">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Potongan Absen Per Hari</label>
+        </div>
+        <div class="col-md-8">
+          <div class="d-flex gap-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="absenOtomatis"
+                     [checked]="potonganAbsenOtomatis()"
+                     (change)="potonganAbsenOtomatis.set($any($event.target).checked)">
+              <label class="form-check-label small" for="absenOtomatis">Otomatis</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="absenManual"
+                     [checked]="potonganAbsenManual()"
+                     (change)="potonganAbsenManual.set($any($event.target).checked)">
+              <label class="form-check-label small" for="absenManual">Manual</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tombol Simpan -->
+      <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-8">
+          <button class="btn btn-primary px-4" style="background:#6366f1;border-color:#6366f1"
+                  [disabled]="saving()" (click)="simpan()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Simpan
+          </button>
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- ══════════════ TAB: PEMBAYARAN GAJI ══════════════ -->
+  @if (activeTab() === 'PEMBAYARAN_GAJI') {
+    <div class="card border-0 shadow-sm rounded-3 p-4" style="max-width:900px">
+      <div class="text-center text-muted py-5">
+        <i class="bx bx-money" style="font-size:3rem"></i>
+        <p class="mt-2">Fitur Pembayaran Gaji akan segera tersedia.</p>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════ TAB: BPJS ══════════════ -->
+  @if (activeTab() === 'BPJS') {
+    <div class="row g-4">
+
+      <!-- ── KARTU KIRI: BPJS Ketenagakerjaan ── -->
+      <div class="col-12 col-xl-6">
+        <div class="card border shadow-sm rounded-3 p-4 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+            <h6 class="fw-bold mb-0">BPJS Ketenagakerjaan</h6>
+            <i class="bx bx-chevron-down text-muted"></i>
+          </div>
+
+          <!-- Tanggal Kepesertaan -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Tanggal Kepesertaan</label>
+            <input type="date" class="form-control form-control-sm" style="max-width:200px"
+                   [value]="tkTanggalKepesertaan()"
+                   (change)="tkTanggalKepesertaan.set($any($event.target).value)">
+          </div>
+
+          <!-- Nomor BPJS TK -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Nomor BPJS Ketenagakerjaan</label>
+            <input type="text" class="form-control form-control-sm" style="max-width:280px"
+                   placeholder=""
+                   [value]="tkNomor()"
+                   (input)="tkNomor.set($any($event.target).value)">
+          </div>
+
+          <!-- Upah Didaftarkan -->
+          <div class="mb-4">
+            <label class="form-label small fw-semibold">Upah Didaftarkan</label>
+            <div class="input-group input-group-sm" style="max-width:220px">
+              <span class="input-group-text">Rp</span>
+              <input type="number" class="form-control" min="0"
+                     [value]="tkUpahDidaftarkan()"
+                     (input)="tkUpahDidaftarkan.set(+$any($event.target).value)">
+            </div>
+          </div>
+
+          <!-- Simpan -->
+          <div>
+            <button class="btn btn-primary btn-sm px-4" style="background:#6366f1;border-color:#6366f1"
+                    [disabled]="saving()" (click)="simpan()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── KARTU KANAN: BPJS Kesehatan ── -->
+      <div class="col-12 col-xl-6">
+        <div class="card border shadow-sm rounded-3 p-4 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+            <h6 class="fw-bold mb-0">BPJS Kesehatan</h6>
+            <i class="bx bx-chevron-down text-muted"></i>
+          </div>
+
+          <!-- Tanggal Kepesertaan -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Tanggal Kepesertaan</label>
+            <input type="date" class="form-control form-control-sm" style="max-width:200px"
+                   [value]="kesTanggalKepesertaan()"
+                   (change)="kesTanggalKepesertaan.set($any($event.target).value)">
+          </div>
+
+          <!-- Nomor BPJS Kesehatan -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Nomor BPJS Kesehatan</label>
+            <input type="text" class="form-control form-control-sm" style="max-width:280px"
+                   placeholder=""
+                   [value]="kesNomor()"
+                   (input)="kesNomor.set($any($event.target).value)">
+          </div>
+
+          <!-- Upah Didaftarkan -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Upah Didaftarkan</label>
+            <div class="input-group input-group-sm" style="max-width:220px">
+              <span class="input-group-text">Rp</span>
+              <input type="number" class="form-control" min="0"
+                     [value]="kesUpahDidaftarkan()"
+                     (input)="kesUpahDidaftarkan.set(+$any($event.target).value)">
+            </div>
+          </div>
+
+          <!-- Anggota Keluarga Inti -->
+          <div class="mb-3">
+            <label class="form-label small fw-semibold" style="color:#f59e0b">
+              Anggota Keluarga Inti (Termasuk Karyawan)
+            </label>
+            <div class="input-group input-group-sm" style="max-width:160px">
+              <input type="number" class="form-control" min="0"
+                     [value]="kesAnggotaKeluargaInti()"
+                     (input)="kesAnggotaKeluargaInti.set(+$any($event.target).value)">
+              <span class="input-group-text">Orang</span>
+            </div>
+          </div>
+
+          <!-- Anggota Keluarga Tambahan -->
+          <div class="mb-4">
+            <label class="form-label small fw-semibold" style="color:#f59e0b">
+              Anggota Keluarga Tambahan
+            </label>
+            <div class="input-group input-group-sm" style="max-width:160px">
+              <input type="number" class="form-control" min="0"
+                     [value]="kesAnggotaKeluargaTambahan()"
+                     (input)="kesAnggotaKeluargaTambahan.set(+$any($event.target).value)">
+              <span class="input-group-text">Orang</span>
+            </div>
+          </div>
+
+          <!-- Simpan -->
+          <div>
+            <button class="btn btn-primary btn-sm px-4" style="background:#6366f1;border-color:#6366f1"
+                    [disabled]="saving()" (click)="simpan()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- ══════════════ TAB: PPH 21 ══════════════ -->
+  @if (activeTab() === 'PPH21') {
+    <div style="max-width:1200px">
+
+      <!-- ── Card 1: Pengaturan PPH 21 ───────────────────────── -->
+      <div class="card border-0 shadow-sm rounded-3 mb-3">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center"
+             style="cursor:pointer"
+             (click)="pengaturanPph21Open.set(!pengaturanPph21Open())">
+          <span class="fw-semibold small">Pengaturan PPH 21</span>
+          <i class="bx" [class.bx-chevron-down]="pengaturanPph21Open()"
+                       [class.bx-chevron-up]="!pengaturanPph21Open()"></i>
+        </div>
+        @if (pengaturanPph21Open()) {
+          <div class="card-body p-4">
+
+            <!-- Status Karyawan -->
+            <div class="row mb-3 align-items-center">
+              <label class="col-md-3 col-form-label small text-muted">Status Karyawan</label>
+              <div class="col-md-9">
+                <select class="form-select form-select-sm"
+                        [value]="statusPkp()"
+                        (change)="statusPkp.set($any($event.target).value)">
+                  @for (opt of statusPkpOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Status PTKP -->
+            <div class="row mb-3 align-items-start">
+              <label class="col-md-3 col-form-label small text-muted">
+                Status PTKP <span class="text-danger">*</span>
+              </label>
+              <div class="col-md-9">
+                <select class="form-select form-select-sm mb-2" style="max-width:240px"
+                        [value]="statusPtkp()"
+                        (change)="statusPtkp.set($any($event.target).value)">
+                  <option value="">--Pilih--</option>
+                  @for (opt of statusPtkpOptions; track opt) {
+                    <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+                <div class="bg-light border rounded p-3 small">
+                  <div><strong>TK/0</strong> = Tidak Kawin, tanpa tanggungan</div>
+                  <div><strong>TK/1</strong> = Tidak Kawin, dengan 1 tanggungan</div>
+                  <div><strong>TK/2</strong> = Tidak Kawin, dengan 2 tanggungan</div>
+                  <div><strong>TK/3</strong> = Tidak Kawin, dengan 3 tanggungan</div>
+                  <div><strong>K/0</strong> = Kawin, tanpa tanggungan</div>
+                  <div><strong>K/1</strong> = Kawin, dengan 1 tanggungan</div>
+                  <div><strong>K/2</strong> = Kawin, dengan 2 tanggungan</div>
+                  <div><strong>K/3</strong> = Kawin, dengan 3 tanggungan</div>
+                </div>
+              </div>
+            </div>
+
+            @if (pengaturanPph21Saved()) {
+              <div class="alert alert-success py-2 small mb-3">
+                Pengaturan PPH 21 berhasil disimpan.
+              </div>
+            }
+            @if (error()) {
+              <div class="alert alert-danger py-2 small mb-3">{{ error() }}</div>
+            }
+
+            <div class="text-center">
+              <button class="btn btn-sm px-4 text-white"
+                      style="background:#6366f1;border-color:#6366f1"
+                      [disabled]="saving()" (click)="simpan()">
+                @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                Simpan
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ── Card 2: Riwayat Pembayaran PPH 21 ───────────────── -->
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center"
+             style="cursor:pointer"
+             (click)="riwayatPph21Open.set(!riwayatPph21Open())">
+          <span class="fw-semibold small">Riwayat Pembayaran PPH 21</span>
+          <i class="bx" [class.bx-chevron-down]="riwayatPph21Open()"
+                       [class.bx-chevron-up]="!riwayatPph21Open()"></i>
+        </div>
+        @if (riwayatPph21Open()) {
+          <div class="card-body p-4">
+
+            <!-- Toolbar: tahun + tombol -->
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+              <select class="form-select form-select-sm" style="width:auto"
+                      [value]="riwayatPph21Year()"
+                      (change)="riwayatPph21Year.set(+$any($event.target).value)">
+                @for (y of riwayatPph21YearOptions(); track y) {
+                  <option [value]="y">{{ y }}</option>
+                }
+              </select>
+
+              <button class="btn btn-sm text-white"
+                      style="background:#6366f1;border-color:#6366f1"
+                      (click)="bukaPph21Modal()">
+                <i class="bx bx-plus me-1"></i> Input/Update Manual
+              </button>
+
+              <button class="btn btn-sm text-white"
+                      style="background:#6366f1;border-color:#6366f1"
+                      title="Ekspor Excel" disabled>
+                <i class="bx bxs-file"></i>
+              </button>
+              <button class="btn btn-sm text-white"
+                      style="background:#6366f1;border-color:#6366f1"
+                      title="Impor Excel" disabled>
+                <i class="bx bxs-file-plus"></i>
+              </button>
+            </div>
+
+            <!-- Card total -->
+            <div class="row g-2 mb-3">
+              <div class="col-md-4">
+                <div class="rounded p-3 text-white d-flex justify-content-between align-items-center"
+                     style="background:#3a3f4d">
+                  <span class="small">Total DPP</span>
+                  <span class="fw-bold">{{ formatRp(totalDpp()) }}</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="rounded p-3 text-white d-flex justify-content-between align-items-center"
+                     style="background:#3a3f4d">
+                  <span class="small">Total PPH 21</span>
+                  <span class="fw-bold">{{ formatRp(totalPph21()) }}</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="rounded p-3 text-white d-flex justify-content-between align-items-center"
+                     style="background:#3a3f4d">
+                  <span class="small">Total THP</span>
+                  <span class="fw-bold">{{ formatRp(totalThp()) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabel Riwayat -->
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Bulan</th>
+                    <th>NPWP</th>
+                    <th>Status PTKP</th>
+                    <th class="text-end">Gaji (Rp)</th>
+                    <th class="text-end">Tunjangan (Rp)</th>
+                    <th class="text-end">Potongan (Rp)</th>
+                    <th class="text-end">Dasar Pengenaan Pajak (Rp)</th>
+                    <th>Tarif</th>
+                    <th class="text-end">Nilai PPH (Rp)</th>
+                    <th class="text-end">THP (Rp)</th>
+                    <th class="text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of riwayatPph21Filtered(); track r.id) {
+                    <tr>
+                      <td>{{ formatBulanPeriode(r.periode) }}</td>
+                      <td>{{ npwp() || '-' }}</td>
+                      <td>{{ statusPtkp() || '-' }}</td>
+                      <td class="text-end">{{ formatRp(0) }}</td>
+                      <td class="text-end">{{ formatRp(0) }}</td>
+                      <td class="text-end">{{ formatRp(0) }}</td>
+                      <td class="text-end">{{ formatRp(+(r.pendapatanBruto ?? 0)) }}</td>
+                      <td>-</td>
+                      <td class="text-end">{{ formatRp(+(r.pph21Terutang ?? 0)) }}</td>
+                      <td class="text-end">
+                        {{ formatRp(hitungThp(r.pendapatanBruto, r.pph21Terutang)) }}
+                      </td>
+                      <td class="text-center">
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                title="Edit" (click)="bukaPph21Modal(r)">
+                          <i class="bx bx-edit-alt"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                title="Hapus" (click)="hapusRiwayatPph21(r)">
+                          <i class="bx bx-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                  @if (riwayatPph21Filtered().length === 0) {
+                    <tr>
+                      <td colspan="11" class="text-center text-muted py-3">
+                        <strong>Menampilkan 0 dari 0 total data</strong>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              @if (riwayatPph21Filtered().length > 0) {
+                <div class="small text-muted mt-2">
+                  Menampilkan {{ riwayatPph21Filtered().length }} dari
+                  {{ riwayatPph21Filtered().length }} total data
+                </div>
+              }
+            </div>
+
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <!-- ── Modal: Input/Update Manual PPH 21 ───────────────── -->
+    @if (showPph21Modal()) {
+      <div class="modal fade show d-block" tabindex="-1"
+           style="background:rgba(0,0,0,.55);z-index:1060">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:720px">
+          <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+              <h5 class="modal-title fw-bold">Input/Update Manual PPH 21</h5>
+              <button type="button" class="btn-close" (click)="tutupPph21Modal()"></button>
+            </div>
+            <div class="modal-body">
+
+              <!-- Karyawan (read-only) -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Karyawan <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="text" class="form-control form-control-sm bg-light"
+                         readonly [value]="karyawan()?.namaLengkap ?? '-'">
+                </div>
+              </div>
+
+              <!-- Bulan / Tahun -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Bulan / Tahun <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="month" class="form-control form-control-sm"
+                         [value]="pph21Periode()"
+                         (input)="pph21Periode.set($any($event.target).value)">
+                </div>
+              </div>
+
+              <!-- Status PTKP -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Status PTKP <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm" style="max-width:200px"
+                          [value]="pph21StatusPtkp()"
+                          (change)="pph21StatusPtkp.set($any($event.target).value)">
+                    <option value="">--Pilih--</option>
+                    @for (opt of statusPtkpOptions; track opt) {
+                      <option [value]="opt">{{ opt }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <!-- Status Karyawan -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Status Karyawan <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm"
+                          [value]="pph21StatusKaryawan()"
+                          (change)="pph21StatusKaryawan.set($any($event.target).value)">
+                    <option value="">--Pilih--</option>
+                    @for (opt of statusKaryawanModalOptions; track opt) {
+                      <option [value]="opt">{{ opt }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <!-- Gaji Dasar -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Gaji Dasar <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="pph21GajiDasar()"
+                         (input)="pph21GajiDasar.set(+$any($event.target).value)">
+                </div>
+              </div>
+
+              <!-- DPP -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  DPP <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="pph21Dpp()"
+                         (input)="pph21Dpp.set(+$any($event.target).value)">
+                </div>
+              </div>
+
+              <!-- TER -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  TER <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm" style="max-width:160px"
+                          [value]="pph21Ter()"
+                          (change)="pph21Ter.set($any($event.target).value)">
+                    <option value="">--Pilih--</option>
+                    @for (opt of terOptions; track opt) {
+                      <option [value]="opt">{{ opt }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <!-- PPH 21 -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  PPH 21 <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="pph21Nilai()"
+                         (input)="pph21Nilai.set(+$any($event.target).value)">
+                </div>
+              </div>
+
+              <!-- THP -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  THP <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="pph21Thp()"
+                         (input)="pph21Thp.set(+$any($event.target).value)">
+                </div>
+              </div>
+
+              <!-- Tunjangan -->
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-3 col-form-label small">Tunjangan</label>
+                <div class="col-sm-9">
+                  @for (t of pph21Tunjangan(); track $index) {
+                    <div class="d-flex gap-2 mb-2">
+                      <input type="text" class="form-control form-control-sm"
+                             placeholder="Nama tunjangan"
+                             [value]="t.nama"
+                             (input)="updatePph21Tunjangan($index, 'nama', $any($event.target).value)">
+                      <input type="number" class="form-control form-control-sm"
+                             placeholder="Jumlah" min="0" style="max-width:160px"
+                             [value]="t.jumlah"
+                             (input)="updatePph21Tunjangan($index, 'jumlah', $any($event.target).value)">
+                      <button class="btn btn-sm btn-outline-danger" type="button"
+                              (click)="hapusPph21Tunjangan($index)">
+                        <i class="bx bx-trash"></i>
+                      </button>
+                    </div>
+                  }
+                  <button class="btn btn-sm text-white"
+                          style="background:#6366f1;border-color:#6366f1"
+                          type="button" (click)="tambahPph21Tunjangan()">
+                    Tambah
+                  </button>
+                </div>
+              </div>
+
+              <!-- Potongan -->
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-3 col-form-label small">Potongan</label>
+                <div class="col-sm-9">
+                  @for (p of pph21Potongan(); track $index) {
+                    <div class="d-flex gap-2 mb-2">
+                      <input type="text" class="form-control form-control-sm"
+                             placeholder="Nama potongan"
+                             [value]="p.nama"
+                             (input)="updatePph21Potongan($index, 'nama', $any($event.target).value)">
+                      <input type="number" class="form-control form-control-sm"
+                             placeholder="Jumlah" min="0" style="max-width:160px"
+                             [value]="p.jumlah"
+                             (input)="updatePph21Potongan($index, 'jumlah', $any($event.target).value)">
+                      <button class="btn btn-sm btn-outline-danger" type="button"
+                              (click)="hapusPph21Potongan($index)">
+                        <i class="bx bx-trash"></i>
+                      </button>
+                    </div>
+                  }
+                  <button class="btn btn-sm text-white"
+                          style="background:#6366f1;border-color:#6366f1"
+                          type="button" (click)="tambahPph21Potongan()">
+                    Tambah
+                  </button>
+                </div>
+              </div>
+
+              @if (pph21ModalError()) {
+                <div class="alert alert-danger py-2 small mb-0">
+                  {{ pph21ModalError() }}
+                </div>
+              }
+            </div>
+
+            <div class="modal-footer d-flex justify-content-center gap-2">
+              <button type="button" class="btn btn-sm px-4 text-white"
+                      style="background:#6366f1;border-color:#6366f1"
+                      [disabled]="pph21ModalSaving()" (click)="simpanPph21Modal()">
+                @if (pph21ModalSaving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                Simpan
+              </button>
+              <button type="button" class="btn btn-light border btn-sm px-4"
+                      (click)="tutupPph21Modal()">Tutup</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ══════════════ TAB: REKENING BANK ══════════════ -->
+  @if (activeTab() === 'REKENING_BANK') {
+    <div class="card border-0 shadow-sm rounded-3 p-4" style="max-width:900px">
+
+      <!-- Nama Bank -->
+      <div class="row align-items-center mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Nama Bank</label>
+        </div>
+        <div class="col-md-8">
+          <input type="text" class="form-control form-control-sm" style="max-width:320px"
+                 placeholder="Contoh: BCA, BRI, Mandiri"
+                 [value]="namaBank()"
+                 (input)="namaBank.set($any($event.target).value)">
+        </div>
+      </div>
+
+      <!-- Nomor Rekening -->
+      <div class="row align-items-center mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Nomor Rekening</label>
+        </div>
+        <div class="col-md-8">
+          <input type="text" class="form-control form-control-sm" style="max-width:320px"
+                 placeholder="Nomor rekening"
+                 [value]="nomorRekening()"
+                 (input)="nomorRekening.set($any($event.target).value)">
+        </div>
+      </div>
+
+      <!-- Atas Nama -->
+      <div class="row align-items-center mb-4">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small mb-0">Atas Nama</label>
+        </div>
+        <div class="col-md-8">
+          <input type="text" class="form-control form-control-sm" style="max-width:320px"
+                 placeholder="Nama pemilik rekening"
+                 [value]="atasNama()"
+                 (input)="atasNama.set($any($event.target).value)">
+        </div>
+      </div>
+
+      <!-- Tombol Simpan -->
+      <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-8">
+          <button class="btn btn-primary px-4" style="background:#6366f1;border-color:#6366f1"
+                  [disabled]="saving()" (click)="simpan()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Simpan
+          </button>
+        </div>
+      </div>
+
+    </div>
+  }
+  <!-- ══════════════ Modal Samakan dengan Karyawan Lain ══════════════ -->
+  @if (showSamakanModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+        <div class="modal-content border-0 shadow rounded-3">
+
+          <!-- Header -->
+          <div class="modal-header border-0 pb-0 align-items-start">
+            <div>
+              <h5 class="modal-title fw-semibold">Pilih Karyawan Acuan</h5>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary ms-auto px-3"
+                    (click)="closeSamakan()">
+              ×Close
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body pt-2">
+            <p class="text-muted small mb-3">
+              Samakan pengaturan gaji dasar
+              <strong>{{ karyawan()?.namaLengkap ?? 'karyawan ini' }}</strong> dengan:
+            </p>
+
+            <!-- Search + Select -->
+            <label class="form-label small fw-semibold">Pilih Karyawan</label>
+            <input type="text" class="form-control form-control-sm mb-2"
+                   placeholder="Cari nama karyawan..."
+                   [value]="samakanSearch()"
+                   (input)="samakanSearch.set($any($event.target).value)">
+
+            <select class="form-select form-select-sm" size="6" style="min-height:160px"
+                    [value]="samakanTargetId()"
+                    (change)="samakanTargetId.set(+$any($event.target).value)">
+              <option value="">-- Pilih Karyawan --</option>
+              @for (k of filteredKaryawanList(); track k.id) {
+                @if (k.id !== karyawanId) {
+                  <option [value]="k.id">{{ k.namaLengkap }}</option>
+                }
+              }
+            </select>
+
+            @if (samakanError()) {
+              <div class="alert alert-danger py-2 mt-2 small">{{ samakanError() }}</div>
+            }
+            @if (samakanSuccess()) {
+              <div class="alert alert-success py-2 mt-2 small">
+                <i class="bx bx-check-circle me-1"></i>Data gaji berhasil disalin.
+              </div>
+            }
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="closeSamakan()">
+              Batal
+            </button>
+            <button class="btn btn-primary btn-sm px-4"
+                    style="background:#6366f1;border-color:#6366f1"
+                    [disabled]="!samakanTargetId() || samakanLoading()"
+                    (click)="submitSamakan()">
+              @if (samakanLoading()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Samakan
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

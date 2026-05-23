@@ -1,0 +1,1474 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item active" aria-current="page">Karyawan</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Header row -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="mb-0"><i class="bx bx-badge me-2"></i>Data Karyawan</h5>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-success btn-sm px-3"
+              title="Ekspor data karyawan ke Excel"
+              (click)="bukaEkspor()">
+        <i class="bx bxs-file-export me-1"></i> Ekspor Excel
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm px-3"
+              title="Impor data karyawan dari Excel"
+              (click)="bukaImporPilih()">
+        <i class="bx bxs-file-import me-1"></i> Impor Excel
+      </button>
+      <button type="button" class="btn btn-outline-danger btn-sm px-3"
+              title="Lihat karyawan yang sudah dihapus"
+              (click)="bukaTrash()">
+        <i class="bx bx-trash me-1"></i> Karyawan Dihapus
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm px-3"
+              title="Aksi massal pada beberapa karyawan"
+              (click)="bukaAksiMassal()">
+        <i class="bx bx-list-check me-1"></i> Aksi Massal
+      </button>
+      <a routerLink="/karyawan/baru" class="btn btn-primary btn-sm px-3">
+        <i class="bx bx-plus me-1"></i> Tambah Karyawan
+      </a>
+    </div>
+  </div>
+
+  <!-- Alert error -->
+  @if (error()) {
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+      <i class="bx bx-error-circle me-2 fs-5"></i> {{ error() }}
+      <button type="button" class="btn-close ms-auto" (click)="error.set('')"></button>
+    </div>
+  }
+
+  <!-- Card table -->
+  <div class="card border-0 shadow-sm">
+
+    @if (loading()) {
+      <div class="p-4">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="placeholder-glow mb-3 d-flex align-items-center gap-3">
+            <span class="placeholder rounded-circle flex-shrink-0" style="width:44px;height:44px"></span>
+            <div class="flex-grow-1">
+              <span class="placeholder col-4 rounded d-block mb-2" style="height:13px"></span>
+              <span class="placeholder col-6 rounded d-block" style="height:11px"></span>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (list().length === 0) {
+      <div class="text-center py-5 text-muted">
+        <i class="bx bx-user-x" style="font-size:3rem"></i>
+        <p class="mt-2 mb-3">Belum ada data karyawan.</p>
+        <a routerLink="/karyawan/baru" class="btn btn-primary btn-sm">Tambah Sekarang</a>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table id="tabelKaryawan" class="table table-hover align-middle mb-0 w-100">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Identitas</th>
+              <th class="text-center">Sisa Cuti</th>
+              <th class="text-center">Dokumen</th>
+              <th class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (k of list(); track k.id) {
+              <tr>
+
+                <!-- Kolom Nama -->
+                <td style="min-width:280px">
+                  <div class="d-flex align-items-center gap-3">
+
+                    <!-- Avatar -->
+                    @if (fotoUrl(k.fotoProfil); as url) {
+                      <img [src]="url" alt="Foto"
+                           class="rounded-circle flex-shrink-0"
+                           style="width:42px;height:42px;object-fit:cover;border:2px solid #e9ecef" />
+                    } @else {
+                      <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                           style="width:42px;height:42px;background:#f3f4f6;color:#9ca3af;font-size:1.1rem">
+                        <i class="bx bx-user"></i>
+                      </div>
+                    }
+
+                    <!-- Info teks -->
+                    <div>
+                      <!-- Nama + status -->
+                      <div class="d-flex align-items-center gap-1">
+                        <a [routerLink]="['/karyawan', k.id]"
+                           class="fw-semibold text-dark text-decoration-none"
+                           style="font-size:.9rem"
+                           (click)="$event.stopPropagation()">
+                          {{ k.namaLengkap }}
+                        </a>
+                        @if (k.statusKerja === 'AKTIF') {
+                          <i class="bx bxs-circle text-success" style="font-size:.5rem" title="Aktif"></i>
+                        } @else {
+                          <i class="bx bxs-circle text-secondary" style="font-size:.5rem" title="{{ k.statusKerja }}"></i>
+                        }
+                      </div>
+                      <!-- Jabatan | Divisi -->
+                      <div class="text-muted" style="font-size:.77rem;margin-top:2px">
+                        @if (k.namaJabatan) { <span>{{ k.namaJabatan }}</span> }
+                        @if (k.namaJabatan && k.namaDivisi) { <span class="mx-1" style="opacity:.4">|</span> }
+                        @if (k.namaDivisi) { <span>{{ k.namaDivisi }}</span> }
+                      </div>
+                      <!-- Zona waktu + generasi -->
+                      <div style="font-size:.73rem;color:#c4c9d4;margin-top:2px">
+                        {{ zonaWaktuLabel(k.zonaWaktu) }}
+                        @if (generasiLabel(k.tanggalLahir)) {
+                          <span class="mx-1" style="opacity:.5">|</span>
+                          {{ generasiLabel(k.tanggalLahir) }}
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Kolom Identitas -->
+                <td style="min-width:150px">
+                  @if (k.jenisIdentitas && k.nomorIdentitas) {
+                    <div class="text-muted fw-semibold" style="font-size:.73rem;letter-spacing:.04em">
+                      {{ k.jenisIdentitas }}
+                    </div>
+                    <div style="font-size:.83rem;color:#374151">{{ k.nomorIdentitas }}</div>
+                  } @else {
+                    <span class="text-muted" style="font-size:.82rem">—</span>
+                  }
+                </td>
+
+                <!-- Kolom Sisa Cuti -->
+                <td class="text-center" style="min-width:120px">
+                  <div class="d-flex flex-column align-items-center gap-1">
+                    <div class="fw-semibold" style="font-size:.95rem">
+                      {{ k.sisaCuti }} <span class="text-muted small">hari</span>
+                    </div>
+                    @if (k.pembaruanCutiAktif) {
+                      <span class="badge bg-success-subtle text-success border border-success-subtle"
+                            style="font-size:.62rem"
+                            [title]="k.tglPembaruanBerikutnya
+                              ? ('Pembaruan otomatis berikutnya: ' + (k.tglPembaruanBerikutnya | date:'dd MMM yyyy'))
+                              : 'Pembaruan otomatis aktif'">
+                        <i class="bx bx-refresh"></i> AUTO
+                      </span>
+                    }
+                    <div class="d-flex align-items-center gap-2">
+                      <button type="button"
+                              class="btn p-0 border-0 bg-transparent text-muted lh-1"
+                              title="Pengaturan Pembaruan Cuti Otomatis" style="font-size:1rem"
+                              (click)="$event.preventDefault(); $event.stopPropagation(); bukaPengaturanCuti(k)">
+                        <i class="bx bx-cog"></i>
+                      </button>
+                      <button type="button"
+                              class="btn p-0 border-0 bg-transparent text-muted lh-1"
+                              title="Riwayat Cuti" style="font-size:1rem"
+                              (click)="$event.preventDefault(); $event.stopPropagation(); bukaRiwayatCuti(k)">
+                        <i class="bx bx-history"></i>
+                      </button>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Kolom Dokumen -->
+                <td class="text-center">
+                  <button class="btn p-0 border-0 bg-transparent text-muted lh-1"
+                          title="Dokumen" style="font-size:1rem">
+                    <i class="bx bx-file"></i>
+                  </button>
+                </td>
+
+                <!-- Kolom Aksi -->
+                <td class="text-center" style="position:relative">
+                  <div class="d-inline-block" style="position:relative">
+                    <button class="btn border-0 rounded-2 px-2 lh-1 text-muted"
+                            style="background:#f3f4f6;font-size:.95rem;letter-spacing:.12em;padding-top:5px;padding-bottom:5px"
+                            (click)="$event.stopPropagation(); toggleDropdown(k.id)">
+                      •••
+                    </button>
+
+                    @if (openDropdownId() === k.id) {
+                      <div class="aksi-dropdown border rounded-3 shadow-sm py-1"
+                           style="position:absolute;right:0;top:calc(100% + 4px);min-width:160px;background:#fff;z-index:300">
+                        <a [routerLink]="['/karyawan', k.id]"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-show text-info" style="font-size:.95rem"></i>
+                          Profil
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'edit']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-edit text-primary" style="font-size:.95rem"></i>
+                          Edit
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'perangkat']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-devices text-purple" style="font-size:.95rem;color:#7c3aed"></i>
+                          Perangkat
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'jadwal-kerja']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-calendar-check" style="font-size:.95rem;color:#0891b2"></i>
+                          Jadwal Kerja
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'kehadiran']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-time-five" style="font-size:.95rem;color:#059669"></i>
+                          Kehadiran
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'lembur']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-moon" style="font-size:.95rem;color:#d97706"></i>
+                          Lembur
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'izin']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-calendar-minus" style="font-size:.95rem;color:#7c3aed"></i>
+                          Izin
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'cuti']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-calendar-event" style="font-size:.95rem;color:#ec4899"></i>
+                          Cuti
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'dokumen']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-folder" style="font-size:.95rem;color:#0ea5e9"></i>
+                          Dokumen
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'klaim']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-receipt" style="font-size:.95rem;color:#7c3aed"></i>
+                          Klaim
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'payroll']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-dollar-circle" style="font-size:.95rem;color:#059669"></i>
+                          Payroll
+                        </a>
+                        <a [routerLink]="['/karyawan', k.id, 'surat-peringatan']"
+                           class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none text-dark"
+                           style="font-size:.83rem"
+                           (click)="closeDropdown()">
+                          <i class="bx bx-file-blank" style="font-size:.95rem;color:#dc2626"></i>
+                          Surat Peringatan
+                        </a>
+                        <div class="dropdown-divider my-1"></div>
+                        <button class="d-flex align-items-center gap-2 px-3 py-2 w-100 border-0 bg-transparent text-danger"
+                                style="font-size:.83rem;cursor:pointer"
+                                (click)="$event.stopPropagation(); closeDropdown(); confirmDelete(k.id)">
+                          <i class="bx bx-trash" style="font-size:.95rem"></i>
+                          Hapus
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </td>
+
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+
+  <!-- Modal konfirmasi hapus -->
+  @if (confirmDeleteId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger">
+              <i class="bx bx-trash me-2"></i>Hapus Karyawan?
+            </h5>
+          </div>
+          <div class="modal-body text-muted" style="font-size:.9rem">
+            Data karyawan dan akun pengguna terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4" (click)="cancelDelete()">Batal</button>
+            <button class="btn btn-danger btn-sm px-4" (click)="doDelete()">
+              <i class="bx bx-trash me-1"></i> Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Pengaturan Pembaruan Cuti Otomatis ─────── -->
+  @if (showPengaturanCutiModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
+        <div class="modal-content border-0 shadow">
+
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Pengaturan Pembaruan Cuti Otomatis</h5>
+            <button class="btn-close" (click)="showPengaturanCutiModal.set(false)"></button>
+          </div>
+
+          <div class="modal-body">
+
+            @if (pengaturanError()) {
+              <div class="alert alert-danger py-2 small">{{ pengaturanError() }}</div>
+            }
+
+            @if (pengaturanLoading()) {
+              <div class="text-center py-4 text-muted small">
+                <div class="spinner-border spinner-border-sm me-2"></div>Memuat data...
+              </div>
+            } @else if (!pengaturanFormMode()) {
+
+              <!-- ── Tahap awal: belum ada pengaturan ─────────── -->
+              <div class="bg-light rounded p-3 small">
+                Belum terdapat pengaturan sebelumnya,
+                <a href="javascript:void(0)" class="text-primary fw-semibold text-decoration-none"
+                   (click)="mulaiPengaturanCuti()">Mulai pengaturan</a>
+              </div>
+
+            } @else {
+
+              <!-- ── Tahap form pengaturan ─────────────────────── -->
+              @if (infoMulaiBekerja()) {
+                <div class="bg-light rounded p-3 mb-3 small">
+                  <div class="fw-bold mb-1">Info</div>
+                  {{ infoMulaiBekerja() }}
+                </div>
+              }
+
+              <!-- Periode Pembaruan -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-5 col-form-label small">Periode Pembaruan Otomatis</label>
+                <div class="col-sm-7">
+                  <select class="form-select form-select-sm"
+                          [ngModel]="pengaturanForm().periodePembaruanBulan"
+                          (ngModelChange)="pengaturanForm.set({ ...pengaturanForm(), periodePembaruanBulan: +$event })">
+                    @for (m of [1, 3, 6, 12, 24]; track m) {
+                      <option [value]="m">{{ m }} Bulan</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <!-- Info text -->
+              <div class="bg-light rounded p-3 mb-3 small ms-sm-auto"
+                   style="margin-left:0">
+                <div class="fw-bold mb-1">Info</div>
+                Sisa cuti akan otomatis ditambahkan sebanyak
+                <strong>{{ pengaturanForm().jumlahCutiPembaruan }}</strong>
+                pada <strong>{{ tglPembaruanBerikutnya() }}</strong>.
+              </div>
+
+              <!-- Sisa Cuti Sebelumnya -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-5 col-form-label small">Sisa Cuti Sebelumnya</label>
+                <div class="col-sm-7">
+                  <select class="form-select form-select-sm"
+                          [ngModel]="pengaturanForm().tambahkanSisaCutiSebelumnya ? 'YA' : 'TIDAK'"
+                          (ngModelChange)="pengaturanForm.set({ ...pengaturanForm(), tambahkanSisaCutiSebelumnya: $event === 'YA' })">
+                    <option value="YA">Tambahkan</option>
+                    <option value="TIDAK">Tidak Ditambahkan</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Aktifkan Pengaturan -->
+              <div class="row align-items-center">
+                <label class="col-sm-5 col-form-label small">Aktifkan Pengaturan</label>
+                <div class="col-sm-7">
+                  <div class="d-flex gap-3">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input" id="aktifkanYa"
+                             [checked]="pengaturanForm().pembaruanCutiAktif"
+                             (change)="pengaturanForm.set({ ...pengaturanForm(), pembaruanCutiAktif: true })">
+                      <label class="form-check-label small" for="aktifkanYa">Ya</label>
+                    </div>
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input" id="aktifkanTidak"
+                             [checked]="!pengaturanForm().pembaruanCutiAktif"
+                             (change)="pengaturanForm.set({ ...pengaturanForm(), pembaruanCutiAktif: false })">
+                      <label class="form-check-label small" for="aktifkanTidak">Tidak</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            }
+          </div>
+
+          @if (pengaturanFormMode() && !pengaturanLoading()) {
+            <div class="modal-footer">
+              <button class="btn btn-primary btn-sm px-4"
+                      [disabled]="pengaturanSaving()"
+                      (click)="prosesPengaturanCuti()">
+                {{ pengaturanSaving() ? 'Memproses...' : 'Proses' }}
+              </button>
+              <button class="btn btn-light border btn-sm px-4"
+                      (click)="showPengaturanCutiModal.set(false)">Batal</button>
+            </div>
+          }
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Riwayat Transaksi Cuti ─────────────────── -->
+  @if (showRiwayatCutiModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title fw-bold mb-0">
+                <i class="bx bx-history me-2"></i>Riwayat Transaksi Cuti
+              </h5>
+              @if (riwayatKaryawan(); as k) {
+                <div class="text-muted small mt-1">{{ k.namaLengkap }}</div>
+              }
+            </div>
+            <button type="button" class="btn-close"
+                    (click)="showRiwayatCutiModal.set(false)"></button>
+          </div>
+
+          <div class="modal-body">
+
+            <!-- Ringkasan sisa cuti -->
+            @if (riwayatSisa(); as s) {
+              <div class="row g-2 mb-3">
+                <div class="col-4">
+                  <div class="bg-light rounded p-3 text-center">
+                    <div class="text-muted small">Sisa Cuti</div>
+                    <div class="fw-bold fs-5 text-primary">{{ s.sisaCuti }} hari</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="bg-light rounded p-3 text-center">
+                    <div class="text-muted small">Terpakai</div>
+                    <div class="fw-bold fs-5 text-warning">{{ s.terpakai }} hari</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="bg-light rounded p-3 text-center">
+                    <div class="text-muted small">Berakhir</div>
+                    <div class="fw-bold fs-6">{{ formatTglRiwayat(s.tglCutiBerakhir) }}</div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (riwayatError()) {
+              <div class="alert alert-danger py-2 small">{{ riwayatError() }}</div>
+            }
+
+            @if (riwayatLoading()) {
+              <div class="text-center py-4 text-muted small">
+                <div class="spinner-border spinner-border-sm me-2"></div>Memuat riwayat...
+              </div>
+            } @else if (riwayatCutiList().length === 0) {
+              <div class="text-center py-4 text-muted small">
+                <i class="bx bx-calendar-x" style="font-size:2.5rem"></i>
+                <div class="mt-2">Belum ada transaksi cuti.</div>
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Tgl. Pengajuan</th>
+                      <th>Jenis</th>
+                      <th>Periode</th>
+                      <th class="text-center">Hari</th>
+                      <th>Keperluan</th>
+                      <th class="text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of riwayatCutiList(); track c.id) {
+                      <tr>
+                        <td class="small">{{ formatTglWaktu(c.createdAt) }}</td>
+                        <td class="small">
+                          <span class="fw-semibold">{{ jenisCutiLabel(c.jenisCuti) }}</span>
+                          @if (c.sesiSetengahHari) {
+                            <div class="text-muted" style="font-size:.7rem">
+                              Sesi {{ c.sesiSetengahHari }}
+                            </div>
+                          }
+                          @if (!c.mengurangiSisaCuti) {
+                            <div class="text-info" style="font-size:.7rem">
+                              <i class="bx bx-info-circle"></i> Tidak mengurangi cuti
+                            </div>
+                          }
+                        </td>
+                        <td class="small">
+                          {{ formatTglRiwayat(c.tanggalMulai) }}
+                          @if (c.tanggalSelesai && c.tanggalSelesai !== c.tanggalMulai) {
+                            <span class="text-muted"> – </span>
+                            {{ formatTglRiwayat(c.tanggalSelesai) }}
+                          }
+                        </td>
+                        <td class="text-center small fw-semibold">{{ c.jumlahHari }}</td>
+                        <td class="small text-muted" style="max-width:200px">
+                          <div class="text-truncate" [title]="c.keperluan">{{ c.keperluan }}</div>
+                          @if (c.catatanPenolakan) {
+                            <div class="text-danger text-truncate" style="font-size:.7rem"
+                                 [title]="c.catatanPenolakan">
+                              <i class="bx bx-x-circle"></i> {{ c.catatanPenolakan }}
+                            </div>
+                          }
+                        </td>
+                        <td class="text-center">
+                          <span class="badge {{ badgeStatusCuti(c.status) }}"
+                                style="font-size:.65rem">
+                            {{ c.status }}
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="text-muted small mt-2">
+                Menampilkan <strong>{{ riwayatCutiList().length }}</strong> transaksi cuti.
+              </div>
+            }
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light border btn-sm px-4"
+                    (click)="showRiwayatCutiModal.set(false)">Tutup</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Karyawan Dihapus (Trash) ───────────────── -->
+  @if (showTrashModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bx-trash me-2 text-danger"></i>Karyawan Dihapus
+            </h5>
+            <button type="button" class="btn-close"
+                    (click)="showTrashModal.set(false)"></button>
+          </div>
+
+          <div class="modal-body">
+            @if (trashError()) {
+              <div class="alert alert-danger py-2 small">{{ trashError() }}</div>
+            }
+
+            @if (trashLoading()) {
+              <div class="text-center py-4 text-muted small">
+                <div class="spinner-border spinner-border-sm me-2"></div>Memuat...
+              </div>
+            } @else if (trashList().length === 0) {
+              <div class="text-center py-5 text-muted">
+                <i class="bx bx-trash" style="font-size:3rem"></i>
+                <div class="mt-2">Tidak ada karyawan yang dihapus.</div>
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Nama</th>
+                      <th>Jabatan / Divisi</th>
+                      <th>Dihapus pada</th>
+                      <th class="text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (k of trashList(); track k.id) {
+                      <tr>
+                        <td>
+                          <div class="d-flex align-items-center gap-2">
+                            @if (fotoUrl(k.fotoProfil); as url) {
+                              <img [src]="url" alt="" class="rounded-circle"
+                                   style="width:34px;height:34px;object-fit:cover;border:2px solid #e9ecef">
+                            } @else {
+                              <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                   style="width:34px;height:34px;background:#f3f4f6;color:#9ca3af">
+                                <i class="bx bx-user"></i>
+                              </div>
+                            }
+                            <div>
+                              <div class="fw-semibold small">{{ k.namaLengkap }}</div>
+                              <div class="text-muted" style="font-size:.7rem">NIP: {{ k.nip }}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="small text-muted">
+                          @if (k.namaJabatan) { {{ k.namaJabatan }} }
+                          @if (k.namaJabatan && k.namaDivisi) { <span class="mx-1" style="opacity:.4">|</span> }
+                          @if (k.namaDivisi) { {{ k.namaDivisi }} }
+                          @if (!k.namaJabatan && !k.namaDivisi) { — }
+                        </td>
+                        <td class="small text-muted">{{ formatTglWaktuId(k.deletedAt) }}</td>
+                        <td class="text-center">
+                          <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                  title="Pulihkan"
+                                  (click)="confirmRestoreId.set(k.id)">
+                            <i class="bx bx-undo"></i> Pulihkan
+                          </button>
+                          <button type="button" class="btn btn-sm btn-outline-danger"
+                                  title="Hapus permanen"
+                                  (click)="confirmHardDeleteId.set(k.id)">
+                            <i class="bx bx-trash"></i> Permanen
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="text-muted small mt-2">
+                Menampilkan <strong>{{ trashList().length }}</strong> karyawan dihapus.
+              </div>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light border btn-sm px-4"
+                    (click)="showTrashModal.set(false)">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Konfirmasi Pulihkan -->
+  @if (confirmRestoreId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1060">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h6 class="modal-title text-success">
+              <i class="bx bx-undo me-2"></i>Pulihkan Karyawan?
+            </h6>
+          </div>
+          <div class="modal-body small text-muted">
+            Karyawan akan dikembalikan ke daftar aktif.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-light border btn-sm" [disabled]="trashActionBusy()"
+                    (click)="confirmRestoreId.set(null)">Batal</button>
+            <button class="btn btn-success btn-sm" [disabled]="trashActionBusy()"
+                    (click)="doRestore()">
+              {{ trashActionBusy() ? 'Memproses...' : 'Pulihkan' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Konfirmasi Hapus Permanen -->
+  @if (confirmHardDeleteId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1060">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h6 class="modal-title text-danger">
+              <i class="bx bx-trash me-2"></i>Hapus Permanen?
+            </h6>
+          </div>
+          <div class="modal-body small text-muted">
+            Karyawan akan dihapus permanen dari sistem.
+            <strong class="text-danger">Tindakan ini tidak dapat dibatalkan.</strong>
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-light border btn-sm" [disabled]="trashActionBusy()"
+                    (click)="confirmHardDeleteId.set(null)">Batal</button>
+            <button class="btn btn-danger btn-sm" [disabled]="trashActionBusy()"
+                    (click)="doHardDelete()">
+              {{ trashActionBusy() ? 'Menghapus...' : 'Ya, Hapus' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Ekspor Excel ───────────────────────────── -->
+  @if (showEksporModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+        <div class="modal-content border-0 shadow">
+
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bxs-file-export me-2 text-success"></i>Ekspor Data Karyawan
+            </h5>
+            <button type="button" class="btn-close"
+                    (click)="showEksporModal.set(false)"></button>
+          </div>
+
+          <div class="modal-body">
+
+            @if (eksporError()) {
+              <div class="alert alert-danger py-2 small">{{ eksporError() }}</div>
+            }
+
+            <!-- Filter Divisi -->
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Filter Divisi</label>
+              <select class="form-select form-select-sm"
+                      [ngModel]="eksporForm().divisiId"
+                      (ngModelChange)="eksporForm.set({ ...eksporForm(), divisiId: $event !== null && $event !== '' ? +$event : null })">
+                <option [ngValue]="null">— Semua Divisi —</option>
+                @for (d of divisiList(); track d.id) {
+                  <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+                }
+              </select>
+              <div class="form-text small">
+                Estimasi: <strong>{{ totalKaryawanFiltered() }}</strong> karyawan akan diekspor.
+              </div>
+            </div>
+
+            <!-- Jumlah Target Karyawan -->
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Jumlah Target Karyawan</label>
+              <input type="number" min="1" class="form-control form-control-sm"
+                     placeholder="Kosongkan untuk semua"
+                     [ngModel]="eksporForm().limit"
+                     (ngModelChange)="eksporForm.set({ ...eksporForm(), limit: $event ? +$event : null })">
+              <div class="form-text small text-muted">
+                Maksimum karyawan yang diekspor (kosongkan = tanpa batas).
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- Email -->
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">
+                <i class="bx bx-envelope me-1"></i>Kirim ke Email
+              </label>
+              <input type="email" class="form-control form-control-sm"
+                     placeholder="contoh@email.com"
+                     [ngModel]="eksporForm().email"
+                     (ngModelChange)="eksporForm.set({ ...eksporForm(), email: $event })">
+              <div class="form-text small text-muted">
+                Isi email jika ingin file dikirim sebagai lampiran (kosongkan jika hanya ingin unduh).
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer d-flex justify-content-between">
+            <button type="button" class="btn btn-light border btn-sm"
+                    [disabled]="eksporBusy()"
+                    (click)="showEksporModal.set(false)">Batal</button>
+
+            <div class="d-flex gap-2">
+              @if (eksporForm().email && eksporForm().email.trim().length > 0) {
+                <button type="button" class="btn btn-success btn-sm px-3"
+                        [disabled]="eksporBusy()"
+                        (click)="kirimEksporKeEmail()">
+                  <i class="bx bx-mail-send me-1"></i>
+                  {{ eksporBusy() ? 'Mengirim...' : 'Kirim ke Email' }}
+                </button>
+              } @else {
+                <button type="button" class="btn btn-primary btn-sm px-3"
+                        [disabled]="eksporBusy()"
+                        (click)="unduhEkspor()">
+                  <i class="bx bx-download me-1"></i>
+                  {{ eksporBusy() ? 'Memproses...' : 'Unduh Excel' }}
+                </button>
+              }
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Impor Excel — Tahap 1: Pilih Tipe ────── -->
+  @if (imporTahap() === 'pilih') {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:820px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Impor Excel</h5>
+            <button type="button" class="btn-close" (click)="tutupImpor()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-6 col-md-3">
+                <button type="button"
+                        class="w-100 h-100 border rounded-3 p-3 d-flex flex-column align-items-center justify-content-center bg-light"
+                        style="cursor:pointer;min-height:140px"
+                        (click)="pilihTipeImpor('tambah')">
+                  <i class="bx bx-user-plus" style="font-size:42px"></i>
+                  <div class="mt-2 small fw-semibold text-center">Tambah Karyawan</div>
+                </button>
+              </div>
+              <div class="col-6 col-md-3">
+                <button type="button"
+                        class="w-100 h-100 border rounded-3 p-3 d-flex flex-column align-items-center justify-content-center bg-light"
+                        style="cursor:pointer;min-height:140px"
+                        (click)="pilihTipeImpor('perbarui')">
+                  <i class="bx bx-edit" style="font-size:42px"></i>
+                  <div class="mt-2 small fw-semibold text-center">Perbarui Karyawan</div>
+                </button>
+              </div>
+              <div class="col-6 col-md-3">
+                <button type="button"
+                        class="w-100 h-100 border rounded-3 p-3 d-flex flex-column align-items-center justify-content-center bg-light"
+                        style="cursor:pointer;min-height:140px"
+                        (click)="pilihTipeImpor('bpjs')">
+                  <i class="bx bx-credit-card" style="font-size:42px"></i>
+                  <div class="mt-2 small fw-semibold text-center">BPJS Karyawan</div>
+                </button>
+              </div>
+              <div class="col-6 col-md-3">
+                <button type="button"
+                        class="w-100 h-100 border rounded-3 p-3 d-flex flex-column align-items-center justify-content-center bg-light"
+                        style="cursor:pointer;min-height:140px"
+                        (click)="pilihTipeImpor('pph21')">
+                  <i class="bx bx-money" style="font-size:42px"></i>
+                  <div class="mt-2 small fw-semibold text-center">PPH 21 Karyawan</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Impor Excel — Tahap 2: Form Upload ───── -->
+  @if (imporTahap() === 'form') {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:640px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Impor Excel {{ labelTipeImpor(imporTipe()) }}</h5>
+            <button type="button" class="btn-close" (click)="tutupImpor()"></button>
+          </div>
+          <div class="modal-body">
+
+            <div class="alert alert-light border small mb-3">
+              <div class="fw-bold mb-2">PENTING!</div>
+              <ul class="mb-0 ps-3">
+                <li>
+                  @switch (imporTipe()) {
+                    @case ('tambah') {
+                      Untuk melakukan impor karyawan, pastikan file yang diupload sudah sesuai
+                      format yang ditentukan.
+                    }
+                    @case ('perbarui') {
+                      Untuk melakukan impor data perbarui karyawan, pastikan file yang diupload
+                      sudah sesuai format yang ditentukan.
+                    }
+                    @case ('bpjs') {
+                      Untuk melakukan impor data BPJS karyawan, pastikan file yang diupload
+                      sudah sesuai format yang ditentukan.
+                    }
+                    @case ('pph21') {
+                      Untuk melakukan impor data PPH 21 karyawan, pastikan file yang diupload
+                      sudah sesuai format yang ditentukan.
+                    }
+                    @default {
+                      Untuk melakukan impor, pastikan file yang diupload sudah sesuai format yang ditentukan.
+                    }
+                  }
+                  <a href="javascript:void(0)" class="text-primary fw-semibold"
+                     (click)="unduhTemplateImpor()">
+                    {{ imporTplBusy() ? 'Mengunduh...' : 'Download format impor excel di sini.' }}
+                  </a>
+                </li>
+                @if (imporTipe() === 'tambah') {
+                  <li>
+                    Upload dilakukan per divisi, silakan pisahkan data karyawan sesuai divisi
+                    masing-masing. Bila karyawan tidak memiliki divisi maka saat impor data
+                    tidak perlu memilih divisi.
+                  </li>
+                }
+                @if (imporTipe() === 'perbarui') {
+                  <li>
+                    Aksi impor hanya akan dijalankan jika semua data sudah benar.
+                  </li>
+                  <li>
+                    Jika ada data yang perlu diperbaiki, sistem akan segera menampilkan
+                    informasinya setelah klik tombol proses.
+                  </li>
+                }
+                @if (imporTipe() === 'pph21') {
+                  <li class="text-danger">
+                    Catatan: fitur impor PPH 21 masih dalam pengembangan.
+                  </li>
+                }
+              </ul>
+            </div>
+
+            @if (imporError()) {
+              <div class="alert alert-danger py-2 small">{{ imporError() }}</div>
+            }
+
+            <!-- Form -->
+            @if (imporTipe() === 'tambah') {
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-4 col-form-label small">Divisi (Opsional)</label>
+                <div class="col-sm-8">
+                  <select class="form-select form-select-sm"
+                          [ngModel]="imporDivisiId()"
+                          (ngModelChange)="imporDivisiId.set($event !== null && $event !== '' ? +$event : null)">
+                    <option [ngValue]="null">--Divisi--</option>
+                    @for (d of divisiList(); track d.id) {
+                      <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            }
+
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-4 col-form-label small">
+                Pilih Berkas <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-8">
+                <input type="file" accept=".xlsx" class="form-control form-control-sm"
+                       (change)="onImporFileChange($event)">
+                <div class="form-text small text-muted">Ukuran Maksimal: 500 KB</div>
+              </div>
+            </div>
+
+            <!-- Hasil impor -->
+            @if (imporResult(); as r) {
+              <hr class="my-3">
+              <div class="d-flex gap-3 mb-2 small">
+                <span class="badge bg-success">Berhasil: {{ r.berhasil }}</span>
+                <span class="badge bg-danger">Gagal: {{ r.gagal }}</span>
+              </div>
+              @if (r.errors.length) {
+                <div class="table-responsive" style="max-height:240px;overflow:auto">
+                  <table class="table table-sm table-bordered small mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width:60px">Baris</th>
+                        <th>NIP</th>
+                        <th>Nama</th>
+                        <th>Pesan</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (e of r.errors; track $index) {
+                        <tr>
+                          <td>{{ e.baris }}</td>
+                          <td>{{ e.nip || '-' }}</td>
+                          <td>{{ e.nama || '-' }}</td>
+                          <td class="text-danger">{{ e.pesan }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            }
+
+          </div>
+          <div class="modal-footer d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-primary btn-sm px-4"
+                    [disabled]="imporBusy() || !imporFile()"
+                    (click)="prosesImporExcel()">
+              {{ imporBusy() ? 'Memproses...' : 'Proses' }}
+            </button>
+            <button type="button" class="btn btn-light border btn-sm px-4"
+                    [disabled]="imporBusy()"
+                    (click)="kembaliPilihTipeImpor()">Batal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Sub-modal: Download Format Impor Perbarui Karyawan ─ -->
+  @if (showSubPerbarui()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1065">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:720px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Download Format Impor {{ labelTipeImpor(subPerbaruiTipe()) }}</h5>
+            <button type="button" class="btn-close" (click)="tutupSubPerbarui()"></button>
+          </div>
+          <div class="modal-body">
+
+            <div class="alert alert-light border small mb-3">
+              Untuk mempermudah impor, silakan tentukan karyawan berdasarkan divisi
+              atau Anda bisa memilih karyawan secara spesifik.
+            </div>
+
+            <!-- Divisi -->
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-3 col-form-label small">Divisi</label>
+              <div class="col-sm-9">
+                <select class="form-select form-select-sm"
+                        [ngModel]="subPerbaruiDivisiId()"
+                        (ngModelChange)="subPerbaruiDivisiId.set($event !== null && $event !== '' ? +$event : null)">
+                  <option [ngValue]="null">--Divisi--</option>
+                  @for (d of divisiList(); track d.id) {
+                    <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Spesifik Karyawan -->
+            <div class="row mb-2 align-items-start">
+              <label class="col-sm-3 col-form-label small">Spesifik Karyawan</label>
+              <div class="col-sm-9 position-relative">
+                <select class="form-select form-select-sm"
+                        [ngModel]="null"
+                        (ngModelChange)="onPilihKaryawanSub($event)">
+                  <option [ngValue]="null">
+                    {{ subPerbaruiDivisiId() == null
+                        ? '--Pilih Karyawan (semua divisi)--'
+                        : '--Pilih Karyawan--' }}
+                  </option>
+                  @for (k of karyawanOptionsForSub(); track k.id) {
+                    <option [ngValue]="k.id"
+                            [disabled]="subPerbaruiKaryawanIds().includes(k.id)">
+                      {{ k.namaLengkap }}{{ k.nip ? ' - ' + k.nip : '' }}
+                    </option>
+                  }
+                </select>
+                @if (karyawanOptionsForSub().length === 0) {
+                  <div class="form-text small text-muted">
+                    Tidak ada karyawan tersedia{{ subPerbaruiDivisiId() != null ? ' pada divisi ini' : '' }}.
+                  </div>
+                }
+
+                <!-- Chip karyawan terpilih -->
+                @if (subPerbaruiKaryawanIds().length > 0) {
+                  <div class="d-flex flex-wrap gap-2 mt-2">
+                    @for (id of subPerbaruiKaryawanIds(); track id) {
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-flex align-items-center gap-1"
+                            style="font-size:.75rem">
+                        {{ namaKaryawanById(id) }}
+                        <button type="button" class="btn btn-sm p-0 border-0 bg-transparent text-primary"
+                                style="line-height:1" (click)="hapusKaryawanSub(id)">
+                          <i class="bx bx-x"></i>
+                        </button>
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="form-text small text-muted ms-sm-auto"
+                 style="margin-left:0">
+              Jika tidak memilih divisi maupun karyawan, template akan diisi <strong>seluruh karyawan</strong>.
+            </div>
+
+          </div>
+          <div class="modal-footer d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-primary btn-sm px-4"
+                    [disabled]="imporTplBusy()"
+                    (click)="prosesUnduhPerbarui()">
+              {{ imporTplBusy() ? 'Mengunduh...' : 'Proses' }}
+            </button>
+            <button type="button" class="btn btn-light border btn-sm px-4"
+                    (click)="tutupSubPerbarui()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Toast notifikasi ─────────────────────────────── -->
+  @if (toastMsg()) {
+    <div class="position-fixed top-0 end-0 p-3" style="z-index:1100">
+      <div class="toast show align-items-center text-white border-0"
+           [class.bg-success]="toastType() === 'success'"
+           [class.bg-danger]="toastType() === 'danger'"
+           [class.bg-warning]="toastType() === 'warning'"
+           role="alert">
+        <div class="d-flex">
+          <div class="toast-body small">{{ toastMsg() }}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                  (click)="toastMsg.set('')"></button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ════════════ Modal: Aksi Massal ════════════ -->
+  @if (showAksiMassalModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);z-index:1080">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:720px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Aksi Massal</h5>
+            <button type="button" class="btn-close" (click)="tutupAksiMassal()"></button>
+          </div>
+          <div class="modal-body">
+
+            <!-- Target -->
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-3 col-form-label small">
+                Target <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-9">
+                <select class="form-select form-select-sm"
+                        [value]="aksiMassalTarget()"
+                        (change)="aksiMassalTarget.set($any($event.target).value)">
+                  <option value="">-- Penerima --</option>
+                  <option value="SEMUA">Semua</option>
+                  <option value="DIVISI">Divisi tertentu</option>
+                  <option value="KARYAWAN">Karyawan tertentu</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Target = Divisi tertentu → pilih divisi + spesifik + terkecuali -->
+            @if (aksiMassalTarget() === 'DIVISI') {
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Divisi <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm"
+                          [value]="aksiMassalDivisiId() ?? ''"
+                          (change)="aksiMassalDivisiId.set($any($event.target).value ? +$any($event.target).value : null);
+                                    aksiMassalKaryawanIds.set([]); aksiMassalKaryawanExcl.set([])">
+                    <option value="">--Divisi--</option>
+                    @for (d of divisiList(); track d.id) {
+                      <option [value]="d.id">{{ d.namaDivisi }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-3 col-form-label small">
+                  Penerima spesifik <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm"
+                          (change)="pilihPenerimaSpesifik($any($event.target).value ? +$any($event.target).value : null);
+                                    $any($event.target).value = ''">
+                    <option value="">Tulis kata kunci…</option>
+                    @for (k of amPenerimaOptions('', aksiMassalKaryawanIds()); track k.id) {
+                      <option [value]="k.id">{{ k.namaLengkap }}</option>
+                    }
+                  </select>
+                  @if (aksiMassalKaryawanIds().length > 0) {
+                    <div class="d-flex flex-wrap gap-1 mt-2">
+                      @for (id of aksiMassalKaryawanIds(); track id) {
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                          {{ namaKaryawanById(id) }}
+                          <i class="bx bx-x ms-1" style="cursor:pointer"
+                             (click)="hapusPenerimaSpesifik(id)"></i>
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-3 col-form-label small">Penerima terkecuali</label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm"
+                          (change)="pilihPenerimaExcl($any($event.target).value ? +$any($event.target).value : null);
+                                    $any($event.target).value = ''">
+                    <option value="">Tulis kata kunci…</option>
+                    @for (k of amPenerimaOptions('', aksiMassalKaryawanExcl()); track k.id) {
+                      <option [value]="k.id">{{ k.namaLengkap }}</option>
+                    }
+                  </select>
+                  @if (aksiMassalKaryawanExcl().length > 0) {
+                    <div class="d-flex flex-wrap gap-1 mt-2">
+                      @for (id of aksiMassalKaryawanExcl(); track id) {
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                          {{ namaKaryawanById(id) }}
+                          <i class="bx bx-x ms-1" style="cursor:pointer"
+                             (click)="hapusPenerimaExcl(id)"></i>
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Target = Karyawan tertentu → pilih karyawan -->
+            @if (aksiMassalTarget() === 'KARYAWAN') {
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-3 col-form-label small">
+                  Penerima spesifik <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm"
+                          (change)="pilihPenerimaSpesifik($any($event.target).value ? +$any($event.target).value : null);
+                                    $any($event.target).value = ''">
+                    <option value="">Tulis kata kunci…</option>
+                    @for (k of amPenerimaOptions('', aksiMassalKaryawanIds()); track k.id) {
+                      <option [value]="k.id">{{ k.namaLengkap }}</option>
+                    }
+                  </select>
+                  @if (aksiMassalKaryawanIds().length > 0) {
+                    <div class="d-flex flex-wrap gap-1 mt-2">
+                      @for (id of aksiMassalKaryawanIds(); track id) {
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                          {{ namaKaryawanById(id) }}
+                          <i class="bx bx-x ms-1" style="cursor:pointer"
+                             (click)="hapusPenerimaSpesifik(id)"></i>
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Aksi -->
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-3 col-form-label small">
+                Aksi <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-9">
+                <select class="form-select form-select-sm"
+                        [value]="aksiMassalAksi()"
+                        (change)="aksiMassalAksi.set($any($event.target).value)">
+                  <option value="">--Aksi--</option>
+                  <option value="SAMAKAN_SISA_CUTI">Samakan sisa cuti</option>
+                  <option value="TAMBAH_SISA_CUTI">Tambah sisa cuti</option>
+                  <option value="KURANGI_SISA_CUTI">Kurangi sisa cuti</option>
+                  <option value="ATUR_IZIN_JAM">Atur Izin Jam Karyawan</option>
+                  <option value="PINDAH_DIVISI">Pindah Divisi</option>
+                  <option value="KIRIM_EMAIL_VERIFIKASI">Kirim Email Verifikasi</option>
+                </select>
+              </div>
+            </div>
+
+            @if (aksiMassalAksi()) {
+              <div class="alert alert-warning py-2 small mb-3">
+                Mohon hati-hati, aksi yang sudah dikirimkan tidak dapat dibatalkan.
+              </div>
+            }
+
+            <!-- Aksi: Samakan sisa cuti -->
+            @if (aksiMassalAksi() === 'SAMAKAN_SISA_CUTI') {
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Sisa Cuti <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-3">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="amSamakanSisa() ?? ''"
+                         (input)="amSamakanSisa.set($any($event.target).value === '' ? null : +$any($event.target).value)">
+                </div>
+              </div>
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">Tgl. Cuti Berakhir</label>
+                <div class="col-sm-4">
+                  <input type="date" class="form-control form-control-sm"
+                         [value]="amSamakanTglBerakhir()"
+                         (input)="amSamakanTglBerakhir.set($any($event.target).value)">
+                </div>
+              </div>
+            }
+
+            <!-- Aksi: Tambah sisa cuti -->
+            @if (aksiMassalAksi() === 'TAMBAH_SISA_CUTI') {
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Nilai Penambahan <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-3">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="amTambahNilai() ?? ''"
+                         (input)="amTambahNilai.set($any($event.target).value === '' ? null : +$any($event.target).value)">
+                </div>
+              </div>
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">Tambah Bulan Masa Aktif</label>
+                <div class="col-sm-3">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="amTambahBulanMasaAktif() ?? ''"
+                         (input)="amTambahBulanMasaAktif.set($any($event.target).value === '' ? null : +$any($event.target).value)">
+                </div>
+                <div class="col-sm-2 small text-muted">Bulan</div>
+              </div>
+            }
+
+            <!-- Aksi: Kurangi sisa cuti -->
+            @if (aksiMassalAksi() === 'KURANGI_SISA_CUTI') {
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Nilai Pengurangan <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-3">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="amKurangiNilai() ?? ''"
+                         (input)="amKurangiNilai.set($any($event.target).value === '' ? null : +$any($event.target).value)">
+                </div>
+              </div>
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">Kurangi Bulan Masa Aktif</label>
+                <div class="col-sm-3">
+                  <input type="number" class="form-control form-control-sm" min="0"
+                         [value]="amKurangiBulanMasaAktif() ?? ''"
+                         (input)="amKurangiBulanMasaAktif.set($any($event.target).value === '' ? null : +$any($event.target).value)">
+                </div>
+                <div class="col-sm-2 small text-muted">Bulan</div>
+              </div>
+            }
+
+            <!-- Aksi: Atur Izin Jam Karyawan -->
+            @if (aksiMassalAksi() === 'ATUR_IZIN_JAM') {
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-5 col-form-label small">Karyawan dapat mengganti izin jam?</label>
+                <div class="col-sm-7 d-flex gap-3 align-items-center">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="izinGantiYa"
+                           [checked]="amIzinDapatGanti()"
+                           (change)="amIzinDapatGanti.set(true)">
+                    <label class="form-check-label small" for="izinGantiYa">YA</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="izinGantiTidak"
+                           [checked]="!amIzinDapatGanti()"
+                           (change)="amIzinDapatGanti.set(false)">
+                    <label class="form-check-label small" for="izinGantiTidak">TIDAK</label>
+                  </div>
+                </div>
+              </div>
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-5 col-form-label small">Kenakan potongan izin jam pada rincian gaji</label>
+                <div class="col-sm-7 d-flex gap-3 align-items-center">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="izinPotYa"
+                           [checked]="amIzinPotonganRincian()"
+                           (change)="amIzinPotonganRincian.set(true)">
+                    <label class="form-check-label small" for="izinPotYa">YA</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="izinPotTidak"
+                           [checked]="!amIzinPotonganRincian()"
+                           (change)="amIzinPotonganRincian.set(false)">
+                    <label class="form-check-label small" for="izinPotTidak">TIDAK</label>
+                  </div>
+                </div>
+              </div>
+              <div class="row mb-3 align-items-start">
+                <label class="col-sm-5 col-form-label small">
+                  Kenakan Denda Keterlambatan jika presensi masuk lebih dari selesai izin jam
+                </label>
+                <div class="col-sm-7 d-flex gap-3 align-items-center">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="izinDendaYa"
+                           [checked]="amIzinDendaTelat()"
+                           (change)="amIzinDendaTelat.set(true)">
+                    <label class="form-check-label small" for="izinDendaYa">YA</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="izinDendaTidak"
+                           [checked]="!amIzinDendaTelat()"
+                           (change)="amIzinDendaTelat.set(false)">
+                    <label class="form-check-label small" for="izinDendaTidak">TIDAK</label>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Aksi: Pindah Divisi -->
+            @if (aksiMassalAksi() === 'PINDAH_DIVISI') {
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label small">
+                  Divisi <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <select class="form-select form-select-sm"
+                          [value]="amPindahDivisiId() ?? ''"
+                          (change)="amPindahDivisiId.set($any($event.target).value ? +$any($event.target).value : null)">
+                    <option value="">--Divisi--</option>
+                    @for (d of divisiList(); track d.id) {
+                      <option [value]="d.id">{{ d.namaDivisi }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            }
+
+            @if (aksiMassalError()) {
+              <div class="alert alert-danger py-2 small mb-0">
+                {{ aksiMassalError() }}
+              </div>
+            }
+          </div>
+          <div class="modal-footer d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-sm px-4 text-white"
+                    style="background:#6366f1;border-color:#6366f1"
+                    [disabled]="aksiMassalBusy()"
+                    (click)="prosesAksiMassal()">
+              @if (aksiMassalBusy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+              Proses
+            </button>
+            <button type="button" class="btn btn-light border btn-sm px-4"
+                    (click)="tutupAksiMassal()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>
+

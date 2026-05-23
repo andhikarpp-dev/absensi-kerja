@@ -1,0 +1,1095 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          @if (karyawan()?.namaLengkap) {
+            <li class="breadcrumb-item">
+              <a [routerLink]="['/karyawan', karyawan()!.id]">{{ karyawan()!.namaLengkap }}</a>
+            </li>
+          }
+          <li class="breadcrumb-item active">Kehadiran</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Info Bar -->
+  <div class="info-bar card border-0 shadow-sm mb-3 px-4 py-3 d-flex flex-row align-items-center gap-3">
+    @if (fotoUrl(karyawan()?.fotoProfil); as url) {
+      <img [src]="url" alt="Foto" class="rounded-circle"
+           style="width:44px;height:44px;object-fit:cover;border:2px solid #e9ecef;flex-shrink:0" />
+    } @else {
+      <div class="rounded-circle d-flex align-items-center justify-content-center"
+           style="width:44px;height:44px;background:#f3f4f6;color:#9ca3af;font-size:1.2rem;flex-shrink:0">
+        <i class="bx bx-user"></i>
+      </div>
+    }
+    <div class="flex-grow-1">
+      <div class="fw-bold" style="font-size:1rem">{{ karyawan()?.namaLengkap || '—' }}</div>
+      <div class="text-muted small">
+        {{ karyawan()?.namaDivisi || 'Belum ada divisi' }}
+        @if (karyawan()?.namaJabatan) { · {{ karyawan()!.namaJabatan }} }
+      </div>
+    </div>
+    <a [routerLink]="['/karyawan', karyawan()?.id]" class="btn btn-outline-secondary btn-sm px-3">
+      <i class="bx bx-arrow-back me-1"></i> Kembali
+    </a>
+  </div>
+
+  <!-- Judul + Tab -->
+  <div class="card border-0 shadow-sm mb-3 px-4 py-3">
+    <div class="fw-bold mb-2" style="font-size:1.1rem">Kehadiran</div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'harian'" (click)="setTab('harian')">Kehadiran Harian</button>
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'ringkasan'" (click)="setTab('ringkasan')">Ringkasan Kehadiran</button>
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'catatan'" (click)="setTab('catatan')">Rekap Catatan Presensi</button>
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'selfie'" (click)="setTab('selfie')">Rekap Selfie</button>
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'lokasi'" (click)="setTab('lokasi')">Rekap Lokasi Kehadiran</button>
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'fingerspot'" (click)="setTab('fingerspot')">Fingerspot</button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+    </div>
+  }
+
+  <!-- ═══ TAB: Kehadiran Harian ══════════════════════════════ -->
+  @if (activeTab() === 'harian') {
+
+  <!-- Card Utama -->
+  <div class="card border-0 shadow-sm">
+
+    <!-- Filter + Tombol Aksi -->
+    <div class="px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <select class="form-select form-select-sm" style="width:140px"
+                [ngModel]="bulan()"
+                (ngModelChange)="onBulanChange($event)">
+          @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+            <option [value]="i">{{ BULAN_LABEL[i] }}</option>
+          }
+        </select>
+        <select class="form-select form-select-sm" style="width:100px"
+                [ngModel]="tahun()"
+                (ngModelChange)="onTahunChange($event)">
+          @for (y of TAHUN_LIST; track y) {
+            <option [value]="y">{{ y }}</option>
+          }
+        </select>
+      </div>
+      <button class="btn btn-tambah btn-sm px-3" (click)="openModal()">
+        <i class="bx bx-plus me-1"></i> Tambah Presensi
+      </button>
+    </div>
+
+    <!-- Statistik -->
+    <div class="stat-row px-4 py-3 border-bottom d-flex gap-3 flex-wrap">
+      <div class="stat-item stat-hadir">
+        <div class="stat-val">{{ totalHadir() }}</div>
+        <div class="stat-lbl">Hadir</div>
+      </div>
+      <div class="stat-item stat-terlambat">
+        <div class="stat-val">{{ totalTerlambat() }}</div>
+        <div class="stat-lbl">Terlambat</div>
+      </div>
+      <div class="stat-item stat-izin">
+        <div class="stat-val">{{ totalIzin() }}</div>
+        <div class="stat-lbl">Izin</div>
+      </div>
+      <div class="stat-item stat-sakit">
+        <div class="stat-val">{{ totalSakit() }}</div>
+        <div class="stat-lbl">Sakit</div>
+      </div>
+      <div class="stat-item stat-alpha">
+        <div class="stat-val">{{ totalAlpha() }}</div>
+        <div class="stat-lbl">Alpha</div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="text-center py-5 text-muted">
+        <span class="spinner-border text-primary mb-3"></span>
+        <p class="mb-0 small">Memuat data kehadiran...</p>
+      </div>
+    }
+
+    <!-- Kosong -->
+    @if (!loading() && list().length === 0) {
+      <div class="text-center py-5 text-muted">
+        <i class="bx bx-calendar-x" style="font-size:3.5rem;opacity:.2"></i>
+        <p class="mt-3 fw-semibold mb-1">Belum ada data kehadiran</p>
+        <p class="small mb-3">Belum ada presensi pada bulan ini.</p>
+        <button class="btn btn-tambah btn-sm px-4" (click)="openModal()">
+          <i class="bx bx-plus me-1"></i> Tambah Presensi
+        </button>
+      </div>
+    }
+
+    <!-- Tabel -->
+    @if (!loading() && list().length > 0) {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 kehadiran-table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th class="text-center">Presensi Masuk</th>
+              <th class="text-center">Mulai Istirahat</th>
+              <th class="text-center">Selesai Istirahat</th>
+              <th class="text-center">Presensi Keluar</th>
+              <th class="text-center">Mulai Lembur</th>
+              <th class="text-center">Selesai Lembur</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of list(); track a.id) {
+              <tr>
+                <!-- Tanggal + Status -->
+                <td>
+                  <div class="fw-semibold" style="font-size:.85rem">{{ formatTanggal(a.tanggal) }}</div>
+                  <div class="d-flex align-items-center gap-2 mt-1">
+                    <span class="badge-status" [ngClass]="statusClass(a.status)">{{ a.status }}</span>
+                    @if (a.menitTerlambat > 0) {
+                      <span class="badge-terlambat">+{{ a.menitTerlambat }} mnt</span>
+                    }
+                  </div>
+                  @if (a.namaPolaKerja) {
+                    <div class="text-muted" style="font-size:.72rem;margin-top:2px">{{ a.namaPolaKerja }}</div>
+                  }
+                </td>
+                <!-- Presensi Masuk -->
+                <td class="text-center">
+                  @if (a.jamMasuk) {
+                    <div class="jam-besar">{{ formatJam(a.jamMasuk) }}</div>
+                    @if (a.jamKerjaMulai) {
+                      <div class="text-muted" style="font-size:.72rem">Jadwal: {{ a.jamKerjaMulai }}</div>
+                    }
+                  } @else { <span class="text-muted">—</span> }
+                </td>
+                <!-- Mulai Istirahat -->
+                <td class="text-center">
+                  @if (a.jamMulaiIstirahat) {
+                    <div class="jam-besar">{{ formatJam(a.jamMulaiIstirahat) }}</div>
+                  } @else { <span class="text-muted">—</span> }
+                </td>
+                <!-- Selesai Istirahat -->
+                <td class="text-center">
+                  @if (a.jamSelesaiIstirahat) {
+                    <div class="jam-besar">{{ formatJam(a.jamSelesaiIstirahat) }}</div>
+                  } @else { <span class="text-muted">—</span> }
+                </td>
+                <!-- Presensi Keluar -->
+                <td class="text-center">
+                  @if (a.jamKeluar) {
+                    <div class="jam-besar">{{ formatJam(a.jamKeluar) }}</div>
+                    @if (a.jamKerjaSelesai) {
+                      <div class="text-muted" style="font-size:.72rem">Jadwal: {{ a.jamKerjaSelesai }}</div>
+                    }
+                  } @else { <span class="text-muted">—</span> }
+                </td>
+                <!-- Mulai Lembur -->
+                <td class="text-center">
+                  @if (a.jamMulaiLembur) {
+                    <div class="jam-besar">{{ formatJam(a.jamMulaiLembur) }}</div>
+                  } @else { <span class="text-muted">—</span> }
+                </td>
+                <!-- Selesai Lembur -->
+                <td class="text-center">
+                  @if (a.jamSelesaiLembur) {
+                    <div class="jam-besar">{{ formatJam(a.jamSelesaiLembur) }}</div>
+                  } @else { <span class="text-muted">—</span> }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer info -->
+      <div class="px-4 py-2 border-top" style="background:#fafafa;font-size:.78rem;color:#9ca3af">
+        Menampilkan {{ list().length }} data presensi bulan
+        {{ BULAN_LABEL[bulan()] }} {{ tahun() }}
+      </div>
+    }
+
+  </div>
+
+  } <!-- end tab harian -->
+
+  <!-- ═══ TAB: Ringkasan Kehadiran ═══════════════════════════ -->
+  @if (activeTab() === 'ringkasan') {
+
+  <!-- Filter Bulan & Tahun -->
+  <div class="card border-0 shadow-sm mb-3 px-4 py-3">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <select class="form-select form-select-sm" style="width:140px"
+              [ngModel]="bulan()"
+              (ngModelChange)="onBulanChange($event)">
+        @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+          <option [value]="i">{{ BULAN_LABEL[i] }}</option>
+        }
+      </select>
+      <select class="form-select form-select-sm" style="width:100px"
+              [ngModel]="tahun()"
+              (ngModelChange)="onTahunChange($event)">
+        @for (y of TAHUN_LIST; track y) {
+          <option [value]="y">{{ y }}</option>
+        }
+      </select>
+      <span class="text-muted small">— Ringkasan {{ BULAN_LABEL[bulan()] }} {{ tahun() }}</span>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (loadingRingkasan()) {
+    <div class="text-center py-5 text-muted">
+      <span class="spinner-border text-primary mb-3"></span>
+      <p class="mb-0 small">Memuat data ringkasan...</p>
+    </div>
+  }
+
+  <!-- Data tersedia -->
+  @if (!loadingRingkasan() && ringkasan(); as rks) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-0">
+        <div class="row g-0">
+
+          <!-- ══ Kolom Kiri ══════════════════════════════════ -->
+          <div class="col-12 col-md-6 rks-col rks-col-left">
+
+            <div class="rks-row">
+              <span class="rks-label">Total Hari Jadwal Kerja</span>
+              <span class="rks-val-blue">{{ rks.totalHariJadwalKerja }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Hari Kehadiran
+                <i class="bx bx-question-mark rks-help" title="Jumlah hari hadir"></i>
+              </span>
+              <span class="rks-val-blue">{{ rks.totalHariKehadiran }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Hari Tidak Masuk
+                <i class="bx bx-question-mark rks-help" title="Jumlah hari alpha (tidak hadir tanpa keterangan)"></i>
+              </span>
+              <span class="rks-val-blue">{{ rks.totalHariTidakMasuk }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Hari Cuti
+                <i class="bx bx-question-mark rks-help" title="Jumlah hari cuti"></i>
+              </span>
+              <span class="rks-val-blue">{{ rks.totalHariCuti }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Hari Izin
+                <i class="bx bx-question-mark rks-help" title="Jumlah hari izin"></i>
+              </span>
+              <span class="rks-val-blue">{{ rks.totalHariIzin }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Persentase Kehadiran
+                <i class="bx bx-question-mark rks-help" title="(Hari Hadir / Total Hari Jadwal) × 100"></i>
+              </span>
+              <span class="rks-val-dark">{{ rks.persentaseKehadiran }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Target Kehadiran Jabatan</span>
+              <span class="rks-val-dark">
+                @if (rks.targetKehadiranJabatan != null) { {{ rks.targetKehadiranJabatan }}% }
+                @else { <span class="text-muted">—</span> }
+              </span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Jam Jadwal Kerja</span>
+              <span class="rks-val-dark">{{ formatDurasi(rks.totalMenitJadwalKerja) }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Jam Kerja
+                <i class="bx bx-question-mark rks-help" title="Total jam masuk hingga keluar dikurangi istirahat"></i>
+              </span>
+              <span class="rks-val-dark">{{ formatDurasi(rks.totalMenitKerja) }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Persentase Capaian Jam Kerja
+                <i class="bx bx-question-mark rks-help" title="(Total Jam Kerja / Total Jam Jadwal) × 100"></i>
+              </span>
+              <span class="rks-val-dark">{{ rks.persentaseCapaianJamKerja }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Jam Istirahat
+                <i class="bx bx-question-mark rks-help" title="Total durasi istirahat"></i>
+              </span>
+              <span class="rks-val-dark">{{ formatDurasi(rks.totalMenitIstirahat) }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Jam Lembur
+                <i class="bx bx-question-mark rks-help" title="Total durasi lembur"></i>
+              </span>
+              <span class="rks-val-dark">
+                @if (rks.totalMenitLembur > 0) { {{ formatDurasi(rks.totalMenitLembur) }} }
+                @else { <span class="text-muted">—</span> }
+              </span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Jam Openshift</span>
+              <span class="rks-val-dark text-muted">—</span>
+            </div>
+
+            <div class="rks-row rks-row-last">
+              <span class="rks-label">Total Hari Openshift</span>
+              <span class="rks-val-blue">{{ rks.totalHariOpenshift }}</span>
+            </div>
+
+          </div><!-- /col kiri -->
+
+          <!-- ══ Kolom Kanan ═════════════════════════════════ -->
+          <div class="col-12 col-md-6 rks-col rks-col-right">
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Jam Terlambat
+                <i class="bx bx-question-mark rks-help" title="Total durasi keterlambatan masuk"></i>
+              </span>
+              <span class="rks-val-dark">
+                @if (rks.totalMenitTerlambat > 0) { {{ formatDurasi(rks.totalMenitTerlambat) }} }
+                @else { <span class="text-muted">—</span> }
+              </span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Hari Terlambat
+                <i class="bx bx-question-mark rks-help" title="Jumlah hari dengan keterlambatan masuk"></i>
+              </span>
+              <span class="rks-val-blue">{{ rks.totalHariTerlambat }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Denda Keterlambatan(Rp)</span>
+              <span class="rks-val-blue">{{ rks.totalDendaKeterlambatan }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Hari Terlambat Presensi Keluar</span>
+              <span class="rks-val-blue">{{ rks.totalHariTerlambatPresensiKeluar }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Denda Terlambat Presensi Keluar(Rp)</span>
+              <span class="rks-val-blue">{{ rks.totalDendaTerlambatPresensiKeluar }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Jam Toleransi
+                <i class="bx bx-question-mark rks-help" title="Total durasi toleransi keterlambatan"></i>
+              </span>
+              <span class="rks-val-dark">
+                @if (rks.totalMenitToleransi > 0) { {{ formatDurasi(rks.totalMenitToleransi) }} }
+                @else { <span class="text-muted">—</span> }
+              </span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">
+                Total Hari Toleransi
+                <i class="bx bx-question-mark rks-help" title="Jumlah hari dengan penggunaan toleransi"></i>
+              </span>
+              <span class="rks-val-blue">{{ rks.totalHariToleransi }}</span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Jam Izin Jam</span>
+              <span class="rks-val-dark">
+                @if (rks.totalMenitIzinJam > 0) { {{ formatDurasi(rks.totalMenitIzinJam) }} }
+                @else { <span class="text-muted">—</span> }
+              </span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Jam Izin Jam Belum Diganti</span>
+              <span class="rks-val-dark">
+                @if (rks.totalMenitIzinJamBelumDiganti > 0) { {{ formatDurasi(rks.totalMenitIzinJamBelumDiganti) }} }
+                @else { <span class="text-muted">—</span> }
+              </span>
+            </div>
+
+            <div class="rks-row">
+              <span class="rks-label">Total Hari Presensi Keluar Otomatis</span>
+              <span class="rks-val-blue">{{ rks.totalHariPresensiKeluarOtomatis }}</span>
+            </div>
+
+            <div class="rks-row rks-row-last">
+              <span class="rks-label">
+                Jam Kerja Tidak Terpenuhi
+                <i class="bx bx-question-mark rks-help" title="Selisih jam jadwal yang tidak terpenuhi"></i>
+              </span>
+              <span class="rks-val-blue">
+                @if (rks.menitJamKerjaTidakTerpenuhi > 0) { {{ formatDurasi(rks.menitJamKerjaTidakTerpenuhi) }} }
+                @else { 0 }
+              </span>
+            </div>
+
+          </div><!-- /col kanan -->
+
+        </div><!-- /row -->
+      </div>
+    </div>
+  }
+
+  <!-- Belum ada data -->
+  @if (!loadingRingkasan() && !ringkasan()) {
+    <div class="card border-0 shadow-sm">
+      <div class="text-center py-5 text-muted">
+        <i class="bx bx-bar-chart-alt" style="font-size:3rem;opacity:.2"></i>
+        <p class="mt-3 mb-0 small fw-semibold">Belum ada data ringkasan</p>
+        <p class="small mt-1">Klik tab ini kembali atau pilih periode lain.</p>
+      </div>
+    </div>
+  }
+
+  } <!-- end tab ringkasan -->
+
+  <!-- ═══ TAB: Rekap Catatan Presensi ════════════════════════ -->
+  @if (activeTab() === 'catatan') {
+
+  <div class="card border-0 shadow-sm mb-0">
+
+    <!-- ── Toolbar navigasi minggu ── -->
+    <div class="catatan-toolbar px-3 py-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+
+      <!-- Tombol navigasi + label minggu -->
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn-minggu btn-minggu-prev" (click)="mingguSebelumnya()">
+          ← Minggu sebelumnya
+        </button>
+        <button class="btn-minggu btn-minggu-next" (click)="mingguBerikutnya()">
+          Minggu berikutnya →
+        </button>
+      </div>
+
+      <!-- Filter Bulan & Tahun -->
+      <div class="d-flex align-items-center gap-2">
+        <select class="form-select form-select-sm" style="width:130px"
+                [ngModel]="bulan()"
+                (ngModelChange)="onBulanChange($event)">
+          @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+            <option [value]="i">{{ BULAN_LABEL[i] }}</option>
+          }
+        </select>
+        <select class="form-select form-select-sm" style="width:90px"
+                [ngModel]="tahun()"
+                (ngModelChange)="onTahunChange($event)">
+          @for (y of TAHUN_LIST; track y) {
+            <option [value]="y">{{ y }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- ── Loading ── -->
+    @if (loading()) {
+      <div class="text-center py-5 text-muted">
+        <span class="spinner-border text-primary mb-3"></span>
+        <p class="mb-0 small">Memuat data...</p>
+      </div>
+    }
+
+    <!-- ── Tabel mingguan ── -->
+    @if (!loading()) {
+      <div class="table-responsive catatan-scroll">
+        <table class="catatan-table">
+
+          <!-- ── Baris 1: Nama hari ── -->
+          <thead>
+            <tr class="catatan-row-hari">
+              @for (tgl of hariMingguIni(); track tgl) {
+                <th colspan="2"
+                    [class.catatan-col-today]="isHariIni(tgl)"
+                    [class.catatan-col-normal]="!isHariIni(tgl)">
+                  <div class="catatan-hari-lbl">{{ labelHari(tgl) }}</div>
+                  @if (isHariIni(tgl)) {
+                    <div class="catatan-hari-today">(Hari ini)</div>
+                  }
+                </th>
+              }
+            </tr>
+
+            <!-- ── Baris 2: Sub-header Presensi Masuk / Keluar ── -->
+            <tr class="catatan-row-sub">
+              @for (tgl of hariMingguIni(); track tgl) {
+                <th [class.catatan-sub-today]="isHariIni(tgl)"
+                    [class.catatan-sub-normal]="!isHariIni(tgl)">
+                  Presensi Masuk
+                </th>
+                <th [class.catatan-sub-today]="isHariIni(tgl)"
+                    [class.catatan-sub-normal]="!isHariIni(tgl)">
+                  Presensi Keluar
+                </th>
+              }
+            </tr>
+          </thead>
+
+          <!-- ── Baris data ── -->
+          <tbody>
+            <tr class="catatan-row-data">
+              @for (tgl of hariMingguIni(); track tgl) {
+                @let absensi = getAbsensi(tgl);
+
+                @if (absensi) {
+                  <!-- Presensi Masuk -->
+                  <td [class.catatan-cell-today]="isHariIni(tgl)"
+                      [class.catatan-cell-normal]="!isHariIni(tgl)">
+                    @if (absensi.jamMasuk) {
+                      <div class="catatan-jam">{{ absensi.jamMasuk }}</div>
+                      <div class="catatan-note">
+                        {{ absensi.catatanMasuk || 'Tidak Ada Catatan' }}
+                      </div>
+                    } @else {
+                      <span class="text-muted catatan-empty">—</span>
+                    }
+                  </td>
+                  <!-- Presensi Keluar -->
+                  <td [class.catatan-cell-today]="isHariIni(tgl)"
+                      [class.catatan-cell-normal]="!isHariIni(tgl)">
+                    @if (absensi.jamKeluar) {
+                      <div class="catatan-jam">{{ absensi.jamKeluar }}</div>
+                      <div class="catatan-note">
+                        {{ absensi.catatanKeluar || 'Tidak Ada Catatan' }}
+                      </div>
+                    } @else {
+                      <span class="text-muted catatan-empty">—</span>
+                    }
+                  </td>
+                } @else {
+                  <!-- Tidak / Belum Masuk (span 2 kolom) -->
+                  <td colspan="2"
+                      [class.catatan-cell-today]="isHariIni(tgl)"
+                      [class.catatan-cell-kosong]="!isHariIni(tgl)">
+                    <span class="catatan-belum">Tidak/Belum Masuk</span>
+                  </td>
+                }
+              }
+            </tr>
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- Footer range minggu -->
+      <div class="px-4 py-2 border-top"
+           style="background:#fafafa;font-size:.78rem;color:#9ca3af">
+        {{ labelMinggu() }}
+      </div>
+    }
+
+  </div>
+
+  } <!-- end tab catatan -->
+
+  <!-- ═══ TAB: Rekap Selfie ══════════════════════════════════ -->
+  @if (activeTab() === 'selfie') {
+
+  <div class="card border-0 shadow-sm mb-0">
+
+    <!-- ── Toolbar navigasi minggu ── -->
+    <div class="catatan-toolbar px-3 py-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn-minggu" (click)="mingguSebelumnya()">← Minggu sebelumnya</button>
+        <button class="btn-minggu" (click)="mingguBerikutnya()">Minggu berikutnya →</button>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <select class="form-select form-select-sm" style="width:130px"
+                [ngModel]="bulan()" (ngModelChange)="onBulanChange($event)">
+          @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+            <option [value]="i">{{ BULAN_LABEL[i] }}</option>
+          }
+        </select>
+        <select class="form-select form-select-sm" style="width:90px"
+                [ngModel]="tahun()" (ngModelChange)="onTahunChange($event)">
+          @for (y of TAHUN_LIST; track y) {
+            <option [value]="y">{{ y }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- ── Loading ── -->
+    @if (loading()) {
+      <div class="text-center py-5 text-muted">
+        <span class="spinner-border text-primary mb-3"></span>
+        <p class="mb-0 small">Memuat data selfie...</p>
+      </div>
+    }
+
+    <!-- ── Tabel mingguan selfie ── -->
+    @if (!loading()) {
+      <div class="table-responsive catatan-scroll">
+        <table class="selfie-table">
+
+          <!-- ── Baris 1: Nama hari ── -->
+          <thead>
+            <tr class="catatan-row-hari">
+              @for (tgl of hariMingguIni(); track tgl) {
+                <th colspan="2"
+                    [class.catatan-col-today]="isHariIni(tgl)"
+                    [class.catatan-col-normal]="!isHariIni(tgl)">
+                  <div class="catatan-hari-lbl">{{ labelHari(tgl) }}</div>
+                  @if (isHariIni(tgl)) {
+                    <div class="catatan-hari-today">(Hari ini)</div>
+                  }
+                </th>
+              }
+            </tr>
+
+            <!-- ── Baris 2: Sub-header ── -->
+            <tr class="catatan-row-sub">
+              @for (tgl of hariMingguIni(); track tgl) {
+                <th [class.catatan-sub-today]="isHariIni(tgl)"
+                    [class.catatan-sub-normal]="!isHariIni(tgl)">
+                  Selfie Masuk
+                </th>
+                <th [class.catatan-sub-today]="isHariIni(tgl)"
+                    [class.catatan-sub-normal]="!isHariIni(tgl)">
+                  Selfie Keluar
+                </th>
+              }
+            </tr>
+          </thead>
+
+          <!-- ── Baris data ── -->
+          <tbody>
+            <tr class="catatan-row-data">
+              @for (tgl of hariMingguIni(); track tgl) {
+                @let absensi = getAbsensi(tgl);
+
+                @if (absensi) {
+                  <!-- Selfie Masuk -->
+                  <td [class.catatan-cell-today]="isHariIni(tgl)"
+                      [class.catatan-cell-normal]="!isHariIni(tgl)"
+                      class="selfie-cell">
+                    @if (absensi.fotoMasukUrl) {
+                      <div class="selfie-wrap">
+                        <img [src]="absensi.fotoMasukUrl"
+                             alt="Selfie Masuk"
+                             class="selfie-img"
+                             (click)="bukaFotoModal(absensi.fotoMasukUrl, 'Selfie Masuk — ' + labelHari(tgl))" />
+                        <div class="selfie-jam">{{ formatJam(absensi.jamMasuk) }}</div>
+                        @if (absensi.menitTerlambat > 0) {
+                          <span class="selfie-late">+{{ absensi.menitTerlambat }} mnt</span>
+                        }
+                      </div>
+                    } @else {
+                      <div class="selfie-kosong">
+                        <i class="bx bx-camera-off"></i>
+                        <span>Tidak Ada</span>
+                      </div>
+                    }
+                  </td>
+
+                  <!-- Selfie Keluar -->
+                  <td [class.catatan-cell-today]="isHariIni(tgl)"
+                      [class.catatan-cell-normal]="!isHariIni(tgl)"
+                      class="selfie-cell">
+                    @if (absensi.fotoKeluarUrl) {
+                      <div class="selfie-wrap">
+                        <img [src]="absensi.fotoKeluarUrl"
+                             alt="Selfie Keluar"
+                             class="selfie-img"
+                             (click)="bukaFotoModal(absensi.fotoKeluarUrl, 'Selfie Keluar — ' + labelHari(tgl))" />
+                        <div class="selfie-jam">{{ formatJam(absensi.jamKeluar) }}</div>
+                      </div>
+                    } @else {
+                      <div class="selfie-kosong">
+                        <i class="bx bx-camera-off"></i>
+                        <span>Tidak Ada</span>
+                      </div>
+                    }
+                  </td>
+
+                } @else {
+                  <!-- Tidak / Belum Masuk -->
+                  <td colspan="2"
+                      [class.catatan-cell-today]="isHariIni(tgl)"
+                      [class.catatan-cell-kosong]="!isHariIni(tgl)"
+                      class="selfie-cell">
+                    <span class="catatan-belum">Tidak/Belum Masuk</span>
+                  </td>
+                }
+              }
+            </tr>
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- Footer range minggu -->
+      <div class="px-4 py-2 border-top"
+           style="background:#fafafa;font-size:.78rem;color:#9ca3af">
+        {{ labelMinggu() }}
+      </div>
+    }
+
+  </div>
+
+  <!-- ── Modal Foto Selfie ── -->
+  @if (fotoModalUrl()) {
+    <div class="foto-modal-backdrop" (click)="tutupFotoModal()">
+      <div class="foto-modal-box" (click)="$event.stopPropagation()">
+        <div class="foto-modal-header">
+          <span class="foto-modal-title">{{ fotoModalJudul() }}</span>
+          <button class="foto-modal-close" (click)="tutupFotoModal()">
+            <i class="bx bx-x"></i>
+          </button>
+        </div>
+        <img [src]="fotoModalUrl()!" alt="Foto Selfie" class="foto-modal-img" />
+      </div>
+    </div>
+  }
+
+  } <!-- end tab selfie -->
+
+  <!-- ═══ TAB: Rekap Lokasi Kehadiran ══════════════════════ -->
+  @if (activeTab() === 'lokasi') {
+
+  <div class="card border-0 shadow-sm mb-0">
+
+    <!-- Toolbar filter bulan/tahun -->
+    <div class="catatan-toolbar px-3 py-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="fw-semibold" style="font-size:.9rem">
+        <i class="bx bx-map-pin me-1 text-primary"></i>Lokasi Kehadiran GPS
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <select class="form-select form-select-sm" style="width:130px"
+                [ngModel]="bulan()" (ngModelChange)="onBulanChange($event)">
+          @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+            <option [value]="i">{{ BULAN_LABEL[i] }}</option>
+          }
+        </select>
+        <select class="form-select form-select-sm" style="width:90px"
+                [ngModel]="tahun()" (ngModelChange)="onTahunChange($event)">
+          @for (y of TAHUN_LIST; track y) {
+            <option [value]="y">{{ y }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="text-center py-5 text-muted">
+        <span class="spinner-border text-primary mb-3"></span>
+        <p class="mb-0 small">Memuat data lokasi...</p>
+      </div>
+    }
+
+    @if (!loading()) {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+          <thead class="table-light">
+            <tr>
+              <th class="px-4" style="width:220px">Tanggal</th>
+              <th class="px-3">Lokasi Kehadiran (GPS)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (listDenganLokasi().length === 0) {
+              <tr>
+                <td colspan="2" class="text-center py-5 text-muted">
+                  <i class="bx bx-map-alt fs-3 d-block mb-2"></i>
+                  Tidak ada data lokasi GPS untuk periode ini.
+                </td>
+              </tr>
+            }
+            @for (a of listDenganLokasi(); track a.tanggal) {
+              <tr>
+                <!-- Tanggal -->
+                <td class="px-4 py-3">
+                  <div class="fw-semibold">{{ formatTanggal(a.tanggal) }}</div>
+                  @if (isHariIni(a.tanggal)) {
+                    <span class="badge bg-primary-subtle text-primary" style="font-size:.7rem">Hari ini</span>
+                  }
+                </td>
+                <!-- Lokasi GPS -->
+                <td class="px-3 py-3">
+                  <div class="d-flex flex-wrap gap-2">
+                    @if (a.lokasiMasukUrl) {
+                      <a [href]="a.lokasiMasukUrl" target="_blank" rel="noopener"
+                         class="btn btn-sm d-inline-flex align-items-center gap-1"
+                         style="background:#dcfce7;color:#15803d;border-radius:8px;font-size:.78rem;padding:.25rem .65rem;border:none">
+                        <i class="bx bx-log-in-circle"></i>
+                        <span>Lokasi Masuk</span>
+                        @if (a.jamMasuk) {
+                          <span class="ms-1 text-muted" style="font-size:.72rem">({{ formatJam(a.jamMasuk) }})</span>
+                        }
+                      </a>
+                    }
+                    @if (a.lokasiKeluarUrl) {
+                      <a [href]="a.lokasiKeluarUrl" target="_blank" rel="noopener"
+                         class="btn btn-sm d-inline-flex align-items-center gap-1"
+                         style="background:#dbeafe;color:#1d4ed8;border-radius:8px;font-size:.78rem;padding:.25rem .65rem;border:none">
+                        <i class="bx bx-log-out-circle"></i>
+                        <span>Lokasi Keluar</span>
+                        @if (a.jamKeluar) {
+                          <span class="ms-1 text-muted" style="font-size:.72rem">({{ formatJam(a.jamKeluar) }})</span>
+                        }
+                      </a>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer info -->
+      <div class="px-4 py-2 border-top"
+           style="background:#fafafa;font-size:.78rem;color:#9ca3af">
+        {{ listDenganLokasi().length }} data dengan lokasi GPS · {{ BULAN_LABEL[bulan()] }} {{ tahun() }}
+      </div>
+    }
+
+  </div>
+
+  } <!-- end tab lokasi -->
+
+  <!-- ═══ TAB: Fingerspot ══════════════════════════════════ -->
+  @if (activeTab() === 'fingerspot') {
+
+  <!-- Toast notifikasi -->
+  @if (fingerspotToast()) {
+    <div class="fingerspot-toast d-flex align-items-center gap-2">
+      <i class="bx bx-check-circle fs-5"></i>
+      <span>Pengaturan pembatasan berhasil disimpan.</span>
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm mb-0">
+
+    <!-- Header -->
+    <div class="px-4 py-3 border-bottom d-flex align-items-center gap-2">
+      <i class="bx bx-fingerprint fs-4 text-primary"></i>
+      <div>
+        <div class="fw-bold" style="font-size:.95rem">Pengaturan Fingerspot</div>
+        <div class="text-muted small">Pembatasan presensi melalui mesin Fingerspot</div>
+      </div>
+    </div>
+
+    <!-- Konten -->
+    <div class="px-4 py-4">
+
+      <!-- Deskripsi -->
+      <div class="alert alert-light border d-flex align-items-start gap-3 mb-4"
+           style="border-radius:10px">
+        <i class="bx bx-info-circle fs-5 mt-1 text-primary flex-shrink-0"></i>
+        <div style="font-size:.85rem;line-height:1.6">
+          Aktifkan opsi ini untuk <strong>membatasi presensi</strong> karyawan
+          <strong>{{ karyawan()?.namaLengkap }}</strong> agar hanya dapat dilakukan
+          melalui mesin <strong>Fingerspot</strong>. Presensi via aplikasi mobile atau
+          web tidak akan diproses selama opsi ini aktif.
+        </div>
+      </div>
+
+      <!-- Radio Button -->
+      <div class="fw-semibold mb-3" style="font-size:.88rem;color:#374151">
+        Batasi presensi hanya dapat dilakukan melalui mesin Fingerspot.
+      </div>
+
+      <div class="d-flex flex-column gap-3">
+
+        <!-- Aktifkan -->
+        <label class="fingerspot-option"
+               [class.fingerspot-option--active]="fingerspotAktif() === true">
+          <input type="radio" name="fingerspotMode"
+                 [value]="true"
+                 [checked]="fingerspotAktif() === true"
+                 (change)="setFingerspot(true)"
+                 class="fingerspot-radio" />
+          <div class="fingerspot-option-body">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="bx bx-check-shield"
+                 [style.color]="fingerspotAktif() === true ? '#15803d' : '#6b7280'"></i>
+              <span class="fw-semibold" style="font-size:.88rem">Aktifkan</span>
+              @if (fingerspotAktif() === true) {
+                <span class="badge ms-1"
+                      style="background:#dcfce7;color:#15803d;font-size:.7rem">Aktif</span>
+              }
+            </div>
+            <div class="text-muted" style="font-size:.8rem">
+              Presensi hanya dapat dilakukan melalui mesin Fingerspot.
+            </div>
+          </div>
+        </label>
+
+        <!-- Nonaktifkan -->
+        <label class="fingerspot-option"
+               [class.fingerspot-option--active]="fingerspotAktif() === false">
+          <input type="radio" name="fingerspotMode"
+                 [value]="false"
+                 [checked]="fingerspotAktif() === false"
+                 (change)="setFingerspot(false)"
+                 class="fingerspot-radio" />
+          <div class="fingerspot-option-body">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="bx bx-x-circle"
+                 [style.color]="fingerspotAktif() === false ? '#b91c1c' : '#6b7280'"></i>
+              <span class="fw-semibold" style="font-size:.88rem">Nonaktifkan</span>
+              @if (fingerspotAktif() === false) {
+                <span class="badge ms-1"
+                      style="background:#fee2e2;color:#b91c1c;font-size:.7rem">Nonaktif</span>
+              }
+            </div>
+            <div class="text-muted" style="font-size:.8rem">
+              Karyawan dapat melakukan presensi melalui semua metode yang tersedia.
+            </div>
+          </div>
+        </label>
+
+      </div>
+
+      <!-- Tombol Simpan -->
+      <div class="mt-4">
+        <button class="btn btn-tambah btn-sm px-4"
+                (click)="simpanFingerspot()"
+                [disabled]="fingerspotSaving()">
+          @if (fingerspotSaving()) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          } @else {
+            <i class="bx bx-save me-1"></i>
+          }
+          Simpan Pengaturan
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  } <!-- end tab fingerspot -->
+
+  @if (showModal()) {
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.45);z-index:1055"
+         (click)="closeModal()">
+      <div class="modal-dialog modal-dialog-centered"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">
+              <i class="bx bx-plus-circle me-2 text-primary"></i>Tambah Presensi
+            </h5>
+            <button type="button" class="btn-close" (click)="closeModal()"></button>
+          </div>
+
+          <div class="modal-body pt-3">
+            @if (modalError()) {
+              <div class="alert alert-danger py-2 small mb-3">{{ modalError() }}</div>
+            }
+
+            <!-- Karyawan -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Karyawan</label>
+              <input type="text" class="form-control form-control-sm"
+                     [value]="karyawan()?.namaLengkap || ''" readonly />
+            </div>
+
+            <!-- Tanggal -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Tanggal <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm"
+                     [ngModel]="form().tanggal"
+                     (ngModelChange)="updateForm('tanggal', $event)" />
+            </div>
+
+            <!-- Tipe Presensi -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Tipe Presensi <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm"
+                      [ngModel]="form().tipePresensi"
+                      (ngModelChange)="updateForm('tipePresensi', $event)">
+                @for (t of TIPE_LIST; track t.value) {
+                  <option [value]="t.value">{{ t.label }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Waktu Mulai & Selesai -->
+            <div class="row g-2 mb-3">
+              <div class="col">
+                <label class="form-label fw-semibold small">
+                  Waktu Presensi Mulai <span class="text-danger">*</span>
+                </label>
+                <input type="time" class="form-control form-control-sm"
+                       [ngModel]="form().waktuMulai"
+                       (ngModelChange)="updateForm('waktuMulai', $event)" />
+              </div>
+              <div class="col">
+                <label class="form-label fw-semibold small">Waktu Presensi Selesai</label>
+                <input type="time" class="form-control form-control-sm"
+                       [ngModel]="form().waktuSelesai"
+                       (ngModelChange)="updateForm('waktuSelesai', $event)" />
+              </div>
+            </div>
+
+            <!-- Catatan (hanya untuk Masuk-Keluar) -->
+            @if (form().tipePresensi === 'MASUK_KELUAR') {
+              <div class="mb-1">
+                <label class="form-label fw-semibold small">Catatan</label>
+                <textarea class="form-control form-control-sm" rows="2"
+                          [ngModel]="form().catatan"
+                          (ngModelChange)="updateForm('catatan', $event)"
+                          placeholder="Catatan presensi (opsional)"></textarea>
+              </div>
+            }
+          </div>
+
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="closeModal()" [disabled]="modalSaving()">
+              Batal
+            </button>
+            <button class="btn btn-tambah btn-sm px-4"
+                    (click)="simpan()" [disabled]="modalSaving()">
+              @if (modalSaving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              <i class="bx bx-save me-1"></i> Simpan
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

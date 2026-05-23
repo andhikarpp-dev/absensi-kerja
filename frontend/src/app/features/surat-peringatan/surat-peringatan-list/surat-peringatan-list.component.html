@@ -1,0 +1,692 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item">
+            <a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Surat Peringatan</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center" role="alert">
+      <i class="bx bx-error-circle me-2 fs-5"></i>{{ error() }}
+    </div>
+  }
+
+  <!-- Card utama -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+
+      <h5 class="fw-bold mb-3">Surat Peringatan</h5>
+
+      <!-- Top action row -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-primary btn-sm" (click)="openTambah()">
+            <i class="bx bx-plus-medical me-1"></i> Tambah Surat Peringatan
+          </button>
+          <button class="btn btn-primary btn-sm" (click)="openJenis()">
+            <i class="bx bx-cog me-1"></i> Jenis Peringatan
+          </button>
+        </div>
+        <button class="btn btn-light border btn-sm" title="Riwayat Perubahan"
+                (click)="bukaRiwayat()">
+          <i class="bx bx-history me-1"></i> Riwayat Perubahan
+        </button>
+      </div>
+
+      <!-- Filter row -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="date" class="form-control form-control-sm" style="max-width:160px"
+               [ngModel]="filterMulai()" (ngModelChange)="filterMulai.set($event); page.set(1)">
+        <span class="text-muted">-</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:160px"
+               [ngModel]="filterSelesai()" (ngModelChange)="filterSelesai.set($event); page.set(1)">
+
+        <select class="form-select form-select-sm" style="max-width:200px"
+                [ngModel]="filterKaryawanId()"
+                (ngModelChange)="filterKaryawanId.set($event === '' ? '' : +$event); page.set(1)">
+          <option value="">--Semua Karyawan--</option>
+          @for (k of karyawanList(); track k.id) {
+            <option [ngValue]="k.id">{{ k.namaLengkap }}</option>
+          }
+        </select>
+
+        <select class="form-select form-select-sm" style="max-width:150px"
+                [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event); page.set(1)">
+          <option value="">--Status--</option>
+          <option value="AKTIF">Aktif</option>
+          <option value="KEDALUWARSA">Kedaluwarsa</option>
+          <option value="DICABUT">Dicabut</option>
+        </select>
+
+        <select class="form-select form-select-sm" style="max-width:200px"
+                [ngModel]="filterStatusPersetujuan()"
+                (ngModelChange)="filterStatusPersetujuan.set($event); page.set(1)">
+          <option value="">--Status Persetujuan--</option>
+          <option value="MENUNGGU">Menunggu</option>
+          <option value="DISETUJUI">Disetujui</option>
+          <option value="DITOLAK">Ditolak</option>
+        </select>
+
+        <div class="input-group input-group-sm" style="max-width:240px">
+          <input type="text" class="form-control" placeholder="Cari nama / jenis..."
+                 [ngModel]="filterCari()" (ngModelChange)="filterCari.set($event); page.set(1)">
+          <button class="btn btn-dark"><i class="bx bx-search"></i></button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr class="border-bottom">
+              <th>Karyawan</th>
+              <th>Jenis</th>
+              <th>Masa Berlaku</th>
+              <th>Status</th>
+              <th>Sanksi</th>
+              <th>Alur Persetujuan</th>
+              <th>Status Persetujuan</th>
+              <th class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="8" class="text-center text-muted py-4">Memuat data...</td></tr>
+            } @else if (rows().length === 0) {
+              <tr><td colspan="8" class="text-center text-muted py-4">Belum ada data.</td></tr>
+            } @else {
+              @for (sp of rows(); track sp.id) {
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ sp.namaKaryawan ?? '-' }}</div>
+                    <div class="text-muted" style="font-size:.72rem">
+                      {{ sp.namaJabatan ?? '' }}
+                      @if (sp.namaJabatan && sp.namaDivisi) { <span> · </span> }
+                      {{ sp.namaDivisi ?? '' }}
+                    </div>
+                  </td>
+                  <td><span class="fw-semibold">{{ sp.jenisNama }}</span></td>
+                  <td>{{ formatTanggal(sp.tanggalMulai) }} - {{ formatTanggal(sp.tanggalSelesai) }}</td>
+                  <td><span class="badge" [class]="badgeStatus(sp.status)">{{ sp.status }}</span></td>
+                  <td>
+                    @if (sp.cegahPresensi) {
+                      <span class="badge bg-danger-subtle text-danger">Cegah Presensi</span>
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+                  <td>
+                    @if (sp.penyetuju.length === 0) {
+                      <span class="text-muted">-</span>
+                    } @else {
+                      <div class="d-flex flex-wrap gap-1">
+                        @for (p of sp.penyetuju; track $index) {
+                          <span class="badge bg-light text-dark border">{{ p.nama }}</span>
+                        }
+                      </div>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge" [class]="badgeStatusPersetujuan(sp.statusPersetujuan)">
+                      {{ sp.statusPersetujuan }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-inline-flex gap-1">
+                      @if (sp.statusPersetujuan === 'MENUNGGU') {
+                        <button class="btn btn-sm btn-success" title="Setujui"
+                                (click)="setujui(sp)">
+                          <i class="bx bx-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" title="Tolak"
+                                (click)="bukaTolak(sp)">
+                          <i class="bx bx-x"></i>
+                        </button>
+                      }
+                      @if (sp.statusPersetujuan === 'DISETUJUI' && sp.status === 'AKTIF') {
+                        <button class="btn btn-sm btn-light border text-secondary" title="Cabut"
+                                (click)="cabut(sp)">
+                          <i class="bx bx-undo"></i>
+                        </button>
+                      }
+                      @if (sp.dokumenUrl) {
+                        <a class="btn btn-sm btn-light border" title="Lihat Dokumen"
+                           [href]="sp.dokumenUrl" target="_blank">
+                          <i class="bx bx-file"></i>
+                        </a>
+                      }
+                      <button class="btn btn-light border btn-sm text-danger"
+                              title="Hapus"
+                              (click)="konfirmasiHapus(sp)">
+                        <i class="bx bx-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <div class="small text-muted fw-semibold">
+          Menampilkan {{ infoStart() }}-{{ infoEnd() }} dari {{ total() }} total data
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link" (click)="page.set(1)">«</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link" (click)="page.set(page()-1)">‹</button>
+            </li>
+            @for (p of pageNumbers(); track p) {
+              <li class="page-item" [class.active]="p===page()">
+                <button class="page-link" (click)="page.set(p)">{{ p }}</button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link" (click)="page.set(page()+1)">›</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link" (click)="page.set(totalPages())">»</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal Tambah Surat Peringatan ───────────────── -->
+  @if (showFormModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Tambah Surat Peringatan</h5>
+            <button class="btn-close" (click)="closeForm()"></button>
+          </div>
+          <div class="modal-body">
+            @if (errorForm()) {
+              <div class="alert alert-danger small py-2">{{ errorForm() }}</div>
+            }
+
+            <!-- Karyawan (searchable picker) -->
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label small">
+                Karyawan <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-9 position-relative">
+                <div class="form-control form-control-sm d-flex justify-content-between align-items-center"
+                     style="cursor:pointer"
+                     (click)="karyawanDropdownOpen.set(!karyawanDropdownOpen())">
+                  @if (selectedKaryawanLabel()) {
+                    <span>{{ selectedKaryawanLabel() }}</span>
+                  } @else {
+                    <input class="border-0 flex-grow-1 bg-transparent" style="outline:none"
+                           placeholder="Tulis nama karyawan..."
+                           [ngModel]="karyawanQuery()"
+                           (ngModelChange)="karyawanQuery.set($event); karyawanDropdownOpen.set(true)"
+                           (click)="$event.stopPropagation()">
+                  }
+                  <i class="bx bx-chevron-down text-muted"></i>
+                </div>
+                @if (karyawanDropdownOpen()) {
+                  <div class="border rounded shadow-sm bg-white position-absolute w-100 mt-1"
+                       style="z-index:30;max-height:220px;overflow-y:auto">
+                    @if (filteredKaryawanForm().length === 0) {
+                      <div class="px-3 py-2 small text-muted">Tidak ada hasil.</div>
+                    } @else {
+                      @for (k of filteredKaryawanForm(); track k.id) {
+                        <div class="px-3 py-2 small jenis-option"
+                             [class.bg-primary]="formKaryawanId() === k.id"
+                             [class.text-white]="formKaryawanId() === k.id"
+                             style="cursor:pointer"
+                             (click)="pickKaryawanForm(k)">
+                          <div class="fw-semibold">{{ k.namaLengkap }}</div>
+                          @if (k.namaJabatan || k.namaDivisi) {
+                            <div [class.text-white-50]="formKaryawanId() === k.id"
+                                 [class.text-muted]="formKaryawanId() !== k.id"
+                                 style="font-size:.72rem">
+                              {{ k.namaJabatan ?? '' }}
+                              @if (k.namaJabatan && k.namaDivisi) { <span> · </span> }
+                              {{ k.namaDivisi ?? '' }}
+                            </div>
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Jenis -->
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label small">
+                Jenis <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-9 position-relative">
+                <div class="form-control form-control-sm d-flex justify-content-between align-items-center"
+                     style="cursor:pointer"
+                     (click)="jenisDropdownOpen.set(!jenisDropdownOpen())">
+                  @if (selectedJenisLabel()) {
+                    <span>{{ selectedJenisLabel() }}</span>
+                  } @else {
+                    <input class="border-0 flex-grow-1 bg-transparent" style="outline:none"
+                           placeholder="Tulis kata kunci..."
+                           [ngModel]="jenisQuery()"
+                           (ngModelChange)="jenisQuery.set($event); jenisDropdownOpen.set(true)"
+                           (click)="$event.stopPropagation()">
+                  }
+                  <i class="bx bx-chevron-down text-muted"></i>
+                </div>
+                @if (jenisDropdownOpen()) {
+                  <div class="border rounded shadow-sm bg-white position-absolute w-100 mt-1"
+                       style="z-index:20;max-height:200px;overflow-y:auto">
+                    @if (filteredJenis().length === 0) {
+                      <div class="px-3 py-2 small text-muted">Tidak ada hasil.</div>
+                    } @else {
+                      @for (j of filteredJenis(); track j.id) {
+                        <div class="px-3 py-2 small jenis-option"
+                             [class.bg-primary]="form().jenisId === j.id"
+                             [class.text-white]="form().jenisId === j.id"
+                             style="cursor:pointer"
+                             (click)="pickJenis(j)">
+                          {{ j.nama }}
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Dokumen -->
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label small">
+                Dokumen <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-9">
+                <input type="file" class="form-control form-control-sm"
+                       accept=".pdf,image/*" (change)="onDokumenChange($event)">
+              </div>
+            </div>
+
+            <!-- Pelanggaran -->
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label small">Pelanggaran</label>
+              <div class="col-sm-9">
+                <textarea class="form-control form-control-sm" rows="3"
+                          [ngModel]="form().pelanggaran"
+                          (ngModelChange)="updateForm('pelanggaran', $event)"></textarea>
+              </div>
+            </div>
+
+            <!-- Masa Berlaku -->
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label small">
+                Masa Berlaku <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-9">
+                <div class="d-flex align-items-center gap-2">
+                  <input type="date" class="form-control form-control-sm"
+                         [ngModel]="form().tanggalMulai"
+                         (ngModelChange)="updateForm('tanggalMulai', $event)">
+                  <span class="text-muted">-</span>
+                  <input type="date" class="form-control form-control-sm"
+                         [ngModel]="form().tanggalSelesai"
+                         (ngModelChange)="updateForm('tanggalSelesai', $event)">
+                </div>
+              </div>
+            </div>
+
+            <!-- Sanksi -->
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label small">Sanksi</label>
+              <div class="col-sm-9">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="cegahPresensiGlobal"
+                         [checked]="form().cegahPresensi"
+                         (change)="updateForm('cegahPresensi', $any($event.target).checked)">
+                  <label class="form-check-label small" for="cegahPresensiGlobal">
+                    Cegah Presensi
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Penyetuju -->
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label small">
+                Penyetuju <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-9">
+                @for (p of form().penyetuju; track $index; let rowIdx = $index) {
+                  <div class="d-flex align-items-start gap-2 mb-2 position-relative">
+                    <div class="flex-grow-1 position-relative">
+                      <div class="form-control form-control-sm d-flex justify-content-between align-items-center"
+                           style="cursor:pointer; min-height: 31px"
+                           (click)="togglePenyetujuDropdown(rowIdx)">
+                        @if (p.nama) {
+                          <span>{{ p.nama }}</span>
+                        } @else {
+                          <span class="text-muted">Pilih karyawan...</span>
+                        }
+                        <i class="bx bx-chevron-down text-muted"></i>
+                      </div>
+                      @if (penyetujuOpenIdx() === rowIdx) {
+                        <div class="border rounded shadow-sm bg-white position-absolute w-100 mt-1"
+                             style="z-index:25;max-height:220px;overflow-y:auto">
+                          <div class="p-2 border-bottom">
+                            <input type="text" class="form-control form-control-sm"
+                                   placeholder="Cari karyawan..."
+                                   [ngModel]="penyetujuQuery()"
+                                   (ngModelChange)="penyetujuQuery.set($event)"
+                                   (click)="$event.stopPropagation()">
+                          </div>
+                          @if (filteredKaryawanPenyetuju().length === 0) {
+                            <div class="px-3 py-2 small text-muted">Tidak ada hasil.</div>
+                          } @else {
+                            @for (k of filteredKaryawanPenyetuju(); track k.id) {
+                              <div class="px-3 py-2 small jenis-option"
+                                   style="cursor:pointer"
+                                   (click)="pickPenyetujuKaryawan(rowIdx, k)">
+                                <div class="fw-semibold">{{ k.namaLengkap }}</div>
+                                @if (k.namaJabatan || k.namaDivisi) {
+                                  <div class="text-muted" style="font-size:.72rem">
+                                    {{ k.namaJabatan ?? '' }}
+                                    @if (k.namaJabatan && k.namaDivisi) { <span> · </span> }
+                                    {{ k.namaDivisi ?? '' }}
+                                  </div>
+                                }
+                              </div>
+                            }
+                          }
+                        </div>
+                      }
+                    </div>
+                    <button class="btn btn-sm btn-light border text-danger"
+                            (click)="hapusPenyetuju(rowIdx)" type="button">
+                      <i class="bx bx-x"></i>
+                    </button>
+                  </div>
+                }
+                <button class="btn btn-primary btn-sm" (click)="tambahPenyetuju()" type="button">
+                  Tambah
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer justify-content-center">
+            <button class="btn btn-primary btn-sm px-4"
+                    [disabled]="saving()" (click)="simpan()">
+              {{ saving() ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+            <button class="btn btn-light border btn-sm px-4" (click)="closeForm()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Jenis Peringatan ──────────────────────── -->
+  @if (showJenisModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Jenis Peringatan</h5>
+            <button class="btn-close" (click)="showJenisModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            <div class="d-flex gap-2 mb-3">
+              <input type="text" class="form-control form-control-sm" placeholder="Kode (mis. SP1)"
+                     [ngModel]="jenisForm().kode"
+                     (ngModelChange)="jenisForm.set({ ...jenisForm(), kode: $event })">
+              <input type="text" class="form-control form-control-sm" placeholder="Nama"
+                     [ngModel]="jenisForm().nama"
+                     (ngModelChange)="jenisForm.set({ ...jenisForm(), nama: $event })">
+              <button class="btn btn-primary btn-sm" (click)="simpanJenis()">Tambah</button>
+            </div>
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Kode</th>
+                  <th>Nama</th>
+                  <th class="text-end">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (jenisList().length === 0) {
+                  <tr><td colspan="3" class="text-center text-muted">Belum ada data.</td></tr>
+                } @else {
+                  @for (j of jenisList(); track j.id) {
+                    <tr>
+                      <td>{{ j.kode }}</td>
+                      <td>{{ j.nama }}</td>
+                      <td class="text-end">
+                        <button class="btn btn-sm btn-light border text-danger"
+                                (click)="hapusJenis(j.id)">
+                          <i class="bx bx-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-light border btn-sm" (click)="showJenisModal.set(false)">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Tolak ─────────────────────────────────── -->
+  @if (showTolakModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger">Tolak Surat Peringatan</h5>
+            <button class="btn-close" (click)="showTolakModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label small">Catatan Penolakan (opsional)</label>
+            <textarea class="form-control form-control-sm" rows="3"
+                      [ngModel]="tolakCatatan()"
+                      (ngModelChange)="tolakCatatan.set($event)"></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm" (click)="showTolakModal.set(false)">Batal</button>
+            <button class="btn btn-danger btn-sm" (click)="konfirmasiTolak()">Tolak</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Hapus ─────────────────────────────────── -->
+  @if (konfirmasiHapusId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger"><i class="bx bx-trash me-2"></i>Hapus Surat Peringatan?</h5>
+          </div>
+          <div class="modal-body small text-muted">
+            Data akan dihapus permanen.
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm"
+                    (click)="konfirmasiHapusId.set(null); konfirmasiHapusKaryawanId.set(null)">Batal</button>
+            <button class="btn btn-danger btn-sm" (click)="hapus()">Ya, Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Riwayat Perubahan ─────────────────────── -->
+  @if (showRiwayatModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1056">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title fw-bold">Riwayat Perubahan</h6>
+            <button class="btn-close" (click)="showRiwayatModal.set(false)"></button>
+          </div>
+          <div class="modal-body p-0">
+            @if (riwayatItems().length === 0) {
+              <div class="text-center text-muted py-5">
+                <i class="bx bx-time-five" style="font-size:2rem"></i>
+                <div class="mt-2 small">Belum ada riwayat perubahan.</div>
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="table mb-0 align-top riwayat-table">
+                  <thead class="text-center">
+                    <tr>
+                      <th style="width:32%">User</th>
+                      <th>Aktivitas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (r of riwayatPage(); track $index) {
+                      <tr>
+                        <td class="py-3">
+                          <div class="d-flex gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:40px;height:40px;background:#e8f0fe;color:#3b7ddd">
+                              <i class="bx bx-user" style="font-size:1.25rem"></i>
+                            </div>
+                            <div>
+                              <div class="fw-semibold small">{{ r.actor }}</div>
+                              <div class="text-muted" style="font-size:.75rem">{{ r.waktu }}</div>
+                              <span class="badge rounded-pill mt-1 border"
+                                    [class]="r.badgeClass">{{ r.actionLabel }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="py-3">
+                          <div class="mb-2">
+                            <span class="badge text-white px-2 py-1" style="background:#e83e8c">
+                              Surat Peringatan
+                            </span>
+                            <span class="badge bg-light text-dark border ms-1">
+                              ID: {{ r.spId }}
+                            </span>
+                          </div>
+                          <div class="small mb-1">
+                            <strong>Status Persetujuan:</strong>
+                            <a class="ms-1 text-decoration-underline">{{ r.statusPersetujuanLabel }}</a>
+                          </div>
+                          <div class="small mb-1"><strong>Penyetuju:</strong></div>
+                          @if (r.penyetuju.length > 0) {
+                            <div class="table-responsive mb-2">
+                              <table class="table table-sm table-bordered mb-0" style="font-size:.78rem">
+                                <thead class="table-light text-center">
+                                  <tr>
+                                    <th style="width:40px">No.</th>
+                                    <th>Status</th>
+                                    <th>Penyetuju</th>
+                                    <th>Catatan</th>
+                                    <th>Diupdate Pada</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  @for (p of r.penyetuju; track $index) {
+                                    <tr>
+                                      <td class="text-center">{{ $index + 1 }}</td>
+                                      <td>
+                                        <span class="badge"
+                                              [class]="badgeStatusPersetujuan(p.status ?? 'MENUNGGU')">
+                                          {{ statusPersetujuanLabel(p.status) }}
+                                        </span>
+                                      </td>
+                                      <td>{{ p.nama }}</td>
+                                      <td>{{ p.catatan ?? '' }}</td>
+                                      <td>{{ p.diprosesAt ? formatTanggalJam(p.diprosesAt) : '' }}</td>
+                                    </tr>
+                                  }
+                                </tbody>
+                              </table>
+                            </div>
+                          }
+                          <div class="small">
+                            <div><strong>Tgl. Mulai Berlaku:</strong>
+                              <a class="ms-1 text-decoration-underline">{{ formatTanggal(r.tanggalMulai) }}</a>
+                            </div>
+                            <div><strong>Tanggal Berakhir:</strong>
+                              <a class="ms-1 text-decoration-underline">{{ formatTanggal(r.tanggalSelesai) }}</a>
+                            </div>
+                            <div><strong>Karyawan:</strong>
+                              <a class="ms-1 text-decoration-underline">{{ r.namaKaryawan }}</a>
+                            </div>
+                            <div><strong>Jenis Peringatan:</strong>
+                              <a class="ms-1 text-decoration-underline">{{ r.jenisKode }}</a>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+          <div class="modal-footer justify-content-between">
+            <button class="btn btn-outline-secondary btn-sm"
+                    (click)="showRiwayatModal.set(false)">Tutup</button>
+            @if (riwayatTotalPages() > 1) {
+              <div class="btn-group">
+                <button class="btn btn-primary btn-sm"
+                        [disabled]="riwayatPageIdx() === 1"
+                        (click)="riwayatPageIdx.set(riwayatPageIdx() - 1)">
+                  <i class="bx bx-chevron-left"></i>
+                </button>
+                <button class="btn btn-primary btn-sm"
+                        [disabled]="riwayatPageIdx() === riwayatTotalPages()"
+                        (click)="riwayatPageIdx.set(riwayatPageIdx() + 1)">
+                  <i class="bx bx-chevron-right"></i>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="position-fixed bottom-0 end-0 m-3" style="z-index:1080">
+      <div class="toast show align-items-center text-white border-0"
+           [class.bg-success]="toastType()==='success'"
+           [class.bg-danger]="toastType()==='danger'">
+        <div class="d-flex">
+          <div class="toast-body">{{ toastMsg() }}</div>
+          <button class="btn-close btn-close-white me-2 m-auto" (click)="toastMsg.set('')"></button>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

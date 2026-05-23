@@ -1,0 +1,548 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Karyawan</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          @if (karyawan()) {
+            <li class="breadcrumb-item">
+              <a [routerLink]="['/karyawan', karyawan()!.id]">{{ karyawan()!.namaLengkap }}</a>
+            </li>
+          }
+          <li class="breadcrumb-item active" aria-current="page">Cuti</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center" role="alert">
+      <i class="bx bx-error-circle me-2 fs-5"></i>{{ error() }}
+    </div>
+  }
+
+  <!-- ── Card Sisa Cuti ─────────────────────────────────── -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <div class="row align-items-center text-center text-md-start">
+        <div class="col-md-3">
+          <div class="text-muted small">Sisa Cuti</div>
+          <div class="fs-5 fw-bold">{{ sisa()?.sisaCuti ?? '-' }}</div>
+        </div>
+        <div class="col-md-5">
+          <div class="text-muted small">Tgl. Cuti Berakhir</div>
+          <div class="fs-5 fw-bold">{{ sisa()?.tglCutiBerakhir ? formatTanggal(sisa()!.tglCutiBerakhir!) : '-' }}</div>
+        </div>
+        <div class="col-md-4 d-flex justify-content-center justify-content-md-end gap-2 mt-3 mt-md-0">
+          <button class="btn btn-primary btn-sm px-3" (click)="openSisaModal()">
+            <i class="bx bx-edit me-1"></i> Ubah Sisa Cuti
+          </button>
+          <button class="btn btn-light btn-sm border" title="Pengaturan">
+            <i class="bx bx-cog"></i>
+          </button>
+          <button class="btn btn-light btn-sm border" title="Riwayat">
+            <i class="bx bx-history"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Card Daftar Cuti ──────────────────────────────── -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+
+      <!-- Tabs status + quick filter -->
+      <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+        <div class="btn-group flex-grow-1" role="group" style="max-width:560px">
+          <button type="button"
+                  class="btn"
+                  [class.btn-primary]="statusTab() === 'PENGAJUAN'"
+                  [class.btn-light]="statusTab() !== 'PENGAJUAN'"
+                  (click)="setStatusTab('PENGAJUAN')">Pengajuan</button>
+          <button type="button"
+                  class="btn"
+                  [class.btn-primary]="statusTab() === 'DISETUJUI'"
+                  [class.btn-light]="statusTab() !== 'DISETUJUI'"
+                  (click)="setStatusTab('DISETUJUI')">Disetujui</button>
+          <button type="button"
+                  class="btn"
+                  [class.btn-primary]="statusTab() === 'DITOLAK'"
+                  [class.btn-light]="statusTab() !== 'DITOLAK'"
+                  (click)="setStatusTab('DITOLAK')">Ditolak</button>
+        </div>
+
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-light border"
+                  [class.active]="quickFilter()==='HARI_INI'"
+                  (click)="setQuickFilter('HARI_INI')">Cuti Hari Ini</button>
+          <button type="button" class="btn btn-light border"
+                  [class.active]="quickFilter()==='BESOK'"
+                  (click)="setQuickFilter('BESOK')">Cuti Besok</button>
+          <button type="button" class="btn btn-light border"
+                  [class.active]="quickFilter()==='7_HARI'"
+                  (click)="setQuickFilter('7_HARI')">Cuti 7 Hari Kedepan</button>
+        </div>
+      </div>
+
+      <!-- Filter form -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="date" class="form-control form-control-sm" style="max-width:170px"
+               placeholder="Mulai Cuti"
+               [ngModel]="filterMulai()" (ngModelChange)="filterMulai.set($event); applyFilter()">
+        <span>-</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:170px"
+               placeholder="Selesai Cuti"
+               [ngModel]="filterSelesai()" (ngModelChange)="filterSelesai.set($event); applyFilter()">
+        <select class="form-select form-select-sm" style="max-width:200px"
+                [ngModel]="filterJenis()" (ngModelChange)="filterJenis.set($event); applyFilter()">
+          <option value="">--Jenis Cuti--</option>
+          <option value="TAHUNAN">Cuti Tahunan</option>
+          <option value="SETENGAH_HARI">Cuti Setengah Hari</option>
+          <option value="KHUSUS">Cuti Khusus</option>
+        </select>
+
+        <button class="btn btn-primary btn-sm" (click)="ekspor()" [disabled]="eksporting()">
+          <i class="bx bx-export me-1"></i> Ekspor Excel
+        </button>
+
+        <div class="position-relative">
+          <button class="btn btn-primary btn-sm" (click)="showTambahMenu.set(!showTambahMenu())">
+            <i class="bx bx-plus-circle me-1"></i> Tambah Cuti <i class="bx bx-caret-down"></i>
+          </button>
+          @if (showTambahMenu()) {
+            <div class="border rounded shadow-sm bg-white py-1"
+                 style="position:absolute;right:0;top:calc(100% + 4px);min-width:200px;z-index:300">
+              <button class="dropdown-item w-100 text-start px-3 py-2 border-0 bg-transparent"
+                      (click)="openTambah('TAHUNAN')">Cuti Tahunan</button>
+              <button class="dropdown-item w-100 text-start px-3 py-2 border-0 bg-transparent"
+                      (click)="openTambah('SETENGAH_HARI')">Cuti Setengah Hari</button>
+              <button class="dropdown-item w-100 text-start px-3 py-2 border-0 bg-transparent"
+                      (click)="openTambah('KHUSUS')">Cuti Khusus</button>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:50px">#</th>
+              <th>Detail Pengajuan</th>
+              <th>Keperluan</th>
+              <th>Lampiran</th>
+              <th>Status Persetujuan</th>
+              <th class="text-center" style="width:140px">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="6" class="text-center text-muted py-4">Memuat data...</td></tr>
+            } @else if (rows().length === 0) {
+              <tr><td colspan="6" class="text-center text-muted py-4">Belum ada data cuti.</td></tr>
+            } @else {
+              @for (c of rows(); track c.id; let i = $index) {
+                <tr>
+                  <td>{{ infoStart() + i }}</td>
+                  <td>
+                    <div class="fw-semibold">{{ jenisLabel(c.jenisCuti) }}</div>
+                    <div class="small text-muted">
+                      {{ formatTanggal(c.tanggalMulai) }}
+                      @if (c.tanggalMulai !== c.tanggalSelesai) {
+                        — {{ formatTanggal(c.tanggalSelesai) }}
+                      }
+                      @if (c.sesiSetengahHari) {
+                        <span class="ms-1">({{ c.sesiSetengahHari === 'PAGI' ? 'Sesi Pagi' : 'Sesi Siang' }})</span>
+                      }
+                    </div>
+                    <div class="small text-muted">
+                      Jumlah: <b>{{ c.jumlahHari }}</b> hari
+                      @if (!c.mengurangiSisaCuti) {
+                        <span class="badge bg-light text-dark ms-1">tidak potong cuti</span>
+                      }
+                    </div>
+                    <div class="small text-muted">Diajukan: {{ formatDateTime(c.createdAt) }}</div>
+                  </td>
+                  <td style="max-width:280px">{{ c.keperluan }}</td>
+                  <td>
+                    @if (c.lampiranUrl) {
+                      <a [href]="c.lampiranUrl" target="_blank" class="text-primary">
+                        <i class="bx bx-paperclip"></i> Lampiran
+                      </a>
+                    } @else { <span class="text-muted">—</span> }
+                  </td>
+                  <td>
+                    <span [class]="statusBadgeClass(c.status)">{{ statusLabel(c.status) }}</span>
+                    @if (c.status === 'DITOLAK' && c.catatanPenolakan) {
+                      <div class="small text-danger mt-1">{{ c.catatanPenolakan }}</div>
+                    }
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      @if (!isKaryawan() && c.status === 'MENUNGGU') {
+                        <button class="btn btn-success" title="Setujui" (click)="setujui(c)">
+                          <i class="bx bx-check"></i>
+                        </button>
+                        <button class="btn btn-danger" title="Tolak" (click)="openTolak(c)">
+                          <i class="bx bx-x"></i>
+                        </button>
+                      }
+                      <button class="btn btn-light border" title="Riwayat" (click)="openRiwayat(c)">
+                        <i class="bx bx-history"></i>
+                      </button>
+                      @if (c.status === 'MENUNGGU') {
+                        <button class="btn btn-light border" title="Edit" (click)="openEdit(c)">
+                          <i class="bx bx-edit"></i>
+                        </button>
+                      }
+                      <button class="btn btn-light border text-danger" title="Hapus"
+                              (click)="konfirmasiHapusId.set(c.id)">
+                        <i class="bx bx-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <div class="small text-muted">
+          Menampilkan {{ infoStart() }} - {{ infoEnd() }} dari {{ total() }} total data
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link" (click)="page.set(1)">«</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link" (click)="page.set(page()-1)">‹</button>
+            </li>
+            @for (p of pageNumbers(); track p) {
+              <li class="page-item" [class.active]="p===page()">
+                <button class="page-link" (click)="page.set(p)">{{ p }}</button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link" (click)="page.set(page()+1)">›</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link" (click)="page.set(totalPages())">»</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal Tambah/Edit Cuti ────────────────────────── -->
+  @if (showFormModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              {{ editId() ? 'Edit' : 'Tambah' }} {{ jenisLabel(form().jenisCuti) }}
+            </h5>
+            <button class="btn-close" (click)="closeForm()"></button>
+          </div>
+          <div class="modal-body">
+            @if (errorForm()) {
+              <div class="alert alert-danger small py-2">{{ errorForm() }}</div>
+            }
+
+            <div class="mb-3">
+              <label class="form-label small">Jenis Cuti</label>
+              <select class="form-select form-select-sm"
+                      [ngModel]="form().jenisCuti"
+                      (ngModelChange)="updateForm('jenisCuti', $event)">
+                <option value="TAHUNAN">Cuti Tahunan</option>
+                <option value="SETENGAH_HARI">Cuti Setengah Hari</option>
+                <option value="KHUSUS">Cuti Khusus</option>
+              </select>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col">
+                <label class="form-label small">Tanggal Mulai *</label>
+                <input type="date" class="form-control form-control-sm"
+                       [ngModel]="form().tanggalMulai"
+                       (ngModelChange)="updateForm('tanggalMulai', $event)">
+              </div>
+              @if (form().jenisCuti !== 'SETENGAH_HARI') {
+                <div class="col">
+                  <label class="form-label small">Tanggal Selesai *</label>
+                  <input type="date" class="form-control form-control-sm"
+                         [ngModel]="form().tanggalSelesai"
+                         (ngModelChange)="updateForm('tanggalSelesai', $event)">
+                </div>
+              }
+            </div>
+
+            @if (form().jenisCuti === 'SETENGAH_HARI') {
+              <div class="mb-3">
+                <label class="form-label small">Sesi</label>
+                <select class="form-select form-select-sm"
+                        [ngModel]="form().sesiSetengahHari"
+                        (ngModelChange)="updateForm('sesiSetengahHari', $event)">
+                  <option value="PAGI">Pagi</option>
+                  <option value="SIANG">Siang</option>
+                </select>
+              </div>
+            }
+
+            <div class="mb-3">
+              <label class="form-label small">Keperluan *</label>
+              <textarea class="form-control form-control-sm" rows="3"
+                        [ngModel]="form().keperluan"
+                        (ngModelChange)="updateForm('keperluan', $event)"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small">Lampiran (PDF/Gambar)</label>
+              <input type="file" class="form-control form-control-sm"
+                     accept=".pdf,image/*" (change)="onLampiranChange($event)">
+              @if (lampiranNama()) {
+                <div class="small text-muted mt-1">{{ lampiranNama() }}</div>
+              }
+            </div>
+
+            @if (form().jenisCuti === 'KHUSUS') {
+              <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" id="mengurangiSisa"
+                       [checked]="form().mengurangiSisaCuti"
+                       (change)="updateForm('mengurangiSisaCuti', $any($event.target).checked)">
+                <label class="form-check-label small" for="mengurangiSisa">
+                  Mengurangi sisa cuti
+                </label>
+              </div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm" (click)="closeForm()">Batal</button>
+            <button class="btn btn-primary btn-sm" [disabled]="saving()" (click)="simpan()">
+              {{ saving() ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Ubah Sisa Cuti ─────────────────────────── -->
+  @if (showSisaModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-edit me-2"></i>Ubah Sisa Cuti</h5>
+            <button class="btn-close" (click)="showSisaModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label small">Sisa Cuti (hari)</label>
+              <input type="number" min="0" class="form-control form-control-sm"
+                     [ngModel]="sisaForm().sisaCuti"
+                     (ngModelChange)="sisaForm.set({ ...sisaForm(), sisaCuti: $event })">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">Tgl. Cuti Berakhir</label>
+              <input type="date" class="form-control form-control-sm"
+                     [ngModel]="sisaForm().tglCutiBerakhir"
+                     (ngModelChange)="sisaForm.set({ ...sisaForm(), tglCutiBerakhir: $event })">
+            </div>
+
+            <hr class="my-3">
+            <h6 class="fw-bold mb-3">Pengaturan Pembaruan Otomatis</h6>
+
+            <!-- Periode -->
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-5 col-form-label small">Periode Pembaruan Otomatis</label>
+              <div class="col-sm-7">
+                <div class="input-group input-group-sm">
+                  <input type="number" min="1" class="form-control"
+                         [ngModel]="sisaForm().periodePembaruanBulan"
+                         (ngModelChange)="sisaForm.set({ ...sisaForm(), periodePembaruanBulan: $event })">
+                  <span class="input-group-text">Bulan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Jumlah cuti per pembaruan -->
+            <div class="row mb-2 align-items-center">
+              <label class="col-sm-5 col-form-label small">Jumlah Cuti per Pembaruan</label>
+              <div class="col-sm-7">
+                <input type="number" min="0" class="form-control form-control-sm"
+                       [ngModel]="sisaForm().jumlahCutiPembaruan"
+                       (ngModelChange)="sisaForm.set({ ...sisaForm(), jumlahCutiPembaruan: $event })">
+              </div>
+            </div>
+
+            <!-- Info text -->
+            @if (sisaForm().pembaruanCutiAktif && sisaForm().tglPembaruanBerikutnya) {
+              <div class="alert alert-info py-2 small d-flex align-items-start gap-2 mb-3">
+                <i class="bx bx-info-circle fs-6 mt-1"></i>
+                <div>
+                  Sisa cuti akan otomatis ditambahkan sebanyak
+                  <strong>{{ sisaForm().jumlahCutiPembaruan }}</strong>
+                  pada <strong>{{ formatTglId(sisaForm().tglPembaruanBerikutnya) }}</strong>.
+                </div>
+              </div>
+            }
+
+            <!-- Sisa Cuti Sebelumnya -->
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-5 col-form-label small">Sisa Cuti Sebelumnya</label>
+              <div class="col-sm-7">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="sisaSebelumnya"
+                         [checked]="sisaForm().tambahkanSisaCutiSebelumnya"
+                         (change)="sisaForm.set({ ...sisaForm(), tambahkanSisaCutiSebelumnya: $any($event.target).checked })">
+                  <label class="form-check-label small" for="sisaSebelumnya">
+                    Tambahkan
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Aktifkan Pengaturan -->
+            <div class="row mb-2 align-items-center">
+              <label class="col-sm-5 col-form-label small">Aktifkan Pengaturan</label>
+              <div class="col-sm-7">
+                <div class="d-flex gap-3">
+                  <div class="form-check">
+                    <input type="radio" class="form-check-input" id="aktifYa" name="pembaruanCutiAktif"
+                           [checked]="sisaForm().pembaruanCutiAktif"
+                           (change)="sisaForm.set({ ...sisaForm(), pembaruanCutiAktif: true })">
+                    <label class="form-check-label small" for="aktifYa">Ya</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="radio" class="form-check-input" id="aktifTidak" name="pembaruanCutiAktif"
+                           [checked]="!sisaForm().pembaruanCutiAktif"
+                           (change)="sisaForm.set({ ...sisaForm(), pembaruanCutiAktif: false })">
+                    <label class="form-check-label small" for="aktifTidak">Tidak</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm" (click)="showSisaModal.set(false)">Batal</button>
+            <button class="btn btn-primary btn-sm" [disabled]="savingSisa()" (click)="simpanSisa()">
+              {{ savingSisa() ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Tolak ──────────────────────────────────── -->
+  @if (showTolakModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger">Tolak Pengajuan Cuti</h5>
+            <button class="btn-close" (click)="showTolakModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label small">Catatan Penolakan (opsional)</label>
+            <textarea class="form-control form-control-sm" rows="3"
+                      [ngModel]="tolakCatatan()" (ngModelChange)="tolakCatatan.set($event)"></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm" (click)="showTolakModal.set(false)">Batal</button>
+            <button class="btn btn-danger btn-sm" (click)="konfirmasiTolak()">Tolak</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Riwayat ────────────────────────────────── -->
+  @if (showRiwayatModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-history me-2"></i>Riwayat Perubahan</h5>
+            <button class="btn-close" (click)="showRiwayatModal.set(false)"></button>
+          </div>
+          <div class="modal-body" style="max-height:60vh;overflow-y:auto">
+            @if (riwayatLoading()) {
+              <div class="text-center text-muted py-3">Memuat...</div>
+            } @else if (riwayatList().length === 0) {
+              <div class="text-center text-muted py-3">Belum ada riwayat.</div>
+            } @else {
+              @for (r of riwayatList(); track r.id) {
+                <div class="border rounded p-2 mb-2">
+                  <div class="d-flex justify-content-between">
+                    <span class="badge bg-info">{{ r.tipe }}</span>
+                    <span class="small text-muted">{{ formatDateTime(r.changedAt) }} • {{ r.changedBy }}</span>
+                  </div>
+                  @if (r.aktivitas.length) {
+                    <ul class="small mb-0 mt-2 ps-3">
+                      @for (a of r.aktivitas; track a.label) {
+                        <li>
+                          <b>{{ a.label }}</b>:
+                          @if (a.lama) { <span class="text-muted">{{ a.lama }}</span> → }
+                          <span>{{ a.baru }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Hapus ──────────────────────────────────── -->
+  @if (konfirmasiHapusId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger"><i class="bx bx-trash me-2"></i>Hapus Cuti?</h5>
+          </div>
+          <div class="modal-body small text-muted">
+            Data cuti akan dihapus permanen. Jika cuti telah disetujui, sisa cuti akan dikembalikan.
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm" (click)="konfirmasiHapusId.set(null)">Batal</button>
+            <button class="btn btn-danger btn-sm" (click)="hapus(konfirmasiHapusId()!)">Ya, Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="position-fixed bottom-0 end-0 m-3" style="z-index:1080">
+      <div class="toast show align-items-center text-white border-0"
+           [class.bg-success]="toastType()==='success'"
+           [class.bg-danger]="toastType()==='danger'">
+        <div class="d-flex">
+          <div class="toast-body">{{ toastMsg() }}</div>
+          <button class="btn-close btn-close-white me-2 m-auto" (click)="toastMsg.set('')"></button>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

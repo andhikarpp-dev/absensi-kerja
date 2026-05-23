@@ -1,0 +1,168 @@
+<div class="rp-bg">
+
+  <!-- ── Top Navbar ── -->
+  <header class="rp-nav">
+    <div class="rp-nav__brand">
+      <span class="material-icons rp-nav__icon">fingerprint</span>
+      <span class="rp-nav__name">Absensi<strong>Kerja</strong></span>
+    </div>
+    <div class="rp-nav__actions">
+      <a routerLink="/auth/login" class="rp-nav__link">Login</a>
+      <a href="#" class="rp-nav__btn rp-nav__btn--outline">Hubungi Kami</a>
+      <a href="#" class="rp-nav__btn rp-nav__btn--solid">Jadwalkan Demo</a>
+    </div>
+  </header>
+
+  <!-- ── Main Content ── -->
+  <main class="rp-main">
+
+    <!-- Badge -->
+    <div class="rp-badge">
+      <span class="material-icons">rocket_launch</span>
+      Mulai Gratis — Tanpa Kartu Kredit
+    </div>
+
+    <h1 class="rp-title">Daftar ke <span>AbsensiKerja</span></h1>
+    <p class="rp-subtitle">Pilih peran yang sesuai untuk melanjutkan</p>
+
+    <!-- Role Cards -->
+    <div class="rp-cards">
+
+      <div
+        class="rp-card"
+        [class.rp-card--selected]="selectedRole === 'employee'"
+        (click)="selectRole('employee')"
+      >
+        <div class="rp-card__illustration rp-card__illustration--yellow">
+          <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="rp-card__svg">
+            <!-- desk -->
+            <rect x="30" y="100" width="140" height="8" rx="4" fill="#c4b5a0"/>
+            <rect x="40" y="108" width="8" height="30" rx="3" fill="#c4b5a0"/>
+            <rect x="152" y="108" width="8" height="30" rx="3" fill="#c4b5a0"/>
+            <!-- monitor -->
+            <rect x="80" y="60" width="55" height="38" rx="5" fill="#fff" stroke="#d1c4b0" stroke-width="2"/>
+            <rect x="85" y="65" width="45" height="28" rx="3" fill="#e8f4fd"/>
+            <!-- lines on screen -->
+            <rect x="88" y="70" width="30" height="3" rx="1" fill="#93c5fd"/>
+            <rect x="88" y="76" width="22" height="3" rx="1" fill="#bfdbfe"/>
+            <rect x="88" y="82" width="26" height="3" rx="1" fill="#bfdbfe"/>
+            <!-- monitor stand -->
+            <rect x="103" y="98" width="9" height="6" rx="1" fill="#c4b5a0"/>
+            <rect x="98" y="103" width="19" height="3" rx="1" fill="#c4b5a0"/>
+            <!-- person left (sitting) -->
+            <circle cx="55" cy="60" r="12" fill="#f9a8d4"/>
+            <rect x="43" y="72" width="24" height="28" rx="8" fill="#6366f1"/>
+            <!-- legs -->
+            <rect x="45" y="96" width="9" height="16" rx="4" fill="#fbbf24"/>
+            <rect x="58" y="96" width="9" height="16" rx="4" fill="#fbbf24"/>
+            <!-- person right (standing) -->
+            <circle cx="148" cy="55" r="11" fill="#fdba74"/>
+            <rect x="137" y="66" width="22" height="26" rx="7" fill="#10b981"/>
+            <rect x="139" y="90" width="8" height="18" rx="4" fill="#fbbf24"/>
+            <rect x="150" y="90" width="8" height="18" rx="4" fill="#fbbf24"/>
+            <!-- plant -->
+            <rect x="25" y="90" width="6" height="14" rx="2" fill="#78350f"/>
+            <ellipse cx="28" cy="88" rx="9" ry="10" fill="#16a34a"/>
+            <ellipse cx="22" cy="84" rx="7" ry="8" fill="#22c55e"/>
+            <ellipse cx="35" cy="82" rx="7" ry="8" fill="#22c55e"/>
+          </svg>
+        </div>
+        <div class="rp-card__body">
+          <div class="rp-card__check">
+            <span class="material-icons">{{ selectedRole === 'employee' ? 'check_circle' : 'radio_button_unchecked' }}</span>
+          </div>
+          <h3 class="rp-card__title">Saya adalah karyawan</h3>
+          <p class="rp-card__desc">Bergabung dengan workspace perusahaan Anda sebagai anggota tim.</p>
+        </div>
+      </div>
+
+      <div
+        class="rp-card"
+        [class.rp-card--selected]="selectedRole === 'owner'"
+        (click)="selectRole('owner')"
+      >
+        <div class="rp-card__illustration rp-card__illustration--blue">
+          <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" class="rp-card__svg">
+            <!-- desk -->
+            <rect x="30" y="100" width="140" height="8" rx="4" fill="#b8c4d0"/>
+            <rect x="40" y="108" width="8" height="30" rx="3" fill="#b8c4d0"/>
+            <rect x="152" y="108" width="8" height="30" rx="3" fill="#b8c4d0"/>
+            <!-- laptop -->
+            <rect x="70" y="68" width="60" height="34" rx="5" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+            <rect x="75" y="72" width="50" height="26" rx="3" fill="#dbeafe"/>
+            <rect x="78" y="76" width="35" height="3" rx="1" fill="#60a5fa"/>
+            <rect x="78" y="82" width="25" height="3" rx="1" fill="#93c5fd"/>
+            <rect x="78" y="88" width="30" height="3" rx="1" fill="#93c5fd"/>
+            <!-- laptop base -->
+            <rect x="65" y="100" width="70" height="4" rx="2" fill="#b8c4d0"/>
+            <!-- person (standing, pointing) -->
+            <circle cx="145" cy="52" r="13" fill="#fdba74"/>
+            <!-- beard -->
+            <ellipse cx="145" cy="62" rx="7" ry="5" fill="#92400e" opacity=".4"/>
+            <rect x="133" y="64" width="24" height="28" rx="8" fill="#f97316"/>
+            <!-- arm pointing -->
+            <rect x="120" y="68" width="18" height="7" rx="3" fill="#f97316" transform="rotate(-20 120 68)"/>
+            <!-- legs -->
+            <rect x="135" y="90" width="9" height="20" rx="4" fill="#1e293b"/>
+            <rect x="148" y="90" width="9" height="20" rx="4" fill="#1e293b"/>
+            <!-- dog/cat on floor -->
+            <ellipse cx="55" cy="118" rx="18" ry="10" fill="#78350f" opacity=".7"/>
+            <circle cx="68" cy="113" r="7" fill="#92400e"/>
+            <ellipse cx="72" cy="110" rx="3" ry="5" fill="#92400e"/>
+            <ellipse cx="64" cy="110" rx="3" ry="5" fill="#92400e"/>
+          </svg>
+        </div>
+        <div class="rp-card__body">
+          <div class="rp-card__check">
+            <span class="material-icons">{{ selectedRole === 'owner' ? 'check_circle' : 'radio_button_unchecked' }}</span>
+          </div>
+          <h3 class="rp-card__title">Saya adalah pemilik bisnis</h3>
+          <p class="rp-card__desc">Daftarkan perusahaan Anda untuk mengelola waktu &amp; kehadiran tim.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Continue Button -->
+    <button
+      class="rp-continue"
+      [class.rp-continue--active]="selectedRole"
+      [disabled]="!selectedRole"
+      (click)="onContinue()"
+    >
+      Lanjutkan
+    </button>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="rp-footer">
+    <span>© 2026 AbsensiKerja. All rights reserved.</span>
+    <div class="rp-footer__links">
+      <a href="#">Kebijakan Privasi</a>
+      <a href="#">Syarat &amp; Ketentuan</a>
+    </div>
+  </footer>
+
+  <!-- ── Employee Info Modal ── -->
+  <div class="rp-modal-overlay" *ngIf="showEmployeeInfo" (click)="closeEmployeeInfo()">
+    <div class="rp-modal" (click)="$event.stopPropagation()">
+      <div class="rp-modal__icon">
+        <span class="material-icons">info</span>
+      </div>
+      <h2 class="rp-modal__title">Informasi Pendaftaran Karyawan</h2>
+      <p class="rp-modal__msg">
+        Silakan hubungi admin perusahaan Anda, untuk menambahkan Anda sebagai Karyawan.
+      </p>
+      <p class="rp-modal__note">
+        <span class="material-icons rp-modal__note-icon">lightbulb</span>
+        <strong>Note:</strong> Pastikan perusahaan Anda sudah menggunakan aplikasi absensi kerja.
+      </p>
+      <div class="rp-modal__actions">
+        <button class="rp-modal__btn rp-modal__btn--primary" (click)="closeEmployeeInfo()">Mengerti</button>
+        <a routerLink="/auth/login" class="rp-modal__btn rp-modal__btn--outline">Sudah punya akun? Login</a>
+      </div>
+    </div>
+  </div>
+
+</div>

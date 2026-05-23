@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/absensi/absensi.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\n\r\nexport const absensiRoutes: Routes = [\r\n  {\r\n    path: '',\r\n    loadComponent: () =>\r\n      import('./check-in-out/check-in-out.component').then(m => m.CheckInOutComponent)\r\n  }\r\n];\r\n\r\n"],
+  "mappings": ";;;AAEO,IAAM,gBAAwB;EACnC;IACE,MAAM;IACN,eAAe,MACb,OAAO,qBAAuC,EAAE,KAAK,OAAK,EAAE,mBAAmB;;;",
+  "names": []
+}

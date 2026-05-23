@@ -1,0 +1,210 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Kunjungan</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/kunjungan/klien">Kunjungan Klien</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Kunjungan</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+
+      <!-- Filter bar -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="date" class="form-control form-control-sm" style="max-width:155px"
+               [ngModel]="filterFrom()"
+               (ngModelChange)="filterFrom.set($event); page.set(1)">
+        <span class="text-muted">-</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:155px"
+               [ngModel]="filterTo()"
+               (ngModelChange)="filterTo.set($event); page.set(1)">
+
+        <select class="form-select form-select-sm" style="max-width:180px"
+                [ngModel]="filterDivisi()"
+                (ngModelChange)="filterDivisi.set($event ? +$event : null); page.set(1)">
+          <option [ngValue]="null">Pilih Divisi</option>
+          @for (d of divisiList(); track d.id) {
+            <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+          }
+        </select>
+
+        <select class="form-select form-select-sm" style="max-width:180px"
+                [ngModel]="filterKlien()"
+                (ngModelChange)="filterKlien.set($event ? +$event : null); page.set(1)">
+          <option [ngValue]="null">Pilih Klien</option>
+          @for (k of klienList(); track k.id) {
+            <option [ngValue]="k.id">{{ k.namaKlien }}</option>
+          }
+        </select>
+
+        <div class="input-group" style="max-width:220px">
+          <input type="text" class="form-control form-control-sm" placeholder="Cari"
+                 [ngModel]="_cariInput()"
+                 (ngModelChange)="_cariInput.set($event)"
+                 (keyup.enter)="applyFilter()">
+          <button class="btn btn-sm btn-outline-secondary" (click)="applyFilter()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+        <button class="btn btn-sm" style="background:#5c6bc0;color:#fff" (click)="notifikasi()">
+          <i class="bx bx-send me-1"></i>Notifikasi Telegram
+        </button>
+        <button class="btn btn-sm" style="background:#5c6bc0;color:#fff" (click)="exportExcel()">
+          <i class="bx bx-file me-1"></i>Ekspor Excel
+        </button>
+        <button class="btn btn-sm btn-success" (click)="openCreate()">
+          <i class="bx bx-plus"></i>
+        </button>
+        <span class="badge bg-success fs-6 px-3">Kuota Hitung Jarak: 0</span>
+      </div>
+
+      <!-- Loading -->
+      @if (loading()) {
+        <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+      } @else {
+
+        <!-- Table -->
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle mb-0">
+            <thead class="table-light text-center">
+              <tr>
+                <th>Karyawan</th>
+                <th>Kunjungan</th>
+                <th>Klien</th>
+                <th>Total Jarak</th>
+                <th>Penjualan Produk</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of pagedData(); track item.id) {
+                <tr>
+                  <!-- Karyawan -->
+                  <td style="min-width:220px">
+                    <div class="d-flex align-items-center gap-2">
+                      <img [src]="fotoUrl(item.fotoProfil)" alt="foto"
+                           style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+                      <div>
+                        <div class="fw-semibold">{{ item.namaKaryawan }}</div>
+                        <div class="text-muted small">{{ item.namaDivisi }}</div>
+                        <div class="text-muted small">{{ item.zonaWaktu ? 'WIB (UTC+7)' : '' }}</div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Kunjungan (masuk + durasi + keluar) -->
+                  <td style="min-width:320px">
+                    <div class="d-flex align-items-center gap-3">
+                      <!-- Waktu Mulai -->
+                      <div>
+                        <div class="text-muted small">{{ formatDate(item.waktuMulai) }}</div>
+                        <div class="d-flex align-items-center gap-1">
+                          <i class="bx bx-up-arrow-circle text-warning fs-5"></i>
+                          <span class="fw-bold fs-5">{{ formatTime(item.waktuMulai) }}</span>
+                        </div>
+                        <div class="d-flex gap-1 mt-1">
+                          @if (item.catatan) { <i class="bx bx-file-blank text-secondary"></i> }
+                          @if (item.lokasiMulaiLat) { <i class="bx bx-map text-secondary"></i> }
+                        </div>
+                      </div>
+
+                      <!-- Durasi -->
+                      <div class="text-center">
+                        <div class="text-muted small">•••</div>
+                        <div class="text-muted small fw-semibold">{{ durasi(item) }}</div>
+                      </div>
+
+                      <!-- Waktu Selesai -->
+                      <div>
+                        @if (item.waktuSelesai) {
+                          <div class="text-muted small">{{ formatDate(item.waktuSelesai) }}</div>
+                          <div class="d-flex align-items-center gap-1">
+                            <i class="bx bx-down-arrow-circle text-success fs-5"></i>
+                            <span class="fw-bold fs-5">{{ formatTime(item.waktuSelesai) }}</span>
+                          </div>
+                          <div class="d-flex gap-1 mt-1">
+                            @if (item.fotoSelesai) { <i class="bx bx-file-blank text-secondary"></i> }
+                            @if (item.lokasiSelesaiLat) { <i class="bx bx-map text-secondary"></i> }
+                          </div>
+                        } @else {
+                          <span class="badge bg-warning text-dark">Berlangsung</span>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Klien -->
+                  <td>
+                    <span class="fw-semibold">{{ item.namaKlien }}</span>
+                  </td>
+
+                  <!-- Total Jarak -->
+                  <td>
+                    <span class="badge bg-light text-dark border">{{ (item.totalJarak ?? 0) | number }} Meter</span>
+                  </td>
+
+                  <!-- Penjualan Produk -->
+                  <td>
+                    {{ item.penjualanProduk || '-' }}
+                  </td>
+
+                  <!-- Aksi -->
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-danger" (click)="delete(item)" title="Hapus">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">Tidak ada data kunjungan.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <small class="text-muted">
+              Menampilkan {{ infoStart() }}–{{ infoEnd() }} dari {{ filteredData().length }} data
+            </small>
+            <nav>
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="page() === 1">
+                  <button class="page-link" (click)="setPage(page() - 1)">‹</button>
+                </li>
+                @for (p of pageNumbers(); track p) {
+                  <li class="page-item" [class.active]="p === page()">
+                    <button class="page-link" (click)="setPage(p)">{{ p }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="page() === totalPages()">
+                  <button class="page-link" (click)="setPage(page() + 1)">›</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+</app-layout>

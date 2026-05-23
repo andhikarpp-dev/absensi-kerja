@@ -1,0 +1,500 @@
+:host { display: block; background: #07090f; }
+
+// ── Design tokens (same as landing page) ─────────────────────
+$bg:         #07090f;
+$surface:    #0f1117;
+$surface2:   #161a24;
+$border:     rgba(255,255,255,.07);
+$primary:    #6366f1;
+$primary2:   #8b5cf6;
+$accent:     #06b6d4;
+$green:      #10b981;
+$red:        #ef4444;
+$amber:      #f59e0b;
+$text:       #f1f5f9;
+$text-muted: #64748b;
+$text-dim:   #94a3b8;
+$white:      #ffffff;
+
+// ── Noise texture (identical to landing) ─────────────────────
+.daftar-noise {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: .028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+// ── Page ──────────────────────────────────────────────────────
+.daftar-page {
+  min-height: 100vh;
+  background: $bg;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+// ── Background blobs ──────────────────────────────────────────
+.daftar-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+
+  &--1 {
+    width: 600px; height: 600px;
+    background: rgba($primary, .12);
+    top: -200px; left: -150px;
+  }
+  &--2 {
+    width: 500px; height: 500px;
+    background: rgba($primary2, .10);
+    bottom: -100px; right: -100px;
+  }
+  &--3 {
+    width: 400px; height: 400px;
+    background: rgba($accent, .07);
+    top: 40%; left: 40%;
+  }
+}
+
+// ── Navbar ────────────────────────────────────────────────────
+.daftar-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.5rem;
+  height: 64px;
+  background: rgba($bg, .8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid $border;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    text-decoration: none;
+  }
+
+  &__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, $primary, $primary2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 16px rgba($primary, .45);
+    font-size: 1.25rem !important;
+    color: $white;
+  }
+
+  &__name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $text;
+    letter-spacing: -.3px;
+
+    strong {
+      background: linear-gradient(90deg, $primary, $accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .45rem 1.1rem;
+    border-radius: 8px;
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: opacity .2s, transform .15s;
+
+    &--outline {
+      background: transparent;
+      border: 1px solid $border;
+      color: $text-dim;
+      &:hover { border-color: rgba(255,255,255,.2); color: $text; }
+    }
+
+    &--solid {
+      background: linear-gradient(135deg, $primary, $primary2);
+      color: $white;
+      box-shadow: 0 4px 14px rgba($primary, .35);
+      strong { color: $white; font-weight: 800; }
+      &:hover { opacity: .88; transform: translateY(-1px); }
+    }
+  }
+}
+
+// ── Main ──────────────────────────────────────────────────────
+.daftar-main {
+  flex: 1;
+  padding: 3.5rem 2rem 5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+}
+
+// ── Page header ───────────────────────────────────────────────
+.daftar-header {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  &__title {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    color: $text;
+    margin: 0 0 .6rem;
+    letter-spacing: -.5px;
+    line-height: 1.2;
+
+    span {
+      background: linear-gradient(90deg, $primary, $accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
+  &__sub {
+    color: $text-muted;
+    font-size: .95rem;
+    margin: 0;
+  }
+}
+
+// ── Two-column layout ─────────────────────────────────────────
+.daftar-content {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.75rem;
+  align-items: start;
+
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+// ── Left — Packages ───────────────────────────────────────────
+.daftar-packages {
+  &__title {
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: $text-muted;
+    margin: 0 0 .9rem;
+  }
+}
+
+.paket-card {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .9rem 1rem;
+  border: 1px solid $border;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: .6rem;
+  background: $surface;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+
+  &:hover {
+    border-color: rgba($primary, .4);
+    background: $surface2;
+  }
+
+  &--selected {
+    border-color: $primary;
+    background: rgba($primary, .08);
+    box-shadow: 0 0 0 1px rgba($primary, .25), 0 4px 20px rgba($primary, .12);
+  }
+
+  &__radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid $border;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color .18s;
+
+    .paket-card--selected & { border-color: $primary; }
+  }
+
+  &__radio-inner {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background .18s;
+
+    &--active { background: $primary; }
+  }
+
+  &__info { flex: 1; }
+
+  &__name {
+    font-size: .9rem;
+    font-weight: 700;
+    color: $text-dim;
+    transition: color .18s;
+
+    .paket-card--selected & {
+      color: $text;
+      background: linear-gradient(90deg, $primary, $primary2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
+  &__sub {
+    font-size: .75rem;
+    color: $text-muted;
+    margin-top: .15rem;
+
+    &--green { color: $green; font-weight: 600; }
+  }
+
+  &__price {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  &__amount {
+    display: block;
+    font-size: .88rem;
+    font-weight: 700;
+    color: $text;
+  }
+
+  &__per {
+    font-size: .72rem;
+    color: $text-muted;
+  }
+}
+
+// ── Right — Form card ─────────────────────────────────────────
+.daftar-form-card {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 20px;
+  padding: 2rem 2rem 1.75rem;
+  box-shadow:
+    0 0 0 1px rgba($primary, .06),
+    0 24px 60px rgba(0,0,0,.5);
+
+  &__title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: $text;
+    margin: 0 0 .25rem;
+  }
+
+  &__sub {
+    font-size: .85rem;
+    color: $text-muted;
+    margin: 0 0 1.5rem;
+  }
+}
+
+// ── Alert ─────────────────────────────────────────────────────
+.daftar-alert {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: rgba($red, .1);
+  border: 1px solid rgba($red, .25);
+  color: #fca5a5;
+  border-radius: 10px;
+  padding: .65rem 1rem;
+  font-size: .85rem;
+  margin-bottom: 1rem;
+
+  .material-icons { font-size: 1rem; }
+}
+
+// ── Form ──────────────────────────────────────────────────────
+.daftar-form {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .85rem;
+
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+  }
+}
+
+// ── Fields ────────────────────────────────────────────────────
+.daftar-field {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+
+  &__label {
+    font-size: .75rem;
+    font-weight: 600;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: .1rem;
+  }
+
+  &__input {
+    width: 100%;
+    padding: .75rem 1rem;
+    background: $bg;
+    border: 1.5px solid rgba(255,255,255,.09);
+    border-radius: 10px;
+    font-size: .9rem;
+    font-family: inherit;
+    color: $text;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color .2s, box-shadow .2s;
+
+    &::placeholder { color: rgba(255,255,255,.25); }
+
+    &:focus {
+      border-color: $primary;
+      box-shadow: 0 0 0 3px rgba($primary, .15);
+    }
+
+    &--err {
+      border-color: $red;
+      box-shadow: 0 0 0 3px rgba($red, .1);
+    }
+
+    &--select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .75rem center;
+      background-size: 1.25rem;
+      padding-right: 2.5rem;
+      cursor: pointer;
+
+      option { background: $surface2; color: $text; }
+    }
+
+    &--textarea {
+      resize: vertical;
+      min-height: 85px;
+    }
+  }
+
+  &__error {
+    font-size: .75rem;
+    color: #f87171;
+  }
+}
+
+// ── ToS ───────────────────────────────────────────────────────
+.daftar-tos {
+  font-size: .79rem;
+  color: $text-muted;
+  text-align: center;
+  margin: .1rem 0 0;
+  line-height: 1.6;
+
+  a {
+    color: $primary;
+    font-weight: 600;
+    text-decoration: none;
+    &:hover { color: #818cf8; text-decoration: underline; }
+  }
+}
+
+// ── Submit button ─────────────────────────────────────────────
+.daftar-btn {
+  width: 100%;
+  padding: .9rem;
+  background: linear-gradient(135deg, $primary, $primary2);
+  color: $white;
+  border: none;
+  border-radius: 12px;
+  font-size: .95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  transition: opacity .2s, transform .15s, box-shadow .2s;
+  margin-top: .5rem;
+  box-shadow: 0 6px 24px rgba($primary, .4);
+  letter-spacing: .2px;
+
+  &:hover:not(:disabled) {
+    opacity: .92;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba($primary, .5);
+  }
+
+  &:disabled { opacity: .45; cursor: not-allowed; }
+}
+
+// ── Spinner ───────────────────────────────────────────────────
+.daftar-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: $white;
+  border-radius: 50%;
+  animation: ds-spin .7s linear infinite;
+}
+
+@keyframes ds-spin { to { transform: rotate(360deg); } }
+
+// ── Login link ────────────────────────────────────────────────
+.daftar-login-link {
+  text-align: center;
+  font-size: .85rem;
+  color: $text-muted;
+  margin: 1.1rem 0 0;
+
+  a {
+    color: $primary;
+    font-weight: 700;
+    text-decoration: none;
+    &:hover { color: #818cf8; text-decoration: underline; }
+  }
+}
+
+// ── Responsive ────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .daftar-nav        { padding: 0 1rem; }
+  .daftar-main       { padding: 1.75rem 1rem 3rem; }
+  .daftar-header__title { font-size: 1.5rem; }
+  .daftar-form-card  { padding: 1.5rem 1.1rem; border-radius: 14px; }
+  .daftar-nav__btn--outline { display: none; }
+}

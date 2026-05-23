@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/divisi/divisi.routes.ts"],
+  "sourcesContent": ["import { Routes } from '@angular/router';\r\nimport { authGuard } from '../../core/guards/auth.guard';\r\nimport { roleGuard } from '../../core/guards/role.guard';\r\n\r\nexport const divisiRoutes: Routes = [\r\n  {\r\n    path: '',\r\n    canActivate: [authGuard, roleGuard(['ADMIN','PEMILIK'])],\r\n    loadComponent: () =>\r\n      import('./divisi-list/divisi-list.component').then(m => m.DivisiListComponent)\r\n  },\r\n  {\r\n    path: 'baru',\r\n    canActivate: [authGuard, roleGuard(['ADMIN','PEMILIK'])],\r\n    loadComponent: () =>\r\n      import('./divisi-form/divisi-form.component').then(m => m.DivisiFormComponent)\r\n  },\r\n  {\r\n    path: ':id/edit',\r\n    canActivate: [authGuard, roleGuard(['ADMIN','PEMILIK'])],\r\n    loadComponent: () =>\r\n      import('./divisi-form/divisi-form.component').then(m => m.DivisiFormComponent)\r\n  }\r\n];\r\n"],
+  "mappings": ";;;;;;;;;;AAIO,IAAM,eAAuB;EAClC;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,SAAQ,SAAS,CAAC,CAAC;IACvD,eAAe,MACb,OAAO,qBAAqC,EAAE,KAAK,OAAK,EAAE,mBAAmB;;EAEjF;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,SAAQ,SAAS,CAAC,CAAC;IACvD,eAAe,MACb,OAAO,qBAAqC,EAAE,KAAK,OAAK,EAAE,mBAAmB;;EAEjF;IACE,MAAM;IACN,aAAa,CAAC,WAAW,UAAU,CAAC,SAAQ,SAAS,CAAC,CAAC;IACvD,eAAe,MACb,OAAO,qBAAqC,EAAE,KAAK,OAAK,EAAE,mBAAmB;;;",
+  "names": []
+}

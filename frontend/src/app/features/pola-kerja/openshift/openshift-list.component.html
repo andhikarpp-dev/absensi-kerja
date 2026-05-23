@@ -1,0 +1,464 @@
+<app-layout>
+
+  <!-- Page header -->
+  <div class="mb-3">
+    <h4 class="mb-2 fw-bold">Openshift</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 p-0 small">
+        <li class="breadcrumb-item"><a routerLink="/dashboard" class="text-primary text-decoration-none">Dasbor</a></li>
+        <li class="breadcrumb-item"><a href="javascript:;" class="text-primary text-decoration-none">Pola Kerja</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">Openshift</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center">
+      <i class="bx bx-error-circle me-2 fs-5"></i>
+      <span class="flex-grow-1">{{ error() }}</span>
+      <button type="button" class="btn-close" (click)="error.set('')"></button>
+    </div>
+  }
+
+  <!-- Toast Sukses -->
+  @if (successMsg()) {
+    <div class="position-fixed top-0 end-0 p-3" style="z-index:1080">
+      <div class="toast show align-items-center text-white bg-success border-0 shadow"
+           role="alert">
+        <div class="d-flex">
+          <div class="toast-body"><i class="bx bx-check-circle me-2"></i>{{ successMsg() }}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                  (click)="successMsg.set('')"></button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Card -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="fw-bold mb-3">Pola Kerja - Openshift</h5>
+
+      <!-- Toolbar -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="date" class="form-control" style="max-width:160px" placeholder="Tanggal Mulai"
+               [ngModel]="filterMulai()" (ngModelChange)="filterMulai.set($event); onSearchChange()" />
+        <span class="text-muted">-</span>
+        <input type="date" class="form-control" style="max-width:160px" placeholder="Tanggal Selesai"
+               [ngModel]="filterSelesai()" (ngModelChange)="filterSelesai.set($event); onSearchChange()" />
+
+        <select class="form-select" style="max-width:160px"
+                [ngModel]="filterDivisiId()"
+                (ngModelChange)="filterDivisiId.set($event ? +$event : null); onSearchChange()">
+          <option [ngValue]="null">--Divisi--</option>
+          @for (d of divisiList(); track d.id) {
+            <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+          }
+        </select>
+
+        <div class="input-group" style="max-width:240px">
+          <input type="text" class="form-control" placeholder="Cari"
+                 [ngModel]="query()" (ngModelChange)="query.set($event); onSearchChange()" />
+          <button class="btn btn-outline-secondary" type="button"><i class="bx bx-search"></i></button>
+        </div>
+
+        <button class="btn btn-primary" (click)="openTambah()">
+          <i class="bx bx-plus-circle me-1"></i> Tambah Openshift
+        </button>
+        <button class="btn btn-primary" (click)="imporExcel()">
+          <i class="bx bx-import me-1"></i> Impor Excel
+        </button>
+        <button class="btn btn-primary" (click)="eksporExcel()">
+          <i class="bx bx-export me-1"></i> Ekspor Excel
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr class="text-center">
+              <th style="width:240px">Jadwal</th>
+              <th>Upah</th>
+              <th style="width:110px">Peminat</th>
+              <th style="width:140px">Dihadiri Oleh</th>
+              <th style="width:160px">Total Upah (Rp)</th>
+              <th style="width:160px">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="6" class="text-center py-4">
+                <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+              </td></tr>
+            } @else if (paged().length === 0) {
+              <tr><td colspan="6" class="text-center py-4 text-muted">
+                <i class="bx bx-folder-open" style="font-size:2.2rem"></i>
+                <div class="mt-1">Belum ada data openshift.</div>
+              </td></tr>
+            } @else {
+              @for (o of paged(); track o.id) {
+                <tr>
+                  <!-- Jadwal -->
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div>
+                        <div class="text-muted small">{{ formatTgl(o.tanggalMulai) }}</div>
+                        <div class="fw-bold fs-5">{{ o.jamMulai }}</div>
+                      </div>
+                      <div class="text-muted">•••</div>
+                      <div>
+                        <div class="text-muted small">{{ formatTgl(o.tanggalSelesai) }}</div>
+                        <div class="fw-bold fs-5">{{ o.jamSelesai }}</div>
+                      </div>
+                    </div>
+                    <div class="small text-muted mt-1">Durasi: {{ durasiJam(o) }} jam</div>
+                    <div class="small text-muted">Catatan: {{ o.catatan || '-' }}</div>
+                  </td>
+
+                  <!-- Upah -->
+                  <td>
+                    <table class="table table-sm table-bordered mb-0">
+                      <tbody>
+                        <tr>
+                          <th class="bg-light" style="width:130px">Upah Per Jam</th>
+                          <td>{{ upahLabel(o) }}</td>
+                        </tr>
+                        <tr>
+                          <th class="bg-light">Maks. Karyawan</th>
+                          <td>{{ maksKaryawanLabel(o) }}</td>
+                        </tr>
+                        <tr>
+                          <th class="bg-light">Target Divisi</th>
+                          <td>
+                            @if (divisiNamaList(o).length === 0) {
+                              <span class="text-muted">-</span>
+                            } @else {
+                              <ul class="mb-0 ps-3">
+                                @for (n of divisiNamaList(o); track n) {
+                                  <li>{{ n }}</li>
+                                }
+                              </ul>
+                            }
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+
+                  <!-- Peminat -->
+                  <td class="text-center">
+                    <a href="javascript:;" class="text-primary text-decoration-none">
+                      {{ o.peminatIds.length }} Karyawan
+                    </a>
+                  </td>
+
+                  <!-- Dihadiri -->
+                  <td class="text-center">{{ o.dihadiriIds.length }} Karyawan</td>
+
+                  <!-- Total Upah -->
+                  <td class="text-center">{{ totalUpah(o) }}</td>
+
+                  <!-- Aksi -->
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-light border me-1" title="Edit" (click)="openEdit(o)">
+                      <i class="bx bx-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger me-1" title="Hapus" (click)="askDelete(o.id)">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light border" title="Riwayat" (click)="openRiwayat(o)">
+                      <i class="bx bx-history"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer / pagination -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
+        <div class="fw-semibold small">
+          Menampilkan {{ paged().length }} dari {{ filtered().length }} total data
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="page() === 1">
+              <a class="page-link" href="javascript:;" (click)="goToPage(1)">«</a>
+            </li>
+            <li class="page-item" [class.disabled]="page() === 1">
+              <a class="page-link" href="javascript:;" (click)="goToPage(page() - 1)">‹</a>
+            </li>
+            @for (n of pages(); track n) {
+              <li class="page-item" [class.active]="page() === n">
+                <a class="page-link" href="javascript:;" (click)="goToPage(n)">{{ n }}</a>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="page() === totalPages()">
+              <a class="page-link" href="javascript:;" (click)="goToPage(page() + 1)">›</a>
+            </li>
+            <li class="page-item" [class.disabled]="page() === totalPages()">
+              <a class="page-link" href="javascript:;" (click)="goToPage(totalPages())">»</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ Modal Tambah/Edit ══════════ -->
+  @if (showFormModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1055">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bx me-2" [class.bx-plus]="!editingId()" [class.bx-edit]="editingId()"></i>
+              {{ editingId() ? 'Edit Openshift' : 'Tambah Openshift' }}
+            </h5>
+            <button type="button" class="btn-close" (click)="closeFormModal()"></button>
+          </div>
+          <div class="modal-body">
+            @if (modalError()) {
+              <div class="alert alert-danger py-2">{{ modalError() }}</div>
+            }
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Tanggal Mulai <span class="text-danger">*</span></label>
+                <input type="date" class="form-control"
+                       [(ngModel)]="modalData.tanggalMulai" [ngModelOptions]="{standalone:true}" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Jam Mulai <span class="text-danger">*</span></label>
+                <input type="time" class="form-control"
+                       [(ngModel)]="modalData.jamMulai" [ngModelOptions]="{standalone:true}" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Tanggal Selesai <span class="text-danger">*</span></label>
+                <input type="date" class="form-control"
+                       [(ngModel)]="modalData.tanggalSelesai" [ngModelOptions]="{standalone:true}" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Jam Selesai <span class="text-danger">*</span></label>
+                <input type="time" class="form-control"
+                       [(ngModel)]="modalData.jamSelesai" [ngModelOptions]="{standalone:true}" />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Jenis Upah</label>
+                <select class="form-select" [(ngModel)]="modalData.upahJenis"
+                        [ngModelOptions]="{standalone:true}">
+                  <option value="SESUAI_LEMBUR">Sesuai Upah Lembur Karyawan</option>
+                  <option value="NOMINAL">Nominal Per Jam</option>
+                </select>
+              </div>
+              @if (modalData.upahJenis === 'NOMINAL') {
+                <div class="col-md-6">
+                  <label class="form-label">Upah Per Jam (Rp)</label>
+                  <input type="number" min="0" class="form-control"
+                         [(ngModel)]="modalData.upahPerJam" [ngModelOptions]="{standalone:true}" />
+                </div>
+              }
+
+              <div class="col-md-6">
+                <label class="form-label">Maks. Karyawan</label>
+                <input type="number" min="0" class="form-control" placeholder="Kosongkan = tidak terbatas"
+                       [(ngModel)]="modalData.maksKaryawan" [ngModelOptions]="{standalone:true}" />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Target Divisi <span class="text-danger">*</span></label>
+                <div class="border rounded p-2" style="max-height:160px;overflow:auto">
+                  @if (divisiList().length === 0) {
+                    <div class="text-muted small">Belum ada divisi.</div>
+                  } @else {
+                    @for (d of divisiList(); track d.id) {
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               [id]="'div_' + d.id"
+                               [checked]="modalData.divisiIds.includes(d.id)"
+                               (change)="toggleDivisiTarget(d.id)" />
+                        <label class="form-check-label" [for]="'div_' + d.id">{{ d.namaDivisi }}</label>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Catatan</label>
+                <textarea rows="2" class="form-control"
+                          [(ngModel)]="modalData.catatan" [ngModelOptions]="{standalone:true}"
+                          placeholder="Catatan tambahan (opsional)"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm px-4" (click)="closeFormModal()">
+              <i class="bx bx-x me-1"></i> Tutup
+            </button>
+            <button type="button" class="btn btn-primary btn-sm px-4"
+                    [disabled]="saving()" (click)="saveOpenshift()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...
+              } @else {
+                <i class="bx bx-save me-1"></i> Simpan
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ Modal Riwayat ══════════ -->
+  @if (showRiwayatModal() && riwayatItem()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bx bx-history me-2"></i>
+              Riwayat Openshift - <span class="text-primary">{{ formatTgl(riwayatItem()!.tanggalMulai) }} {{ riwayatItem()!.jamMulai }}</span>
+            </h5>
+            <button type="button" class="btn-close" (click)="closeRiwayat()"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted text-center py-3 mb-0">Belum ada riwayat perubahan.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="closeRiwayat()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ Modal Konfirmasi Hapus ══════════ -->
+  @if (confirmDeleteId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger">
+              <i class="bx bx-trash me-2"></i>Hapus Openshift?
+            </h5>
+          </div>
+          <div class="modal-body text-muted">
+            Data yang dihapus tidak dapat dikembalikan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-secondary btn-sm" (click)="cancelDelete()">Batal</button>
+            <button class="btn btn-danger btn-sm" (click)="doDelete()">Ya, Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ Modal Impor Excel/CSV ══════════ -->
+  @if (showImportModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-import me-2"></i>Impor Openshift</h5>
+            <button type="button" class="btn-close" (click)="closeImportModal()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning py-2 mb-3">
+              <div class="fw-bold mb-1"><i class="bx bx-error me-1"></i>PENTING!</div>
+              <ul class="mb-0 ps-3 small">
+                <li>
+                  Untuk melakukan impor data openshift, pastikan file yang diupload sudah sesuai
+                  dengan format yang ditentukan.
+                  <a href="javascript:;" class="fw-semibold text-decoration-underline"
+                     (click)="downloadTemplate()">Download format impor excel di sini.</a>
+                </li>
+                <li>Aksi impor hanya akan dijalankan jika semua data sudah benar.</li>
+                <li>Jika ada data yang perlu diperbaiki, sistem akan segera menampilkan informasinya
+                    setelah klik tombol proses.</li>
+              </ul>
+            </div>
+
+            <label class="form-label fw-semibold">Pilih File CSV</label>
+            <input type="file" class="form-control" accept=".csv,text/csv"
+                   [disabled]="importBusy()"
+                   (change)="onImportFileSelected($event)" />
+
+            @if (importFile()) {
+              <div class="d-flex align-items-center justify-content-between border rounded p-2 mt-2 bg-light">
+                <div class="d-flex align-items-center gap-2 text-truncate">
+                  <i class="bx bxs-file-blank text-success fs-4"></i>
+                  <div class="text-truncate">
+                    <div class="fw-semibold text-truncate">{{ importFile()!.name }}</div>
+                    <div class="small text-muted">{{ formatFileSize(importFile()!.size) }}</div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        [disabled]="importBusy()" (click)="clearImportFile()" title="Hapus file">
+                  <i class="bx bx-x"></i>
+                </button>
+              </div>
+            }
+
+            @if (importBusy()) {
+              <div class="text-center text-muted mt-3">
+                <span class="spinner-border spinner-border-sm me-2"></span> Memproses file...
+              </div>
+            }
+
+            @if (importResult()) {
+              <div class="mt-3">
+                @if (importResult()!.gagal === 0 && importResult()!.berhasil > 0) {
+                  <div class="alert alert-success py-2 mb-2">
+                    <i class="bx bx-check-circle me-1"></i>
+                    <b>{{ importResult()!.berhasil }}</b> data openshift berhasil diimpor.
+                  </div>
+                } @else if (importResult()!.gagal > 0) {
+                  <div class="alert alert-danger py-2 mb-2">
+                    <i class="bx bx-x-circle me-1"></i>
+                    Impor <b>dibatalkan</b> — ditemukan <b>{{ importResult()!.gagal }}</b> baris bermasalah.
+                    Tidak ada data yang disimpan. Perbaiki file lalu unggah ulang.
+                  </div>
+                  <div class="table-responsive" style="max-height:240px">
+                    <table class="table table-sm table-bordered mb-0">
+                      <thead class="table-light">
+                        <tr><th style="width:80px">Baris</th><th>Pesan</th></tr>
+                      </thead>
+                      <tbody>
+                        @for (err of importResult()!.errors; track $index) {
+                          <tr>
+                            <td class="text-center">{{ err.baris }}</td>
+                            <td class="text-danger small">{{ err.pesan }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="closeImportModal()">Tutup</button>
+            <button class="btn btn-primary btn-sm"
+                    [disabled]="!importFile() || importBusy()"
+                    (click)="prosesImport()">
+              @if (importBusy()) {
+                <span class="spinner-border spinner-border-sm me-1"></span> Memproses...
+              } @else {
+                <i class="bx bx-check me-1"></i> Proses
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

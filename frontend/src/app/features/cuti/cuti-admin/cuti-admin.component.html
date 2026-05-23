@@ -1,0 +1,427 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Cuti</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item active" aria-current="page">Cuti</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+
+      <!-- Tabs + Quick filter -->
+      <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+        <div class="d-flex" style="border-radius:8px;overflow:hidden;border:1px solid #dee2e6">
+          <button type="button" class="btn px-4"
+                  [style.background]="activeTab()==='PENGAJUAN' ? '#5c6bc0' : '#fff'"
+                  [style.color]="activeTab()==='PENGAJUAN' ? '#fff' : '#333'"
+                  (click)="setTab('PENGAJUAN')">Pengajuan</button>
+          <button type="button" class="btn px-4" style="border-left:1px solid #dee2e6;border-right:1px solid #dee2e6"
+                  [style.background]="activeTab()==='DISETUJUI' ? '#5c6bc0' : '#fff'"
+                  [style.color]="activeTab()==='DISETUJUI' ? '#fff' : '#333'"
+                  (click)="setTab('DISETUJUI')">Disetujui</button>
+          <button type="button" class="btn px-4"
+                  [style.background]="activeTab()==='DITOLAK' ? '#5c6bc0' : '#fff'"
+                  [style.color]="activeTab()==='DITOLAK' ? '#fff' : '#333'"
+                  (click)="setTab('DITOLAK')">Ditolak</button>
+        </div>
+
+        <div class="d-flex gap-1">
+          <button type="button" class="btn btn-light border btn-sm"
+                  [class.active]="quickFilter()==='HARI_INI'"
+                  (click)="setQuickFilter('HARI_INI')">Cuti Hari Ini</button>
+          <button type="button" class="btn btn-light border btn-sm"
+                  [class.active]="quickFilter()==='BESOK'"
+                  (click)="setQuickFilter('BESOK')">Cuti Besok</button>
+          <button type="button" class="btn btn-light border btn-sm"
+                  [class.active]="quickFilter()==='7_HARI'"
+                  (click)="setQuickFilter('7_HARI')">Cuti 7 Hari Kedepan</button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="date" class="form-control form-control-sm" style="max-width:155px"
+               placeholder="Mulai Cuti"
+               [ngModel]="filterFrom()" (ngModelChange)="filterFrom.set($event)">
+        <span>-</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:155px"
+               placeholder="Selesai Cuti"
+               [ngModel]="filterTo()" (ngModelChange)="filterTo.set($event)">
+
+        <select class="form-select form-select-sm" style="max-width:180px"
+                [ngModel]="filterJenis()" (ngModelChange)="filterJenis.set($event)">
+          <option value="">--Jenis Cuti--</option>
+          <option value="TAHUNAN">Cuti Tahunan</option>
+          <option value="SETENGAH_HARI">Cuti Setengah Hari</option>
+          <option value="KHUSUS">Cuti Khusus</option>
+        </select>
+
+        <select class="form-select form-select-sm" style="max-width:180px"
+                [ngModel]="filterDivisi()" (ngModelChange)="filterDivisi.set($event ? +$event : null)">
+          <option [ngValue]="null">--Divisi--</option>
+          @for (d of divisiList(); track d.id) {
+            <option [value]="d.id">{{ d.namaDivisi }}</option>
+          }
+        </select>
+
+        <div class="input-group input-group-sm" style="max-width:200px">
+          <input type="text" class="form-control" placeholder="Cari"
+                 [ngModel]="filterCari()" (ngModelChange)="filterCari.set($event)"
+                 (keyup.enter)="onCari()">
+          <button class="btn btn-light border" (click)="onCari()"><i class="bx bx-search"></i></button>
+        </div>
+
+        <button class="btn btn-sm" style="background:#5c6bc0;color:#fff" (click)="eksporExcel()">
+          <i class="bx bx-export me-1"></i>Ekspor Excel
+        </button>
+
+        <!-- Tambah Cuti dropdown -->
+        <div class="position-relative">
+          <button class="btn btn-sm" style="background:#5c6bc0;color:#fff"
+                  (click)="showTambahMenu.set(!showTambahMenu())">
+            <i class="bx bx-plus-circle me-1"></i>Tambah Cuti <i class="bx bx-caret-down"></i>
+          </button>
+          @if (showTambahMenu()) {
+            <div class="border rounded shadow-sm bg-white py-1"
+                 style="position:absolute;right:0;top:calc(100% + 4px);min-width:190px;z-index:400">
+              <button class="dropdown-item px-3 py-2" (click)="openModal('TAHUNAN')">Cuti Tahunan</button>
+              <button class="dropdown-item px-3 py-2" (click)="openModal('SETENGAH_HARI')">Cuti Setengah Hari</button>
+              <button class="dropdown-item px-3 py-2" (click)="openModal('KHUSUS')">Cuti Khusus</button>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Info text for pengajuan tab -->
+      @if (activeTab() === 'PENGAJUAN') {
+        <div class="text-muted small mb-2" style="font-family:monospace">
+          Daftar karyawan yang melakukan cuti dan membutuhkan aksi jawaban
+        </div>
+      }
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:220px">Karyawan</th>
+              <th>Detail Pengajuan</th>
+              <th style="width:200px">Status Persetujuan</th>
+              <th class="text-center" style="width:120px">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="4" class="text-center text-muted py-4">Memuat data...</td></tr>
+            } @else if (pagedData().length === 0) {
+              <tr><td colspan="4" class="text-center text-muted py-4">Belum ada data cuti.</td></tr>
+            } @else {
+              @for (c of pagedData(); track c.id) {
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ c.namaKaryawan }}</div>
+                    @if (c.namaDivisi) {
+                      <div class="small text-muted">{{ c.namaDivisi }}</div>
+                    }
+                  </td>
+                  <td>
+                    <div class="fw-semibold">{{ jenisLabel(c.jenisCuti) }}</div>
+                    <div class="small text-muted">
+                      {{ formatTanggal(c.tanggalMulai) }}
+                      @if (c.tanggalMulai !== c.tanggalSelesai) {
+                        — {{ formatTanggal(c.tanggalSelesai) }}
+                      }
+                    </div>
+                    <div class="small text-muted">
+                      Keperluan: {{ c.keperluan }}
+                    </div>
+                    @if (c.lampiranUrl) {
+                      <a [href]="c.lampiranUrl" target="_blank" class="small text-primary">
+                        <i class="bx bx-paperclip"></i> Lampiran
+                      </a>
+                    }
+                  </td>
+                  <td>
+                    <span [class]="statusBadgeClass(c.status)">{{ statusLabel(c.status) }}</span>
+                    @if (c.catatanPenolakan) {
+                      <div class="small text-danger mt-1">{{ c.catatanPenolakan }}</div>
+                    }
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      @if (c.status === 'MENUNGGU') {
+                        <button class="btn btn-success" title="Setujui" (click)="approve(c)">
+                          <i class="bx bx-check"></i>
+                        </button>
+                        <button class="btn btn-danger" title="Tolak" (click)="openTolak(c)">
+                          <i class="bx bx-x"></i>
+                        </button>
+                      }
+                      <button class="btn btn-light border text-danger" title="Hapus" (click)="delete(c)">
+                        <i class="bx bx-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <div class="small text-muted fw-semibold">
+          Menampilkan {{ filteredData().length === 0 ? 0 : (page()-1)*pageSize+1 }} dari {{ filteredData().length }} total data
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link" (click)="goPage(1)">«</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===1">
+              <button class="page-link" (click)="goPage(page()-1)">‹</button>
+            </li>
+            @for (p of pageNumbers(); track p) {
+              <li class="page-item" [class.active]="p===page()">
+                <button class="page-link" (click)="goPage(p)">{{ p }}</button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link" (click)="goPage(page()+1)">›</button>
+            </li>
+            <li class="page-item" [class.disabled]="page()===totalPages()">
+              <button class="page-link" (click)="goPage(totalPages())">»</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal Tambah Cuti ───────────────────────────────── -->
+  @if (showModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055"
+         (click)="showKaryawanDrop.set(false); showKhususDrop.set(false)">
+      <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">Tambah {{ modalJenisLabel() }}</h5>
+            <button class="btn-close" (click)="showModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            @if (modalError()) {
+              <div class="alert alert-danger small py-2">{{ modalError() }}</div>
+            }
+
+            <!-- Karyawan -->
+            <div class="row mb-3">
+              <label class="col-sm-4 col-form-label">Karyawan <span class="text-danger">*</span></label>
+              <div class="col-sm-8 position-relative">
+                <div class="input-group">
+                  <input type="text" class="form-control form-control-sm"
+                         placeholder="Tulis kata kunci..."
+                         [ngModel]="modalKaryawanQ()"
+                         (ngModelChange)="modalKaryawanQ.set($event); showKaryawanDrop.set(true)"
+                         (focus)="showKaryawanDrop.set(true)">
+                  <button class="btn btn-light border" type="button"
+                          (click)="showKaryawanDrop.set(!showKaryawanDrop())">
+                    <i class="bx bx-chevron-down"></i>
+                  </button>
+                </div>
+                @if (showKaryawanDrop() && filteredKaryawan().length > 0) {
+                  <div class="border rounded bg-white shadow-sm"
+                       style="position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;z-index:500">
+                    @for (k of filteredKaryawan(); track k.id) {
+                      <button type="button" class="dropdown-item px-3 py-2"
+                              (click)="selectKaryawan(k)">{{ k.namaLengkap }}</button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Jenis Cuti Khusus -->
+            @if (modalJenis() === 'KHUSUS') {
+              <div class="row mb-3">
+                <label class="col-sm-4 col-form-label">Jenis Cuti Khusus <span class="text-danger">*</span></label>
+                <div class="col-sm-8 position-relative">
+                  <div class="input-group">
+                    <input type="text" class="form-control form-control-sm"
+                           placeholder=""
+                           [ngModel]="modalKhususQ()"
+                           (ngModelChange)="modalKhususQ.set($event); showKhususDrop.set(true)"
+                           (focus)="showKhususDrop.set(true)">
+                    @if (modalKhususJenis()) {
+                      <button class="btn btn-light border" type="button"
+                              (click)="modalKhususJenis.set(''); modalKhususQ.set('')">
+                        <i class="bx bx-x"></i>
+                      </button>
+                    }
+                    <button class="btn btn-light border" type="button"
+                            (click)="showKhususDrop.set(!showKhususDrop())">
+                      <i class="bx bx-chevron-down"></i>
+                    </button>
+                  </div>
+                  @if (showKhususDrop()) {
+                    <div class="border rounded bg-white shadow-sm"
+                         style="position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;z-index:500">
+                      @for (j of filteredKhususList(); track j) {
+                        <button type="button" class="dropdown-item px-3 py-2"
+                                (click)="selectKhusus(j)">{{ j }}</button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Tanggal Cuti -->
+            <div class="row mb-3">
+              <label class="col-sm-4 col-form-label">Tgl. Cuti <span class="text-danger">*</span></label>
+              <div class="col-sm-8 position-relative">
+                @if (modalJenis() === 'SETENGAH_HARI') {
+                  <!-- Calendar picker untuk setengah hari -->
+                  <input type="text" class="form-control form-control-sm"
+                         [value]="modalTanggal() ? formatTanggalDisplay(modalTanggal()) : ''"
+                         placeholder="Pilih tanggal"
+                         readonly
+                         (click)="calendarVisible.set(!calendarVisible())">
+                  @if (calendarVisible()) {
+                    <div class="border rounded bg-white shadow"
+                         style="position:absolute;top:100%;left:0;z-index:600;min-width:300px;padding:12px">
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <button class="btn btn-sm btn-light border" (click)="prevMonth()">‹</button>
+                        <span class="fw-semibold">{{ calMonthName() }}</span>
+                        <button class="btn btn-sm btn-light border" (click)="nextMonth()">›</button>
+                      </div>
+                      <div class="d-grid" style="grid-template-columns:repeat(7,1fr);gap:2px">
+                        @for (d of weekDays; track d) {
+                          <div class="text-center small fw-bold py-1"
+                               [style.color]="d==='Min' ? '#e53935' : d==='Sab' ? '#1e88e5' : '#333'">
+                            {{ d }}
+                          </div>
+                        }
+                        @for (cell of calDays(); track cell.full) {
+                          <button type="button"
+                                  class="btn btn-sm"
+                                  [style.color]="cellColor(cell, weekDays)"
+                                  [style.background]="cell.full===modalTanggal() ? '#5c6bc0' : 'transparent'"
+                                  [style.color]="cell.full===modalTanggal() ? '#fff' : undefined"
+                                  (click)="selectDate(cell.full)">
+                            {{ cell.date }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <input type="date" class="form-control form-control-sm"
+                         [ngModel]="modalTanggal()" (ngModelChange)="modalTanggal.set($event)">
+                }
+              </div>
+            </div>
+
+            <!-- Keperluan / Keterangan -->
+            <div class="row mb-3">
+              <label class="col-sm-4 col-form-label">
+                {{ modalJenis() === 'KHUSUS' ? 'Keterangan' : 'Keperluan' }}
+                <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-8">
+                <textarea class="form-control form-control-sm" rows="4"
+                          [ngModel]="modalKeperluan()"
+                          (ngModelChange)="modalKeperluan.set($event)"></textarea>
+              </div>
+            </div>
+
+            <!-- Lampiran -->
+            <div class="row mb-3">
+              <label class="col-sm-4 col-form-label">Lampiran</label>
+              <div class="col-sm-8">
+                <label class="d-flex align-items-center justify-content-center border rounded"
+                       style="width:80px;height:80px;cursor:pointer;border-style:dashed!important">
+                  @if (!modalLampiranNama()) {
+                    <i class="bx bx-plus fs-4 text-primary"></i>
+                  } @else {
+                    <i class="bx bx-file-blank fs-4 text-success"></i>
+                  }
+                  <input type="file" class="d-none" accept=".pdf,image/*" (change)="onLampiranChange($event)">
+                </label>
+                @if (modalLampiranNama()) {
+                  <div class="small text-muted mt-1">{{ modalLampiranNama() }}</div>
+                }
+              </div>
+            </div>
+
+            <!-- Info box -->
+            <div class="rounded p-3 mb-1"
+                 style="background:linear-gradient(135deg,#7b1fa2,#ab47bc);color:#fff;font-size:0.85rem">
+              Pengajuan ini akan langsung disetujui dan akan masuk ke tab Disetujui.
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn px-4" style="background:#5c6bc0;color:#fff"
+                    [disabled]="modalSaving()" (click)="submitModal()">
+              {{ modalSaving() ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+            <button class="btn btn-light border px-4" (click)="showModal.set(false)">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Modal Tolak ──────────────────────────────────── -->
+  @if (showTolakModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger">Tolak Pengajuan Cuti</h5>
+            <button class="btn-close" (click)="showTolakModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label small">Catatan Penolakan (opsional)</label>
+            <textarea class="form-control" rows="3"
+                      [ngModel]="tolakCatatan()" (ngModelChange)="tolakCatatan.set($event)"></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-sm" (click)="showTolakModal.set(false)">Batal</button>
+            <button class="btn btn-danger btn-sm" [disabled]="tolakSaving()" (click)="submitTolak()">
+              {{ tolakSaving() ? 'Menyimpan...' : 'Tolak' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="position-fixed bottom-0 end-0 m-3" style="z-index:1080">
+      <div class="toast show align-items-center text-white border-0"
+           [class.bg-success]="toastType()==='success'"
+           [class.bg-danger]="toastType()==='danger'">
+        <div class="d-flex">
+          <div class="toast-body">{{ toastMsg() }}</div>
+          <button class="btn-close btn-close-white me-2 m-auto" (click)="toastMsg.set('')"></button>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

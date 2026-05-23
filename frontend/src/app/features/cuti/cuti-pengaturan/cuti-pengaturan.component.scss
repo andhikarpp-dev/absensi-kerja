@@ -1,0 +1,146 @@
+// styles specific to cuti-pengaturan
+
+// ── Tabs ─────────────────────────────────────────────────────
+.nav-pills {
+  .nav-link {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: #fff;
+    transition: all 0.15s ease;
+
+    &:hover:not(.active) {
+      background: #f8f9fa;
+      color: #0d6efd;
+      border-color: #0d6efd;
+    }
+
+    &.active {
+      background: #0d6efd;
+      border-color: #0d6efd;
+      color: #fff;
+    }
+  }
+}
+
+// ── DataTable ─────────────────────────────────────────────────
+.dt-table {
+  font-size: 0.875rem;
+
+  th.dt-th {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    background: #f8f9fa;
+    font-weight: 600;
+
+    &:hover {
+      background: #e9ecef;
+    }
+
+    i {
+      font-size: 0.85rem;
+      opacity: 0.6;
+    }
+  }
+
+  td {
+    vertical-align: middle;
+  }
+}
+
+.dt-toolbar {
+  border-bottom: 1px solid #dee2e6;
+
+  .dt-pagesize {
+    width: 70px;
+  }
+
+  .dt-search {
+    width: 160px;
+  }
+}
+
+.dt-footer {
+  border-top: 1px solid #dee2e6;
+}
+
+// ── Foto profil karyawan ──────────────────────────────────────
+.karyawan-foto {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.karyawan-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6c757d;
+  flex-shrink: 0;
+}
+
+// ── Inline edit input ─────────────────────────────────────────
+.inline-date-input {
+  min-width: 130px;
+  font-size: 0.8rem;
+}
+
+.inline-number-input {
+  width: 80px;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+// ── Aksi tombol ───────────────────────────────────────────────
+.btn-aksi-row {
+  white-space: nowrap;
+
+  .btn {
+    padding: 0.2rem 0.4rem;
+    line-height: 1;
+  }
+}
+
+// ── Badge pembaruan aktif ─────────────────────────────────────
+.badge-pembaruan-aktif {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+}
+
+// ── Modal overrides ───────────────────────────────────────────
+.modal {
+  z-index: 1055;
+}
+
+.modal-backdrop {
+  z-index: 1054;
+}
+
+// ── Keterangan box (tab Setengah Hari) ────────────────────────
+.keterangan-box {
+  background: #f4f4f4;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+
+  ul li {
+    color: #444;
+  }
+}
+
+// ── Time input kecil ──────────────────────────────────────────
+.sh-time-input {
+  width: 130px;
+  font-size: 0.8rem;
+}
+

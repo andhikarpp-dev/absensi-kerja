@@ -1,0 +1,756 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Kehadiran Harian</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard">Dasbor</a></li>
+          <li class="breadcrumb-item active">Kehadiran Harian</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+
+    <!-- ── Toolbar ──────────────────────────────────────── -->
+    <div class="px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-3 border-bottom">
+      <!-- Navigasi tanggal -->
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary px-2" (click)="prevDay()">
+          <i class="bx bx-chevron-left"></i>
+        </button>
+        <input type="date" class="form-control form-control-sm" style="width:160px"
+               [ngModel]="tanggalFilter()"
+               (ngModelChange)="onTanggalChange($event)" />
+        <button class="btn btn-sm btn-outline-secondary px-2" (click)="nextDay()">
+          <i class="bx bx-chevron-right"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary">
+          <i class="bx bx-filter-alt me-1"></i> Filter Lanjutan
+        </button>
+      </div>
+      <!-- Tombol aksi -->
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary px-3" (click)="openModal()">
+          <i class="bx bx-plus me-1"></i> Tambah Presensi Karyawan
+        </button>
+        <button class="btn btn-sm btn-success px-3" (click)="exportExcel()">
+          <i class="bx bx-export me-1"></i> Ekspor Excel
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Tab ────────────────────────────────────────────── -->
+    <div class="px-4 pt-3 d-flex gap-1 flex-wrap border-bottom pb-0">
+      @for (tab of tabList; track tab.key) {
+        <button class="btn btn-sm px-4 pb-2 border-0 border-bottom rounded-0 fw-semibold"
+                [class.text-primary]="activeTab() === tab.key"
+                [class.border-primary]="activeTab() === tab.key"
+                [class.text-secondary]="activeTab() !== tab.key"
+                style="border-bottom-width:2px!important;"
+                (click)="setTab(tab.key)">
+          {{ tab.label }}
+          <span class="badge ms-1"
+                [class.bg-warning]="tab.key === 'tidak-masuk'"
+                [class.text-dark]="tab.key === 'tidak-masuk'"
+                [class.bg-primary]="tab.key !== 'tidak-masuk'">
+            {{ tab.count() }}
+          </span>
+        </button>
+      }
+    </div>
+
+    <!-- ── Loading ───────────────────────────────────────── -->
+    @if (loading()) {
+      <div class="text-center py-5 text-muted">
+        <div class="spinner-border spinner-border-sm me-2"></div> Memuat data...
+      </div>
+    } @else {
+
+      <!-- ── TAB: Presensi Masuk ─────────────────────────── -->
+      @if (activeTab() === 'masuk') {
+        <!-- DataTable Controls -->
+        <div class="px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <label class="text-muted small mb-0">Tampilkan</label>
+            <select class="form-select form-select-sm" style="width:75px"
+                    [(ngModel)]="dtMasukPageSize" (ngModelChange)="onMasukPageSize()">
+              @for (n of pageSizeOptions; track n) {
+                <option [value]="n">{{ n }}</option>
+              }
+            </select>
+            <label class="text-muted small mb-0">entri</label>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="text-muted small mb-0">Cari:</label>
+            <input type="text" class="form-control form-control-sm" style="width:220px"
+                   placeholder="Nama, divisi, jabatan..."
+                   [(ngModel)]="dtMasukSearch" (ngModelChange)="onMasukSearch()" />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="min-width:1000px">
+            <thead class="table-light">
+              <tr>
+                <th style="width:240px;cursor:pointer" (click)="sortMasuk('namaKaryawan')">
+                  Karyawan <i class="bx {{ sortIcon(dtMasukSort(), 'namaKaryawan') }} ms-1"></i>
+                </th>
+                <th class="text-center;cursor:pointer" style="cursor:pointer" (click)="sortMasuk('jamMasuk')">
+                  Presensi Masuk <i class="bx {{ sortIcon(dtMasukSort(), 'jamMasuk') }} ms-1"></i>
+                </th>
+                <th class="text-center">Mulai Istirahat</th>
+                <th class="text-center">Selesai Istirahat</th>
+                <th class="text-center;cursor:pointer" style="cursor:pointer" (click)="sortMasuk('jamKeluar')">
+                  Presensi Keluar <i class="bx {{ sortIcon(dtMasukSort(), 'jamKeluar') }} ms-1"></i>
+                </th>
+                <th class="text-center">Mulai Lembur</th>
+                <th class="text-center">Selesai Lembur</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of masukPagedList(); track a.id) {
+                <tr>
+                  <!-- Kolom Karyawan -->
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      @if (fotoUrl(a.fotoProfil); as url) {
+                        <img [src]="url" class="rounded-circle"
+                             style="width:42px;height:42px;object-fit:cover;border:2px solid #e9ecef;flex-shrink:0" />
+                      } @else {
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             style="width:42px;height:42px;background:#f3f4f6;color:#9ca3af;flex-shrink:0">
+                          <i class="bx bx-user"></i>
+                        </div>
+                      }
+                      <div>
+                        <div class="fw-semibold" style="font-size:.85rem">{{ a.namaKaryawan }}</div>
+                        <div class="text-muted" style="font-size:.75rem">
+                          @if (a.namaJabatan) { <span>{{ a.namaJabatan }}</span> }
+                          @if (a.namaDivisi) { <span class="ms-1">| {{ a.namaDivisi }}</span> }
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <!-- Presensi Masuk -->
+                  <td class="text-center">
+                    <div class="d-flex justify-content-center gap-1 mb-1">
+                      <i class="bx bx-mobile-alt text-secondary" title="Info Perangkat"
+                         style="cursor:pointer" (click)="openPerangkatPopup(a)"></i>
+                      @if (a.lokasiMasukUrl) {
+                        <a [href]="a.lokasiMasukUrl" target="_blank">
+                          <i class="bx bx-map-pin text-danger"></i>
+                        </a>
+                      } @else {
+                        <i class="bx bx-map-pin text-secondary"></i>
+                      }
+                      <i class="bx bx-calendar text-danger" title="Jadwal Kerja"
+                         style="cursor:pointer" (click)="openJadwalPopup(a)"></i>
+                      @if (a.fotoMasukUrl) {
+                        <a [href]="a.fotoMasukUrl" target="_blank">
+                          <i class="bx bx-camera text-secondary"></i>
+                        </a>
+                      } @else {
+                        <i class="bx bx-camera text-secondary"></i>
+                      }
+                      <i class="bx bx-edit text-secondary" title="Ubah Presensi"
+                         style="cursor:pointer" (click)="openUbahPresensi(a)"></i>
+                    </div>
+                    <div class="fw-bold" style="font-size:1.25rem;letter-spacing:.05em"
+                         [class.text-danger]="a.menitTerlambat > 0">
+                      {{ formatJam(a.jamMasuk) }}
+                    </div>
+                    @if (a.menitTerlambat > 0) {
+                      <div class="badge bg-danger-subtle text-danger" style="font-size:.7rem">
+                        Terlambat {{ a.menitTerlambat }} mnt
+                      </div>
+                    }
+                  </td>
+                  <td class="text-center text-muted" style="font-size:.9rem">{{ formatJam(a.jamMulaiIstirahat) }}</td>
+                  <td class="text-center text-muted" style="font-size:.9rem">{{ formatJam(a.jamSelesaiIstirahat) }}</td>
+                  <!-- Presensi Keluar -->
+                  <td class="text-center">
+                    @if (a.jamKeluar) {
+                      <div class="d-flex justify-content-center gap-1 mb-1">
+                        @if (a.lokasiKeluarUrl) {
+                          <a [href]="a.lokasiKeluarUrl" target="_blank">
+                            <i class="bx bx-map-pin text-danger"></i>
+                          </a>
+                        } @else {
+                          <i class="bx bx-map-pin text-secondary"></i>
+                        }
+                        @if (a.fotoKeluarUrl) {
+                          <a [href]="a.fotoKeluarUrl" target="_blank">
+                            <i class="bx bx-camera text-secondary"></i>
+                          </a>
+                        } @else {
+                          <i class="bx bx-camera text-secondary"></i>
+                        }
+                      </div>
+                      <div class="fw-bold" style="font-size:1.25rem;letter-spacing:.05em">
+                        {{ formatJam(a.jamKeluar) }}
+                      </div>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+                  <td class="text-center text-muted" style="font-size:.9rem">{{ formatJam(a.jamMulaiLembur) }}</td>
+                  <td class="text-center text-muted" style="font-size:.9rem">{{ formatJam(a.jamSelesaiLembur) }}</td>
+                </tr>
+              }
+              @if (masukPagedList().length === 0) {
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-5">
+                    <i class="bx bx-calendar-x fs-2 d-block mb-2"></i>
+                    {{ dtMasukSearch ? 'Tidak ada data yang cocok dengan pencarian.' : 'Tidak ada karyawan yang presensi masuk pada tanggal ini.' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- DataTable Footer -->
+        <div class="px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border-top">
+          <div class="text-muted small">{{ masukInfo() }}</div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0 gap-1">
+              <li class="page-item" [class.disabled]="dtMasukPage() === 1">
+                <button class="page-link rounded" (click)="dtMasukPage.set(dtMasukPage() - 1)"
+                        [disabled]="dtMasukPage() === 1">
+                  <i class="bx bx-chevron-left"></i>
+                </button>
+              </li>
+              @for (p of masukPagesArr(); track $index) {
+                @if (p === '...') {
+                  <li class="page-item disabled"><span class="page-link">…</span></li>
+                } @else {
+                  <li class="page-item" [class.active]="dtMasukPage() === p">
+                    <button class="page-link rounded" (click)="dtMasukPage.set(+p)">{{ p }}</button>
+                  </li>
+                }
+              }
+              <li class="page-item" [class.disabled]="dtMasukPage() === masukTotalPages()">
+                <button class="page-link rounded" (click)="dtMasukPage.set(dtMasukPage() + 1)"
+                        [disabled]="dtMasukPage() === masukTotalPages()">
+                  <i class="bx bx-chevron-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
+
+      <!-- ── TAB: Tidak/Belum Masuk ──────────────────────── -->
+      @if (activeTab() === 'tidak-masuk') {
+        <!-- DataTable Controls -->
+        <div class="px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <label class="text-muted small mb-0">Tampilkan</label>
+            <select class="form-select form-select-sm" style="width:75px"
+                    [(ngModel)]="dtTidakPageSize" (ngModelChange)="onTidakPageSize()">
+              @for (n of pageSizeOptions; track n) {
+                <option [value]="n">{{ n }}</option>
+              }
+            </select>
+            <label class="text-muted small mb-0">entri</label>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="text-muted small mb-0">Cari:</label>
+            <input type="text" class="form-control form-control-sm" style="width:220px"
+                   placeholder="Nama, divisi, jabatan..."
+                   [(ngModel)]="dtTidakSearch" (ngModelChange)="onTidakSearch()" />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="min-width:600px">
+            <thead class="table-light">
+              <tr>
+                <th style="cursor:pointer" (click)="sortTidak('namaLengkap')">
+                  Karyawan <i class="bx {{ sortIcon(dtTidakSort(), 'namaLengkap') }} ms-1"></i>
+                </th>
+                <th class="text-center" style="cursor:pointer" (click)="sortTidak('namaDivisi')">
+                  Divisi <i class="bx {{ sortIcon(dtTidakSort(), 'namaDivisi') }} ms-1"></i>
+                </th>
+                <th class="text-center">Status</th>
+                <th class="text-center">Jadwal Masuk</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (k of tidakPagedList(); track k.id) {
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      @if (fotoUrl(k.fotoProfil); as url) {
+                        <img [src]="url" class="rounded-circle"
+                             style="width:42px;height:42px;object-fit:cover;border:2px solid #e9ecef;flex-shrink:0" />
+                      } @else {
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             style="width:42px;height:42px;background:#f3f4f6;color:#9ca3af;flex-shrink:0">
+                          <i class="bx bx-user"></i>
+                        </div>
+                      }
+                      <div>
+                        <div class="fw-semibold" style="font-size:.85rem">{{ k.namaLengkap }}</div>
+                        <div class="text-muted" style="font-size:.75rem">
+                          @if (k.namaJabatan) { <span>{{ k.namaJabatan }}</span> }
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center text-muted" style="font-size:.85rem">{{ k.namaDivisi || '—' }}</td>
+                  <td class="text-center">
+                    <span class="badge bg-danger-subtle text-danger fw-semibold">Tidak/Belum Masuk</span>
+                  </td>
+                  <td class="text-center text-muted">—</td>
+                </tr>
+              }
+              @if (tidakPagedList().length === 0) {
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-5">
+                    @if (dtTidakSearch) {
+                      <i class="bx bx-search fs-2 d-block mb-2"></i>
+                      Tidak ada data yang cocok dengan pencarian.
+                    } @else {
+                      <i class="bx bx-check-circle fs-2 d-block mb-2 text-success"></i>
+                      Semua karyawan sudah hadir!
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- DataTable Footer -->
+        <div class="px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border-top">
+          <div class="text-muted small">{{ tidakInfo() }}</div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0 gap-1">
+              <li class="page-item" [class.disabled]="dtTidakPage() === 1">
+                <button class="page-link rounded" (click)="dtTidakPage.set(dtTidakPage() - 1)"
+                        [disabled]="dtTidakPage() === 1">
+                  <i class="bx bx-chevron-left"></i>
+                </button>
+              </li>
+              @for (p of tidakPagesArr(); track $index) {
+                @if (p === '...') {
+                  <li class="page-item disabled"><span class="page-link">…</span></li>
+                } @else {
+                  <li class="page-item" [class.active]="dtTidakPage() === p">
+                    <button class="page-link rounded" (click)="dtTidakPage.set(+p)">{{ p }}</button>
+                  </li>
+                }
+              }
+              <li class="page-item" [class.disabled]="dtTidakPage() === tidakTotalPages()">
+                <button class="page-link rounded" (click)="dtTidakPage.set(dtTidakPage() + 1)"
+                        [disabled]="dtTidakPage() === tidakTotalPages()">
+                  <i class="bx bx-chevron-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
+
+      <!-- ── TAB: Cuti / Izin / Libur (placeholder) ──────── -->
+      @if (activeTab() === 'cuti' || activeTab() === 'izin' || activeTab() === 'libur') {
+        <div class="text-center text-muted py-5">
+          <i class="bx bx-info-circle fs-2 d-block mb-2"></i>
+          Data {{ activeTab() === 'cuti' ? 'Cuti' : activeTab() === 'izin' ? 'Izin' : 'Libur' }} untuk tanggal ini belum tersedia.
+        </div>
+      }
+
+    } <!-- end @else loading -->
+
+  </div><!-- card -->
+
+  <!-- ═══════════════════ Modal Tambah Presensi ═══════════════════ -->
+  @if (showModal()) {
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-bottom">
+            <h6 class="modal-title fw-bold">Tambah Presensi Karyawan</h6>
+            <button type="button" class="btn-close" (click)="closeModal()"></button>
+          </div>
+          <div class="modal-body">
+            @if (modalError()) {
+              <div class="alert alert-danger py-2">{{ modalError() }}</div>
+            }
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Karyawan <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="modalKaryawanId">
+                <option value="">-- Pilih Karyawan --</option>
+                @for (k of karyawanList(); track k.id) {
+                  <option [value]="k.id">{{ k.namaLengkap }}</option>
+                }
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" [(ngModel)]="modalTanggal" />
+            </div>
+            <div class="row mb-3">
+              <div class="col">
+                <label class="form-label fw-semibold">Waktu Masuk <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" [(ngModel)]="modalWaktuMulai" />
+              </div>
+              <div class="col">
+                <label class="form-label fw-semibold">Waktu Keluar</label>
+                <input type="time" class="form-control" [(ngModel)]="modalWaktuSelesai" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Catatan</label>
+              <textarea class="form-control" rows="2" [(ngModel)]="modalCatatan"
+                        placeholder="Opsional…"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <button class="btn btn-secondary" (click)="closeModal()">Batal</button>
+            <button class="btn btn-primary px-4" (click)="submitModal()" [disabled]="modalSaving()">
+              @if (modalSaving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════ Popup Info Perangkat ═══════════════════ -->
+  @if (popupPerangkat(); as p) {
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.4)" (click)="closePerangkatPopup()">
+      <div class="modal-dialog modal-dialog-centered modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header py-2 border-bottom" style="background:#f8f9fa">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bx bx-mobile-alt fs-5 text-primary"></i>
+              <span class="fw-bold" style="font-size:.95rem">Info Perangkat</span>
+            </div>
+            <button type="button" class="btn-close btn-close-sm" (click)="closePerangkatPopup()"></button>
+          </div>
+          <div class="modal-body px-4 py-3" style="font-size:.85rem">
+            @if (!p.namaPerangkat && !p.deviceId) {
+              <div class="text-muted text-center py-2">
+                <i class="bx bx-info-circle me-1"></i> Data perangkat tidak tersedia
+              </div>
+            } @else {
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted fw-semibold pe-3" style="white-space:nowrap;width:45%">Nama Perangkat</td>
+                    <td class="fw-medium">{{ p.namaPerangkat || '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold pe-3">Manufaktur Perangkat</td>
+                    <td class="fw-medium">{{ p.manufaktur || '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold pe-3">Id Perangkat</td>
+                    <td class="fw-medium text-break">{{ p.deviceId || '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold pe-3">Model Perangkat</td>
+                    <td class="fw-medium">{{ p.modelPerangkat || '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold pe-3">Platform / OS</td>
+                    <td class="fw-medium">{{ p.platform || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  <!-- ═══════════════════ Popup Jadwal Kerja ═══════════════════ -->
+  @if (popupJadwal(); as j) {
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.4)" (click)="closeJadwalPopup()">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:420px" (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header border-bottom">
+            <h6 class="modal-title fw-bold">Jadwal Kerja</h6>
+            <button type="button" class="btn-close" (click)="closeJadwalPopup()"></button>
+          </div>
+          <div class="modal-body px-4 py-3">
+            <table class="table table-sm table-borderless mb-3" style="font-size:.88rem">
+              <tbody>
+                <tr>
+                  <td class="fw-semibold text-dark pe-4" style="width:55%">Jam Masuk</td>
+                  <td>{{ j.jamKerjaMulai || '—' }}</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-dark pe-4">Jam Keluar</td>
+                  <td>{{ j.jamKerjaSelesai || '—' }}</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-dark pe-4">Toleransi Keterlambatan</td>
+                  <td>{{ j.toleransiKeterlambatan != null ? j.toleransiKeterlambatan + ' Menit' : '—' }}</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-dark pe-4">Mulai Istirahat</td>
+                  <td>{{ j.jamIstirahatMulai || '—' }}</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-dark pe-4">Selesai Istirahat</td>
+                  <td>{{ j.jamIstirahatSelesai || '—' }}</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-dark pe-4">Maks. Menit Istirahat</td>
+                  <td>{{ j.maksMenitIstirahat != null ? j.maksMenitIstirahat + ' Menit' : '—' }}</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-dark pe-4">Zona Waktu</td>
+                  <td>{{ j.zonaWaktu || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="d-grid gap-2">
+              <button class="btn btn-primary" (click)="openUbahJadwal()"
+                      [disabled]="hapusSaving()">
+                Ubah Jadwal Kerja
+              </button>
+              <button class="btn btn-primary" (click)="hapusJadwal()"
+                      [disabled]="hapusSaving()">
+                @if (hapusSaving()) {
+                  <span class="spinner-border spinner-border-sm me-2"></span>Menghapus...
+                } @else {
+                  Hapus Jadwal Kerja
+                }
+              </button>
+              @if (hapusError()) {
+                <div class="alert alert-danger py-2 mb-0" style="font-size:.82rem">
+                  <i class="bx bx-error-circle me-1"></i>{{ hapusError() }}
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  <!-- ═══════════════════ Popup Ubah Jadwal Kerja ═══════════════════ -->
+  @if (showUbahJadwal()) {
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060"
+         (click)="closeUbahJadwal()">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:440px"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow">
+
+          <!-- Header -->
+          <div class="modal-header border-bottom">
+            <h6 class="modal-title fw-bold">Jadwal Kerja</h6>
+            <button type="button" class="btn-close" (click)="closeUbahJadwal()"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body px-4 py-4">
+
+            <!-- Sub-judul -->
+            <div class="fw-bold mb-1" style="font-size:.95rem">Ubah Jadwal Kerja</div>
+            <div class="text-muted mb-4" style="font-size:.8rem">
+              <i class="bx bx-info-circle me-1"></i>Hanya bisa pilih salah satu jadwal
+            </div>
+
+            <!-- Jam Masuk -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">
+                Jam Masuk <span class="text-danger">*</span>
+              </label>
+              <input type="time" class="form-control" [(ngModel)]="ubahJamMasuk" />
+            </div>
+
+            <!-- Jam Keluar -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">
+                Jam Keluar <span class="text-danger">*</span>
+              </label>
+              <input type="time" class="form-control" [(ngModel)]="ubahJamKeluar" />
+            </div>
+
+            <!-- Toleransi Keterlambatan -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Toleransi Keterlambatan</label>
+              <div class="input-group">
+                <input type="number" class="form-control" [(ngModel)]="ubahToleransi"
+                       min="0" placeholder="0" />
+                <span class="input-group-text">Menit</span>
+              </div>
+            </div>
+
+            <!-- Mulai Istirahat -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Mulai Istirahat</label>
+              <input type="time" class="form-control" [(ngModel)]="ubahMulaiIstirahat" />
+            </div>
+
+            <!-- Selesai Istirahat -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Selesai Istirahat</label>
+              <input type="time" class="form-control" [(ngModel)]="ubahSelesaiIstirahat" />
+            </div>
+
+            <!-- Maks. Menit Istirahat -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Maks. Menit Istirahat</label>
+              <div class="input-group">
+                <input type="number" class="form-control" [(ngModel)]="ubahMaksMenit"
+                       min="0" placeholder="0" />
+                <span class="input-group-text">Menit</span>
+              </div>
+            </div>
+
+            @if (ubahError()) {
+              <div class="alert alert-danger py-2" style="font-size:.85rem">
+                <i class="bx bx-error-circle me-1"></i>{{ ubahError() }}
+              </div>
+            }
+
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer border-top gap-2">
+            <button class="btn btn-secondary flex-fill" (click)="closeUbahJadwal()"
+                    [disabled]="ubahSaving()">Batal</button>
+            <button class="btn btn-primary flex-fill" (click)="simpanUbahJadwal()"
+                    [disabled]="ubahSaving()">
+              @if (ubahSaving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...
+              } @else {
+                Simpan
+              }
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+  <!-- ═══════════════════ Popup Ubah Presensi ═══════════════════ -->
+  @if (popupUbahPresensi(); as a) {
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.4);z-index:1050"
+         (click)="closeUbahPresensi()">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:400px"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow">
+
+          <div class="modal-header border-bottom">
+            <h6 class="modal-title fw-bold">Ubah Presensi</h6>
+            <button type="button" class="btn-close" (click)="closeUbahPresensi()"></button>
+          </div>
+
+          <div class="modal-body px-4 py-4">
+            <!-- Info karyawan + waktu -->
+            <div class="mb-1 fw-semibold" style="font-size:.9rem">
+              Masuk ({{ a.namaKaryawan }})
+            </div>
+            <div class="text-muted mb-4" style="font-size:.85rem">
+              {{ formatTanggalLengkap(a.tanggal) }} &#64; {{ formatJam(a.jamMasuk) }}
+            </div>
+
+            <div class="text-muted mb-3" style="font-size:.85rem">
+              Silakan pilih aksi yang akan dilakukan:
+            </div>
+
+            <!-- Tombol aksi -->
+            <div class="d-grid gap-2">
+              <button class="btn btn-outline-danger text-start px-3"
+                      [disabled]="batalkanSaving()"
+                      (click)="batalkanPresensi()">
+                @if (batalkanSaving()) {
+                  <span class="spinner-border spinner-border-sm me-2"></span>Membatalkan...
+                } @else {
+                  <i class="bx bx-x-circle me-2"></i>Batalkan Presensi
+                }
+              </button>
+              <button class="btn btn-outline-primary text-start px-3"
+                      [disabled]="batalkanSaving()"
+                      (click)="openUbahWaktu()">
+                <i class="bx bx-time me-2"></i>Waktu Presensi
+              </button>
+            </div>
+
+            @if (batalkanError()) {
+              <div class="alert alert-danger py-2 mt-3 mb-0" style="font-size:.82rem">
+                <i class="bx bx-error-circle me-1"></i>{{ batalkanError() }}
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════ Sub-popup Ubah Waktu Presensi ═══════════════════ -->
+  @if (showUbahWaktu()) {
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060"
+         (click)="closeUbahWaktu()">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:400px"
+           (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow">
+
+          <div class="modal-header border-bottom">
+            <h6 class="modal-title fw-bold">Ubah Waktu Presensi</h6>
+            <button type="button" class="btn-close" (click)="closeUbahWaktu()"></button>
+          </div>
+
+          <div class="modal-body px-4 py-4">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">
+                Jam Masuk <span class="text-danger">*</span>
+              </label>
+              <input type="time" class="form-control" [(ngModel)]="ubahWaktuJamMasuk" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Jam Keluar</label>
+              <input type="time" class="form-control" [(ngModel)]="ubahWaktuJamKeluar" />
+              <div class="form-text">Kosongkan jika karyawan belum keluar.</div>
+            </div>
+
+            @if (ubahWaktuError()) {
+              <div class="alert alert-danger py-2 mb-0" style="font-size:.82rem">
+                <i class="bx bx-error-circle me-1"></i>{{ ubahWaktuError() }}
+              </div>
+            }
+          </div>
+
+          <div class="modal-footer border-top gap-2">
+            <button class="btn btn-secondary flex-fill" (click)="closeUbahWaktu()"
+                    [disabled]="ubahWaktuSaving()">Batal</button>
+            <button class="btn btn-primary flex-fill" (click)="simpanUbahWaktu()"
+                    [disabled]="ubahWaktuSaving()">
+              @if (ubahWaktuSaving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...
+              } @else {
+                Simpan
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  <!-- ═══════════════════ Modal Ekspor Excel ═══════════════════ -->
+  @if (showEkspor()) {
+    <app-ekspor-excel-modal
+      [tanggalAwal]="tanggalFilter()"
+      (closed)="tutupEkspor()">
+    </app-ekspor-excel-modal>
+  }
+
+</app-layout>

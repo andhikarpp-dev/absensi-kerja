@@ -1,0 +1,317 @@
+<app-layout>
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Dasbor</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/cuti">Cuti</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Laporan Cuti</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <h6 class="mb-3 fw-bold fs-5">Laporan Cuti</h6>
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="alert alert-{{ toastType() }} alert-dismissible fade show py-2 mb-3" role="alert">
+      {{ toastMsg() }}
+    </div>
+  }
+
+  <!-- Filter Divisi & Jabatan -->
+  <div class="card mb-3">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-auto">
+          <select class="form-select form-select-sm"
+                  [ngModel]="filterDivisi()"
+                  (ngModelChange)="filterDivisi.set($event); onDivisiChange()">
+            <option [ngValue]="null">--Filter Divisi--</option>
+            @for (d of divisiList(); track d.id) {
+              <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-auto">
+          <select class="form-select form-select-sm"
+                  [ngModel]="filterJabatan()"
+                  (ngModelChange)="filterJabatan.set($event); onJabatanChange()">
+            <option [ngValue]="null">--Filter Jabatan--</option>
+            @for (j of jabatanList(); track j.id) {
+              <option [ngValue]="j.id">{{ j.namaJabatan }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-auto d-flex gap-1">
+          <input class="form-control form-control-sm" placeholder="Search"
+                 [ngModel]="searchInput()" (ngModelChange)="searchInput.set($event)"
+                 (keyup.enter)="applyFilter()" style="min-width:200px">
+          <button class="btn btn-sm btn-outline-secondary" (click)="applyFilter()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DataTable Card -->
+  <div class="card">
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+      } @else if (error()) {
+        <div class="alert alert-danger m-3">{{ error() }}</div>
+      } @else {
+
+        <!-- DataTable toolbar: show entries + search -->
+        <div class="dt-toolbar d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted">Tampilkan</span>
+            <select class="form-select form-select-sm dt-pagesize"
+                    [ngModel]="pageSize()"
+                    (ngModelChange)="pageSize.set(+$event); onPageSizeChange()">
+              @for (n of pageSizeOptions; track n) {
+                <option [ngValue]="n">{{ n }}</option>
+              }
+            </select>
+            <span class="small text-muted">entri</span>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <span class="small text-muted">Cari:</span>
+            <input class="form-control form-control-sm dt-search"
+                   [ngModel]="searchInput()"
+                   (ngModelChange)="searchInput.set($event); applyFilter()"
+                   placeholder="">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover dt-table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="dt-th" style="width:160px" (click)="setSort('namaLengkap')">
+                  Nama <i class="bx {{ sortIcon('namaLengkap') }} ms-1"></i>
+                </th>
+                <th class="dt-th" (click)="setSort('divisiJabatan')">
+                  Divisi &amp; Jabatan <i class="bx {{ sortIcon('divisiJabatan') }} ms-1"></i>
+                </th>
+                <th class="dt-th" style="width:130px" (click)="setSort('tglMulaiBekerja')">
+                  Tgl. Mulai Bekerja <i class="bx {{ sortIcon('tglMulaiBekerja') }} ms-1"></i>
+                </th>
+                <th class="dt-th" style="width:150px" (click)="setSort('tglMulaiDapatCuti')">
+                  Tgl. Mulai Dapat Cuti <i class="bx {{ sortIcon('tglMulaiDapatCuti') }} ms-1"></i>
+                </th>
+                <th class="dt-th" style="width:90px" (click)="setSort('sisaCuti')">
+                  Sisa Cuti <i class="bx {{ sortIcon('sisaCuti') }} ms-1"></i>
+                </th>
+                <th class="dt-th" style="width:130px" (click)="setSort('tglCutiBeakhir')">
+                  Tgl. Cuti Berakhir <i class="bx {{ sortIcon('tglCutiBeakhir') }} ms-1"></i>
+                </th>
+                <th style="width:90px" class="text-center">Riwayat Cuti</th>
+                <th style="width:130px" class="text-center">Pembaruan Otomatis</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (k of pagedData(); track k.id) {
+                <tr>
+                  <td>
+                    <a [routerLink]="['/karyawan', k.id]" class="text-primary fw-semibold text-decoration-none">
+                      {{ k.namaLengkap }}
+                    </a>
+                  </td>
+                  <td class="text-muted small">{{ divisiJabatanLabel(k) }}</td>
+                  <td class="small">{{ fmtDateDash(k.tglMulaiBekerja) }}</td>
+                  <td class="small">{{ fmtDateDash(k.tglMulaiDapatCuti) }}</td>
+                  <td class="text-end pe-3">
+                    @if (k.sisaCuti != null && k.sisaCuti > 0) {
+                      <span class="fw-semibold">{{ k.sisaCuti }}</span>
+                    }
+                  </td>
+                  <td class="small">{{ fmtDateDash(k.tglCutiBeakhir) }}</td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-outline-secondary border-0"
+                            title="Riwayat Transaksi Cuti"
+                            (click)="openRiwayat(k)">
+                      <i class="bx bx-history fs-5"></i>
+                    </button>
+                  </td>
+                  <td class="text-center">
+                    <button class="btn btn-sm border-0"
+                            [class.btn-success]="k.pembaruanCutiAktif"
+                            [class.btn-outline-secondary]="!k.pembaruanCutiAktif"
+                            title="Pengaturan Pembaruan Otomatis"
+                            (click)="openPembaruan(k)">
+                      <i class="bx bx-cog fs-5"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @empty {
+                <tr><td colspan="8" class="text-center text-muted py-4">Tidak ada data.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- DataTable footer: showing info + pagination -->
+        <div class="dt-footer d-flex justify-content-between align-items-center px-3 py-2">
+          <div class="small text-muted">{{ showingInfo() }}</div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="page()===1">
+                <button class="page-link" (click)="goPage(1)">«</button>
+              </li>
+              <li class="page-item" [class.disabled]="page()===1">
+                <button class="page-link" (click)="goPage(page()-1)">‹</button>
+              </li>
+              @for (p of pageNumbers(); track p) {
+                <li class="page-item" [class.active]="p===page()">
+                  <button class="page-link" (click)="goPage(p)">{{ p }}</button>
+                </li>
+              }
+              <li class="page-item" [class.disabled]="page()===totalPages()">
+                <button class="page-link" (click)="goPage(page()+1)">›</button>
+              </li>
+              <li class="page-item" [class.disabled]="page()===totalPages()">
+                <button class="page-link" (click)="goPage(totalPages())">»</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+
+      }
+    </div>
+  </div>
+</app-layout>
+
+<!-- Modal Riwayat Transaksi Cuti -->
+@if (showRiwayatModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal d-block" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Riwayat Transaksi Cuti</h5>
+          <button type="button" class="btn-close" (click)="closeRiwayat()"></button>
+        </div>
+        <div class="modal-body p-0">
+          @if (riwayatLoading()) {
+            <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+          } @else {
+            <table class="table table-bordered mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Tanggal Pengajuan</th>
+                  <th>Deskripsi</th>
+                  <th class="text-end">Jumlah</th>
+                  <th class="text-end">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of riwayatList(); track r.id) {
+                  <tr>
+                    <td class="small text-nowrap">{{ fmtDate(r.tanggal) }}</td>
+                    <td class="small">{{ r.deskripsi }}</td>
+                    <td class="text-end fw-semibold"
+                        [class.text-success]="r.jumlah > 0"
+                        [class.text-danger]="r.jumlah < 0">
+                      {{ r.jumlah > 0 ? '+' : '' }}{{ r.jumlah }}
+                    </td>
+                    <td class="text-end">{{ r.saldo }}</td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="4" class="text-center text-muted py-4">Belum ada riwayat.</td></tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="closeRiwayat()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal Pengaturan Pembaruan Cuti Otomatis -->
+@if (showPembaruanModal()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pengaturan Pembaruan Cuti Otomatis</h5>
+          <button type="button" class="btn-close" (click)="closePembaruan()"></button>
+        </div>
+        <div class="modal-body">
+          @if (pembaruanLoading()) {
+            <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+          } @else {
+            @if (mulaiBekerjaInfo()) {
+              <div class="alert alert-light border small mb-3">
+                <strong>Info</strong><br>{{ mulaiBekerjaInfo() }}
+              </div>
+            }
+            @if (pembaruanError()) {
+              <div class="alert alert-danger small py-2">{{ pembaruanError() }}</div>
+            }
+            <div class="mb-3 row align-items-start">
+              <label class="col-sm-5 col-form-label small fw-semibold">Periode Pembaruan Otomatis</label>
+              <div class="col-sm-7">
+                <select class="form-select form-select-sm"
+                        [ngModel]="fPeriode()" (ngModelChange)="fPeriode.set(+$event)">
+                  @for (p of periodeOptions; track p) {
+                    <option [ngValue]="p">{{ p }} Bulan</option>
+                  }
+                </select>
+                @if (pembaruanInfo()) {
+                  <div class="alert alert-light border small mt-2 mb-0 py-2">
+                    <strong>Info</strong><br>{{ pembaruanInfo() }}
+                  </div>
+                }
+              </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+              <label class="col-sm-5 col-form-label small fw-semibold">Sisa Cuti Sebelumnya</label>
+              <div class="col-sm-7">
+                <select class="form-select form-select-sm"
+                        [ngModel]="fSisaSebelumnya()" (ngModelChange)="fSisaSebelumnya.set($event)">
+                  <option value="tambahkan">Tambahkan</option>
+                  <option value="hapus">Hapus</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+              <label class="col-sm-5 col-form-label small fw-semibold">Aktifkan Pengaturan</label>
+              <div class="col-sm-7 d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="aktifYa"
+                         [checked]="fAktif()" (change)="fAktif.set(true)">
+                  <label class="form-check-label small" for="aktifYa">Ya</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="aktifTidak"
+                         [checked]="!fAktif()" (change)="fAktif.set(false)">
+                  <label class="form-check-label small" for="aktifTidak">Tidak</label>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary btn-sm px-4"
+                  [disabled]="pembaruanSaving() || pembaruanLoading()"
+                  (click)="savePembaruan()">
+            @if (pembaruanSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Proses
+          </button>
+          <button class="btn btn-secondary btn-sm" (click)="closePembaruan()">Batal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,197 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          @if (namaKaryawan()) {
+            <li class="breadcrumb-item">
+              <a [routerLink]="['/karyawan', karyawanId()]">{{ namaKaryawan() }}</a>
+            </li>
+          }
+          <li class="breadcrumb-item active">Perangkat Terdaftar</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Info Bar -->
+  <div class="info-bar card border-0 shadow-sm mb-4 px-4 py-3 d-flex flex-row align-items-center gap-3">
+    @if (fotoUrl(fotoProfil()); as url) {
+      <img [src]="url" alt="Foto" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;border:2px solid #e9ecef" />
+    } @else {
+      <div class="rounded-circle d-flex align-items-center justify-content-center"
+           style="width:44px;height:44px;background:#f3f4f6;color:#9ca3af;font-size:1.2rem;flex-shrink:0">
+        <i class="bx bx-user"></i>
+      </div>
+    }
+    <div class="flex-grow-1">
+      <div class="fw-semibold" style="font-size:.95rem">{{ namaKaryawan() || '—' }}</div>
+      <div class="text-muted small">Perangkat yang digunakan untuk presensi</div>
+    </div>
+    <a [routerLink]="['/karyawan', karyawanId()]" class="btn btn-outline-secondary btn-sm px-3">
+      <i class="bx bx-arrow-back me-1"></i> Kembali
+    </a>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+    </div>
+  }
+
+  <!-- Card Tabel -->
+  <div class="card border-0 shadow-sm overflow-hidden">
+
+    <div class="card-header-custom d-flex align-items-center justify-content-between">
+      <span class="fw-semibold" style="font-size:.92rem">
+        <i class="bx bx-devices me-2 text-primary"></i>Perangkat Terdaftar
+      </span>
+      <span class="badge rounded-pill px-3" style="background:#ede9fe;color:#7c3aed;font-size:.8rem">
+        {{ list().length }} perangkat
+      </span>
+    </div>
+
+    <!-- Loading skeleton -->
+    @if (loading()) {
+      <div class="p-4">
+        @for (i of [1,2,3]; track i) {
+          <div class="placeholder-glow mb-4 d-flex align-items-center gap-3">
+            <span class="placeholder rounded-circle flex-shrink-0" style="width:44px;height:44px"></span>
+            <div class="flex-grow-1">
+              <span class="placeholder col-3 rounded d-block mb-2" style="height:13px"></span>
+              <span class="placeholder col-5 rounded d-block" style="height:11px"></span>
+            </div>
+            <span class="placeholder col-2 rounded" style="height:32px"></span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Kosong -->
+    @if (!loading() && list().length === 0) {
+      <div class="text-center py-5 text-muted">
+        <i class="bx bx-devices" style="font-size:3.5rem;opacity:.25"></i>
+        <p class="mt-3 mb-0 fw-semibold">Belum ada perangkat terdaftar</p>
+        <p class="small mt-1">Perangkat akan muncul setelah karyawan melakukan presensi pertama kali.</p>
+      </div>
+    }
+
+    <!-- Tabel perangkat -->
+    @if (!loading() && list().length > 0) {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th style="width:44px">#</th>
+              <th>Nama Perangkat</th>
+              <th>Model Perangkat</th>
+              <th>Manufaktur Perangkat</th>
+              <th>Terakhir Aktif</th>
+              <!-- <th class="text-center">Aksi</th> -->
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of list(); track p.id; let i = $index) {
+              <tr>
+                <td class="text-muted small">{{ i + 1 }}</td>
+
+                <!-- Nama Perangkat -->
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="device-icon-wrap">
+                      <i class="bx bx-mobile-alt"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold" style="font-size:.88rem">{{ p.namaPerangkat }}</div>
+                      <div class="text-muted" style="font-size:.74rem;font-family:monospace">
+                        ID: {{ p.deviceId }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Model -->
+                <td style="font-size:.87rem">{{ p.modelPerangkat || '—' }}</td>
+
+                <!-- Manufaktur -->
+                <td style="font-size:.87rem">{{ p.manufaktur || '—' }}</td>
+
+                <!-- Terakhir Aktif -->
+                <td>
+                  @if (p.terakhirAktif) {
+                    <span class="badge-aktif-custom" [class.badge-aktif-recent]="isAktifBaru(p.terakhirAktif)">
+                      {{ formatTerakhirAktif(p.terakhirAktif) }}
+                    </span>
+                  } @else {
+                    <span class="text-muted small">—</span>
+                  }
+                </td>
+
+                <!-- Aksi -->
+                <!--
+                <td class="text-center">
+                  <button class="btn btn-outline-danger btn-sm px-3"
+                          (click)="confirmRevoke(p.id)"
+                          title="Cabut akses perangkat ini">
+                    <i class="bx bx-block me-1"></i> Cabut
+                  </button>
+                </td>
+                -->
+
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer info -->
+      <div class="px-4 py-3 border-top" style="background:#fafafa;font-size:.8rem;color:#6b7280">
+        <i class="bx bx-info-circle me-1 text-primary"></i>
+        Mencabut perangkat akan memaksa karyawan login ulang di perangkat tersebut.
+        Perangkat akan terdaftar kembali saat presensi berikutnya.
+      </div>
+    }
+
+  </div>
+
+  <!-- Modal konfirmasi cabut (belum dibutuhkan)
+  @if (confirmRevokeId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger">
+              <i class="bx bx-block me-2"></i>Cabut Perangkat?
+            </h5>
+          </div>
+          <div class="modal-body text-muted" style="font-size:.9rem">
+            Akses perangkat ini akan dicabut. Karyawan harus login ulang di perangkat tersebut.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm px-4"
+                    (click)="cancelRevoke()"
+                    [disabled]="revoking()">
+              Batal
+            </button>
+            <button class="btn btn-danger btn-sm px-4"
+                    (click)="doRevoke()"
+                    [disabled]="revoking()">
+              @if (revoking()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              <i class="bx bx-block me-1"></i> Ya, Cabut
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  -->
+
+</app-layout>

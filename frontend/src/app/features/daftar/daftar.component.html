@@ -1,0 +1,206 @@
+<div class="daftar-page">
+
+  <!-- ── Noise + Background blobs (same as landing) ── -->
+  <div class="daftar-noise"></div>
+  <div class="daftar-blob daftar-blob--1"></div>
+  <div class="daftar-blob daftar-blob--2"></div>
+  <div class="daftar-blob daftar-blob--3"></div>
+
+  <!-- ── Navbar ── -->
+  <header class="daftar-nav">
+    <a routerLink="/" class="daftar-nav__brand">
+      <span class="material-icons daftar-nav__icon">fingerprint</span>
+      <span class="daftar-nav__name">Absensi<strong>Kerja</strong></span>
+    </a>
+    <div class="daftar-nav__actions">
+      <a routerLink="/auth/login" class="daftar-nav__btn daftar-nav__btn--outline">Masuk</a>
+      <a routerLink="/daftar" class="daftar-nav__btn daftar-nav__btn--solid">Daftar <strong>Gratis</strong></a>
+    </div>
+  </header>
+
+  <!-- ── Page Content ── -->
+  <main class="daftar-main">
+    <div class="daftar-header">
+      <h1 class="daftar-header__title">Mulai Gunakan <span>AbsensiKerja</span> Hari Ini</h1>
+      <p class="daftar-header__sub">Kelola absensi, cuti, dan payroll dalam satu aplikasi</p>
+    </div>
+
+    <div class="daftar-content">
+
+      <!-- Left: Package selection -->
+      <div class="daftar-packages">
+        <h2 class="daftar-packages__title">Pilih Paket</h2>
+
+        @for (paket of paketOptions; track paket.id) {
+          <div
+            class="paket-card"
+            [class.paket-card--selected]="selectedPaket() === paket.id"
+            [class.paket-card--popular]="paket.popular"
+            (click)="selectPaket(paket.id)"
+          >
+            <div class="paket-card__radio">
+              <div class="paket-card__radio-inner" [class.paket-card__radio-inner--active]="selectedPaket() === paket.id"></div>
+            </div>
+            <div class="paket-card__info">
+              <div class="paket-card__name">{{ paket.name }}</div>
+              <div class="paket-card__sub" [class.paket-card__sub--green]="paket.id !== 'gratis'">{{ paket.subNote }}</div>
+            </div>
+            <div class="paket-card__price">
+              <span class="paket-card__amount">{{ paket.price }}</span>
+              <span class="paket-card__per">{{ paket.priceNote }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Right: Registration form -->
+      <div class="daftar-form-wrap">
+        <div class="daftar-form-card">
+          <h2 class="daftar-form-card__title">Form Pendaftaran</h2>
+          <p class="daftar-form-card__sub">Lengkapi data di bawah untuk memulai</p>
+
+          <!-- Error -->
+          @if (errorMessage()) {
+            <div class="daftar-alert">
+              <span class="material-icons">warning_amber</span>
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="daftar-form">
+
+            <!-- Row 1: Nama Lengkap + Nama Perusahaan -->
+            <div class="daftar-form__row">
+              <div class="daftar-field">
+                <input
+                  type="text"
+                  class="daftar-field__input"
+                  [class.daftar-field__input--err]="f['namaLengkap'].invalid && f['namaLengkap'].touched"
+                  formControlName="namaLengkap"
+                  placeholder="Nama Lengkap *"
+                />
+                @if (f['namaLengkap'].invalid && f['namaLengkap'].touched) {
+                  <span class="daftar-field__error">Nama lengkap tidak boleh kosong</span>
+                }
+              </div>
+              <div class="daftar-field">
+                <input
+                  type="text"
+                  class="daftar-field__input"
+                  [class.daftar-field__input--err]="f['namaPerusahaan'].invalid && f['namaPerusahaan'].touched"
+                  formControlName="namaPerusahaan"
+                  placeholder="Nama Perusahaan *"
+                />
+                @if (f['namaPerusahaan'].invalid && f['namaPerusahaan'].touched) {
+                  <span class="daftar-field__error">Nama perusahaan tidak boleh kosong</span>
+                }
+              </div>
+            </div>
+
+            <!-- Row 2: Jabatan + Jumlah Karyawan -->
+            <div class="daftar-form__row">
+              <div class="daftar-field">
+                <label class="daftar-field__label">Jabatan *</label>
+                <select
+                  class="daftar-field__input daftar-field__input--select"
+                  [class.daftar-field__input--err]="f['jabatan'].invalid && f['jabatan'].touched"
+                  formControlName="jabatan"
+                >
+                  @for (j of jabatanOptions; track j) {
+                    <option [value]="j">{{ j }}</option>
+                  }
+                </select>
+              </div>
+              <div class="daftar-field">
+                <label class="daftar-field__label">Jumlah Karyawan *</label>
+                <select
+                  class="daftar-field__input daftar-field__input--select"
+                  formControlName="jumlahKaryawan"
+                >
+                  @for (jk of jumlahOptions; track jk) {
+                    <option [value]="jk">{{ jk }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 3: Nomor WhatsApp + Alamat Email -->
+            <div class="daftar-form__row">
+              <div class="daftar-field">
+                <input
+                  type="tel"
+                  class="daftar-field__input"
+                  [class.daftar-field__input--err]="f['whatsapp'].invalid && f['whatsapp'].touched"
+                  formControlName="whatsapp"
+                  placeholder="Nomor WhatsApp *"
+                />
+                @if (f['whatsapp'].invalid && f['whatsapp'].touched) {
+                  <span class="daftar-field__error">Nomor WhatsApp tidak valid</span>
+                }
+              </div>
+              <div class="daftar-field">
+                <input
+                  type="email"
+                  class="daftar-field__input"
+                  [class.daftar-field__input--err]="f['email'].invalid && f['email'].touched"
+                  formControlName="email"
+                  placeholder="Alamat Email *"
+                  autocomplete="email"
+                />
+                @if (f['email'].invalid && f['email'].touched) {
+                  <span class="daftar-field__error">Masukkan email yang valid</span>
+                }
+              </div>
+            </div>
+
+            <!-- Row 4: Password -->
+            <div class="daftar-field">
+              <input
+                type="password"
+                class="daftar-field__input"
+                [class.daftar-field__input--err]="f['password'].invalid && f['password'].touched"
+                formControlName="password"
+                placeholder="Password * (minimal 6 karakter)"
+                autocomplete="new-password"
+              />
+              @if (f['password'].invalid && f['password'].touched) {
+                <span class="daftar-field__error">Password minimal 6 karakter</span>
+              }
+            </div>
+
+            <!-- Row 5: Kebutuhan Fitur -->
+            <div class="daftar-field">
+              <textarea
+                class="daftar-field__input daftar-field__input--textarea"
+                formControlName="fiturKebutuhan"
+                placeholder="Kebutuhan Fitur&#10;Contoh: Absensi online, payroll, manajemen cuti"
+                rows="3"
+              ></textarea>
+            </div>
+
+            <!-- ToS -->
+            <p class="daftar-tos">
+              Dengan klik Daftar, Anda menyetujui <a href="#">Syarat dan Ketentuan</a>
+            </p>
+
+            <!-- Submit -->
+            <button type="submit" class="daftar-btn" [disabled]="loading()">
+              @if (loading()) {
+                <span class="daftar-spinner"></span> Memproses...
+              } @else {
+                Daftar Sekarang
+              }
+            </button>
+
+          </form>
+
+          <p class="daftar-login-link">
+            Sudah pernah daftar? <a routerLink="/auth/login">Masuk</a>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</div>

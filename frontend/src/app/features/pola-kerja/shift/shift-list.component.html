@@ -1,0 +1,341 @@
+<app-layout>
+
+  <!-- Page header -->
+  <div class="mb-3">
+    <h4 class="mb-2 fw-bold">Shift</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 p-0 small">
+        <li class="breadcrumb-item"><a routerLink="/dashboard" class="text-primary text-decoration-none">Dasbor</a></li>
+        <li class="breadcrumb-item"><a href="javascript:;" class="text-primary text-decoration-none">Pola Kerja</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">Shift</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center">
+      <i class="bx bx-error-circle me-2 fs-5"></i>
+      <span class="flex-grow-1">{{ error() }}</span>
+      <button type="button" class="btn-close" (click)="error.set('')"></button>
+    </div>
+  }
+
+  <!-- Toast Sukses -->
+  @if (successMsg()) {
+    <div class="position-fixed top-0 end-0 p-3" style="z-index:1080">
+      <div class="toast show align-items-center text-white bg-success border-0 shadow"
+           role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bx bx-check-circle me-2"></i>{{ successMsg() }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                  (click)="successMsg.set('')"></button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Card -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="fw-bold mb-3">Pola Kerja - Shift</h5>
+
+      <!-- Toolbar -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="input-group" style="max-width:260px">
+            <input type="text" class="form-control" placeholder="Cari"
+                   [ngModel]="query()" (ngModelChange)="query.set($event); onSearchChange()" />
+            <button class="btn btn-primary" type="button"><i class="bx bx-search"></i></button>
+          </div>
+          <button class="btn btn-primary" (click)="openTambah()">
+            <i class="bx bx-plus-circle me-1"></i> Tambah Pola Kerja
+          </button>
+        </div>
+        <button class="btn btn-primary" (click)="openPengaturan()">
+          <i class="bx bx-cog me-1"></i> Pengaturan
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr class="text-center">
+              <th>Nama Pola Kerja</th>
+              <th>Jam Kerja</th>
+              <th>Jam Istirahat</th>
+              <th style="width:90px">Warna</th>
+              <th>Toleransi Keterlambatan</th>
+              <th>Catatan</th>
+              <th style="width:160px">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="7" class="text-center py-4">
+                <span class="spinner-border spinner-border-sm me-2"></span> Memuat...
+              </td></tr>
+            } @else if (paged().length === 0) {
+              <tr><td colspan="7" class="text-center py-4 text-muted">
+                <i class="bx bx-folder-open" style="font-size:2.2rem"></i>
+                <div class="mt-1">Belum ada data pola kerja shift.</div>
+              </td></tr>
+            } @else {
+              @for (p of paged(); track p.id) {
+                <tr>
+                  <td>{{ p.namaPolaKerja }}</td>
+                  <td class="text-center">{{ jamKerjaLabel(p) }}</td>
+                  <td class="text-center">{{ jamIstirahatLabel(p) }}</td>
+                  <td class="text-center">
+                    <span class="d-inline-block rounded"
+                          [style.background]="p.warna || '#000'"
+                          style="width:60px;height:18px;border:1px solid rgba(0,0,0,.1)"></span>
+                  </td>
+                  <td>{{ p.toleransi }} Menit</td>
+                  <td>{{ p.catatan }}</td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-light border me-1" title="Edit" (click)="openEdit(p)">
+                      <i class="bx bx-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light border me-1" title="Riwayat" (click)="openRiwayat(p)">
+                      <i class="bx bx-history"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" title="Hapus" (click)="askDelete(p.id)">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer / pagination -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
+        <div class="fw-semibold small">
+          Menampilkan {{ paged().length }} dari {{ filtered().length }} total data
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="page() === 1">
+              <a class="page-link" href="javascript:;" (click)="goToPage(1)">«</a>
+            </li>
+            <li class="page-item" [class.disabled]="page() === 1">
+              <a class="page-link" href="javascript:;" (click)="goToPage(page() - 1)">‹</a>
+            </li>
+            @for (n of pages(); track n) {
+              <li class="page-item" [class.active]="page() === n">
+                <a class="page-link" href="javascript:;" (click)="goToPage(n)">{{ n }}</a>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="page() === totalPages()">
+              <a class="page-link" href="javascript:;" (click)="goToPage(page() + 1)">›</a>
+            </li>
+            <li class="page-item" [class.disabled]="page() === totalPages()">
+              <a class="page-link" href="javascript:;" (click)="goToPage(totalPages())">»</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ Modal Tambah/Edit Shift ══════════ -->
+  @if (showFormModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1055">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bx me-2" [class.bx-plus]="!editingId()" [class.bx-edit]="editingId()"></i>
+              {{ editingId() ? 'Edit Pola Kerja Shift' : 'Tambah Pola Kerja Shift' }}
+            </h5>
+            <button type="button" class="btn-close" (click)="closeFormModal()"></button>
+          </div>
+          <div class="modal-body">
+            @if (modalError()) {
+              <div class="alert alert-danger py-2">{{ modalError() }}</div>
+            }
+
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Nama Pola Kerja <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" [(ngModel)]="modalData.namaPolaKerja"
+                       [ngModelOptions]="{standalone: true}" placeholder="cth. Shift 1 Jmart" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Warna</label>
+                <input type="color" class="form-control form-control-color w-100"
+                       [(ngModel)]="modalData.warna" [ngModelOptions]="{standalone: true}" />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Jam Masuk <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" [(ngModel)]="modalData.jamMasuk"
+                       [ngModelOptions]="{standalone: true}" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Jam Keluar <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" [(ngModel)]="modalData.jamKeluar"
+                       [ngModelOptions]="{standalone: true}" />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Mulai Istirahat</label>
+                <input type="time" class="form-control" [(ngModel)]="modalData.mulaiIstirahat"
+                       [ngModelOptions]="{standalone: true}" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Selesai Istirahat</label>
+                <input type="time" class="form-control" [(ngModel)]="modalData.selesaiIstirahat"
+                       [ngModelOptions]="{standalone: true}" />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Toleransi Keterlambatan</label>
+                <div class="input-group">
+                  <input type="number" min="0" class="form-control"
+                         [(ngModel)]="modalData.toleransi" [ngModelOptions]="{standalone: true}" />
+                  <span class="input-group-text">Menit</span>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Catatan</label>
+                <textarea rows="2" class="form-control" [(ngModel)]="modalData.catatan"
+                          [ngModelOptions]="{standalone: true}"
+                          placeholder="Catatan tambahan (opsional)"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm px-4" (click)="closeFormModal()">
+              <i class="bx bx-x me-1"></i> Tutup
+            </button>
+            <button type="button" class="btn btn-primary btn-sm px-4"
+                    [disabled]="saving()" (click)="saveShift()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...
+              } @else {
+                <i class="bx bx-save me-1"></i> Simpan
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ Modal Pengaturan ══════════ -->
+  @if (showSettingsModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-cog me-2"></i>Pengaturan</h5>
+            <button type="button" class="btn-close" (click)="closePengaturan()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-4">
+              <label class="form-label fw-semibold mb-2">
+                SPV dapat menambah Pola Kerja - Shift
+              </label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" id="spvShiftTambahYa"
+                         name="spvShiftTambah"
+                         [checked]="spvDapatMenambah()"
+                         (change)="spvDapatMenambah.set(true)" />
+                  <label class="form-check-label" for="spvShiftTambahYa">YA</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" id="spvShiftTambahTidak"
+                         name="spvShiftTambah"
+                         [checked]="!spvDapatMenambah()"
+                         (change)="spvDapatMenambah.set(false)" />
+                  <label class="form-check-label" for="spvShiftTambahTidak">TIDAK</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label fw-semibold mb-2">
+                SPV dapat memperbarui Pola Kerja - Shift
+              </label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" id="spvShiftUpdateYa"
+                         name="spvShiftUpdate"
+                         [checked]="spvDapatMemperbarui()"
+                         (change)="spvDapatMemperbarui.set(true)" />
+                  <label class="form-check-label" for="spvShiftUpdateYa">YA</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" id="spvShiftUpdateTidak"
+                         name="spvShiftUpdate"
+                         [checked]="!spvDapatMemperbarui()"
+                         (change)="spvDapatMemperbarui.set(false)" />
+                  <label class="form-check-label" for="spvShiftUpdateTidak">TIDAK</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="closePengaturan()">Batal</button>
+            <button class="btn btn-primary btn-sm" (click)="simpanPengaturan()">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ Modal Riwayat (placeholder) ══════════ -->
+  @if (showRiwayatModal() && riwayatItem()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bx bx-history me-2"></i>
+              Riwayat - <span class="text-primary">{{ riwayatItem()?.namaPolaKerja }}</span>
+            </h5>
+            <button type="button" class="btn-close" (click)="closeRiwayat()"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted text-center py-3 mb-0">Belum ada riwayat perubahan.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="closeRiwayat()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ Modal Konfirmasi Hapus ══════════ -->
+  @if (confirmDeleteId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger">
+              <i class="bx bx-trash me-2"></i>Hapus Pola Kerja Shift?
+            </h5>
+          </div>
+          <div class="modal-body text-muted">
+            Data yang dihapus tidak dapat dikembalikan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-secondary btn-sm" (click)="cancelDelete()">Batal</button>
+            <button class="btn btn-danger btn-sm" (click)="doDelete()">Ya, Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

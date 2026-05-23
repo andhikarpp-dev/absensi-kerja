@@ -1,0 +1,140 @@
+/* ── Info Bar ───────────────────────────────────────────── */
+.info-bar { border-radius: 12px !important; }
+
+/* ── Card Header ────────────────────────────────────────── */
+.jadwal-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f5;
+  display: flex;
+  align-items: center;
+  font-size: .88rem;
+  color: #374151;
+}
+
+/* ── Badge Sistem Kerja ─────────────────────────────────── */
+.badge-sistem {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  font-size: .76rem;
+  font-weight: 600;
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* ── Stat chip ──────────────────────────────────────────── */
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  font-size: .8rem;
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* ── Tabel Per Hari ─────────────────────────────────────── */
+.table thead th {
+  font-size: .73rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #6b7280;
+  font-weight: 600;
+  padding: 11px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.table tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f9fafb;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Chip Status ────────────────────────────────────────── */
+.chip-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.chip-kerja     { background: #dcfce7; color: #15803d; }
+.chip-libur     { background: #fee2e2; color: #b91c1c; }
+.chip-fleksibel { background: #fef9c3; color: #a16207; }
+
+/* ── Stat Row Inline ────────────────────────────────────── */
+.stat-row-inline {
+  font-size: .82rem;
+  color: #374151;
+  strong { color: #111827; }
+}
+
+/* ── Jadwal List ────────────────────────────────────────── */
+.jadwal-list-wrap {
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.jadwal-row {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  padding: 11px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: .87rem;
+  transition: background .1s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: #fafafe; }
+
+  &--libur    { background: #fffbeb; }
+  &--kalender { background: #fef2f2; }
+}
+
+.jadwal-tgl {
+  min-width: 175px;
+  flex-shrink: 0;
+  color: #6b7280;
+  font-size: .82rem;
+  text-align: right;
+}
+
+.jadwal-ket {
+  flex: 1;
+  color: #111827;
+}
+
+.text-libur    { color: #b45309; }
+.text-kalender { color: #b91c1c; font-style: italic; }
+
+/* ── Tombol Ubah Waktu Kerja ────────────────────────────── */
+.btn-ubah {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  transition: background .15s;
+
+  &:hover { background: #6d28d9; color: #fff; }
+  &:disabled { background: #c4b5fd; }
+}
+
+/* ── Modal Preview Box ──────────────────────────────────── */
+.modal-preview-box {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+

@@ -1,0 +1,7 @@
+.visit-item:hover {
+  background: rgba(79, 70, 229, 0.05);
+}
+.visit-item--active {
+  background: rgba(79, 70, 229, 0.1);
+  border-left: 3px solid #4f46e5;
+}

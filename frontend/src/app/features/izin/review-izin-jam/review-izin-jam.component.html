@@ -1,0 +1,308 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Izin</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard">Dasbor</a></li>
+          <li class="breadcrumb-item">Izin</li>
+          <li class="breadcrumb-item active">Review Izin Jam</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <h4 class="fw-bold mb-3">Review Izin Jam</h4>
+
+  <!-- Toast -->
+  @if (toastMsg()) {
+    <div class="alert py-2 px-3 mb-3 d-flex align-items-center gap-2"
+         [class.alert-success]="toastType()==='success'"
+         [class.alert-danger]="toastType()==='danger'"
+         style="position:fixed;top:70px;right:20px;z-index:9999;min-width:260px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+      <i [class]="toastType()==='success' ? 'bx bx-check-circle fs-5' : 'bx bx-x-circle fs-5'"></i>
+      <span>{{ toastMsg() }}</span>
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+
+      <!-- Tabs -->
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="btn btn-sm px-4"
+                [class.btn-primary]="activeTab()==='DISETUJUI'"
+                [class.btn-outline-secondary]="activeTab()!=='DISETUJUI'"
+                (click)="setTab('DISETUJUI')">Disetujui
+          @if (countByStatus('DISETUJUI') > 0) {
+            <span class="badge rounded-pill ms-1 bg-light text-dark">{{ countByStatus('DISETUJUI') }}</span>
+          }
+        </button>
+        <button class="btn btn-sm px-4"
+                [class.btn-primary]="activeTab()==='DITOLAK'"
+                [class.btn-outline-secondary]="activeTab()!=='DITOLAK'"
+                (click)="setTab('DITOLAK')">Ditolak</button>
+        <button class="btn btn-sm px-4"
+                [class.btn-primary]="activeTab()==='TERPENUHI'"
+                [class.btn-outline-secondary]="activeTab()!=='TERPENUHI'"
+                (click)="setTab('TERPENUHI')">Terpenuhi</button>
+        <button class="btn btn-sm px-4"
+                [class.btn-primary]="activeTab()==='TIDAK_TERPENUHI'"
+                [class.btn-outline-secondary]="activeTab()!=='TIDAK_TERPENUHI'"
+                (click)="setTab('TIDAK_TERPENUHI')">Tidak Terpenuhi</button>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="date" class="form-control form-control-sm" style="width:160px" placeholder="Mulai Izin"
+               [value]="filterFrom()" (change)="filterFrom.set($any($event.target).value); load()">
+        <span>-</span>
+        <input type="date" class="form-control form-control-sm" style="width:160px" placeholder="Selesai Izin"
+               [value]="filterTo()" (change)="filterTo.set($any($event.target).value); load()">
+        <select class="form-select form-select-sm" style="width:230px"
+                [value]="filterDapatMengganti()"
+                (change)="filterDapatMengganti.set($any($event.target).value); load()">
+          <option value="">--Dapat Mengganti Izin Jam--</option>
+          <option value="true">Ya</option>
+          <option value="false">Tidak</option>
+        </select>
+        <select class="form-select form-select-sm" style="width:230px"
+                [value]="filterKenaPotong()"
+                (change)="filterKenaPotong.set($any($event.target).value); load()">
+          <option value="">--Kenakan Potongan Izin Jam--</option>
+          <option value="true">Ya</option>
+          <option value="false">Tidak</option>
+        </select>
+        <select class="form-select form-select-sm" style="width:250px"
+                [value]="filterKenaDenda()"
+                (change)="filterKenaDenda.set($any($event.target).value); load()">
+          <option value="">--Kenakan Denda Keterlambatan--</option>
+          <option value="true">Ya</option>
+          <option value="false">Tidak</option>
+        </select>
+        <div class="input-group" style="width:200px">
+          <input type="text" class="form-control form-control-sm" placeholder="Cari"
+                 [value]="filterCari()" (input)="filterCari.set($any($event.target).value)"
+                 (keyup.enter)="onCari()">
+          <button class="btn btn-outline-secondary btn-sm" (click)="onCari()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+        <button class="btn btn-primary btn-sm px-3" (click)="eksporExcel()">
+          <i class="bx bx-export me-1"></i>Ekspor Excel
+        </button>
+      </div>
+
+      <!-- Info -->
+      <div class="bg-light px-3 py-2 mb-2 small text-muted" style="font-family:monospace">
+        Daftar izin dalam jam karyawan yang memerlukan validasi
+      </div>
+
+      <!-- Loading -->
+      @if (loading()) {
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm me-2"></div>Memuat data...
+        </div>
+      }
+
+      @if (!loading()) {
+        <div class="table-responsive">
+          <table class="table table-borderless align-middle" style="min-width:1200px;font-size:.88rem">
+            <thead>
+              <tr class="border-bottom text-center">
+                <th class="text-start" style="width:200px">Karyawan</th>
+                <th style="width:200px">Izin Jam</th>
+                <th style="width:120px">Jam Pengganti</th>
+                <th style="width:130px">Dapat Mengganti Izin Jam</th>
+                <th style="width:130px">Kenakan Potongan Izin Jam</th>
+                <th style="width:130px">Kenakan Denda Keterlambatan</th>
+                <th style="width:180px">Keperluan</th>
+                <th style="width:130px">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (pagedData().length === 0) {
+                <tr>
+                  <td colspan="8" class="text-center py-5 text-muted">
+                    <i class="bx bx-calendar-x fs-2 d-block mb-2"></i>Tidak ada data izin.
+                  </td>
+                </tr>
+              }
+              @for (item of pagedData(); track item.id) {
+                <tr class="border-bottom">
+                  <!-- Karyawan -->
+                  <td class="py-3">
+                    <div class="d-flex align-items-start gap-2">
+                      @if (item.fotoProfil) {
+                        <img [src]="item.fotoProfil" alt="Foto"
+                             class="rounded-circle flex-shrink-0"
+                             style="width:42px;height:42px;object-fit:cover;border:2px solid #e9ecef">
+                      } @else {
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:42px;height:42px;background:#f3f4f6;color:#9ca3af">
+                          <i class="bx bx-user"></i>
+                        </div>
+                      }
+                      <div>
+                        <div class="fw-bold">{{ item.namaKaryawan }}</div>
+                        <div class="text-muted small">{{ item.namaDivisi || '-' }}</div>
+                        @if (item.namaJabatan) {
+                          <div class="text-muted small">{{ item.namaJabatan }}</div>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Izin Jam -->
+                  <td class="py-3">
+                    <div class="d-flex align-items-center gap-2">
+                      <div>
+                        <div class="text-muted small">{{ formatDateOnly(item.tanggalMulai) }}</div>
+                        <div class="fw-bold" style="font-size:1.05rem">{{ formatJam(item.jamMulai) }}</div>
+                      </div>
+                      <div class="text-center text-muted">
+                        <div style="font-size:.85rem">●●●</div>
+                        <div class="small">{{ durasiLabel(item.durasiMenit) }}</div>
+                      </div>
+                      <div>
+                        <div class="text-muted small">{{ formatDateOnly(item.tanggalSelesai) }}</div>
+                        <div class="fw-bold" style="font-size:1.05rem">{{ formatJam(item.jamSelesai) }}</div>
+                      </div>
+                    </div>
+                    @if (item.createdAt) {
+                      <div class="mt-2">
+                        <span class="badge bg-light text-dark border" style="font-weight:400">
+                          <i class="bx bx-calendar"></i> {{ formatDateTime(item.createdAt) }}
+                        </span>
+                      </div>
+                    }
+                  </td>
+
+                  <!-- Jam Pengganti -->
+                  <td class="py-3 text-center">
+                    @if (item.jamPengganti) {
+                      <span class="fw-semibold">{{ formatJam(item.jamPengganti) }}</span>
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+
+                  <!-- Dapat Mengganti -->
+                  <td class="py-3 text-center">{{ item.dapatMengganti ? 'Ya' : 'Tidak' }}</td>
+
+                  <!-- Kena Potong -->
+                  <td class="py-3 text-center">{{ item.kenaPotong ? 'Ya' : 'Tidak' }}</td>
+
+                  <!-- Kena Denda -->
+                  <td class="py-3 text-center">{{ item.kenaDenda ? 'Ya' : 'Tidak' }}</td>
+
+                  <!-- Keperluan -->
+                  <td class="py-3">
+                    <div style="max-width:200px;white-space:normal">{{ item.keperluan || '-' }}</div>
+                    @if (item.catatanPenolakan) {
+                      <div class="text-danger small mt-1"><i class="bx bx-info-circle"></i> {{ item.catatanPenolakan }}</div>
+                    }
+                  </td>
+
+                  <!-- Aksi -->
+                  <td class="py-3">
+                    <div class="d-flex gap-1 justify-content-center">
+                      @if (activeTab() === 'DISETUJUI') {
+                        <button class="btn btn-sm btn-light border" title="Tandai Terpenuhi"
+                                (click)="setTerpenuhi(item, true)">
+                          <i class="bx bx-edit text-secondary"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" title="Tolak"
+                                (click)="openTolak(item)">
+                          <i class="bx bx-x"></i>
+                        </button>
+                      }
+                      @if (activeTab() === 'DITOLAK') {
+                        <button class="btn btn-sm btn-light border" title="Setujui Kembali"
+                                (click)="approve(item)">
+                          <i class="bx bx-check text-success"></i>
+                        </button>
+                      }
+                      @if (activeTab() === 'TERPENUHI' || activeTab() === 'TIDAK_TERPENUHI') {
+                        <button class="btn btn-sm btn-light border"
+                                [title]="activeTab() === 'TERPENUHI' ? 'Tandai Tidak Terpenuhi' : 'Tandai Terpenuhi'"
+                                (click)="setTerpenuhi(item, activeTab() !== 'TERPENUHI')">
+                          <i class="bx bx-edit text-secondary"></i>
+                        </button>
+                      }
+                      <button class="btn btn-sm btn-danger" title="Hapus" (click)="delete(item)">
+                        <i class="bx bx-trash"></i>
+                      </button>
+                      <button class="btn btn-sm btn-light border" title="Riwayat" disabled>
+                        <i class="bx bx-history"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between mt-3">
+          <div class="text-muted small">
+            Menampilkan {{ filteredData().length === 0 ? 0 : (page()-1)*pageSize+1 }}
+            dari {{ filteredData().length }} total data
+          </div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="page()===1">
+                <button class="page-link" (click)="goPage(1)">&laquo;</button>
+              </li>
+              <li class="page-item" [class.disabled]="page()===1">
+                <button class="page-link" (click)="goPage(page()-1)">&lsaquo;</button>
+              </li>
+              @for (p of pageNumbers(); track p) {
+                <li class="page-item" [class.active]="p===page()">
+                  <button class="page-link" (click)="goPage(p)">{{ p }}</button>
+                </li>
+              }
+              <li class="page-item" [class.disabled]="page()===totalPages()">
+                <button class="page-link" (click)="goPage(page()+1)">&rsaquo;</button>
+              </li>
+              <li class="page-item" [class.disabled]="page()===totalPages()">
+                <button class="page-link" (click)="goPage(totalPages())">&raquo;</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ── Modal Tolak ── -->
+  @if (showTolakModal()) {
+    <div class="modal d-block" style="background:rgba(0,0,0,.4)">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title">Tolak Izin Jam</h5>
+            <button class="btn-close" (click)="showTolakModal.set(false)"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">Catatan Penolakan (opsional)</label>
+            <textarea class="form-control" rows="3"
+                      [value]="tolakCatatan()"
+                      (input)="tolakCatatan.set($any($event.target).value)"></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="showTolakModal.set(false)">Batal</button>
+            <button class="btn btn-danger btn-sm px-4" (click)="submitTolak()" [disabled]="tolakSaving()">
+              <span *ngIf="tolakSaving()" class="spinner-border spinner-border-sm me-1"></span>
+              Tolak
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>

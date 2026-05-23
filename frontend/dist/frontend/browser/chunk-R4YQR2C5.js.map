@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/laporan/laporan-list/laporan-list.component.ts"],
+  "sourcesContent": ["import { Component } from '@angular/core';\r\n\r\n@Component({\r\n  selector: 'app-laporan-list',\r\n  standalone: true,\r\n  template: `\r\n    <div style=\"padding:2rem; font-family:Inter,sans-serif\">\r\n      <h1>Laporan Absensi</h1>\r\n      <p>Halaman ini akan dikembangkan pada Phase 7.</p>\r\n    </div>\r\n  `\r\n})\r\nexport class LaporanListComponent {}\r\n\r\n"],
+  "mappings": ";;;;;;;;;;;;AAYM,IAAO,uBAAP,MAAO,sBAAoB;;;uCAApB,uBAAoB;IAAA;EAAA;;yEAApB,uBAAoB,WAAA,CAAA,CAAA,kBAAA,CAAA,GAAA,OAAA,GAAA,MAAA,GAAA,QAAA,CAAA,CAAA,GAAA,WAAA,QAAA,eAAA,kBAAA,CAAA,GAAA,UAAA,SAAA,8BAAA,IAAA,KAAA;AAAA,UAAA,KAAA,GAAA;AAN7B,QAAA,4BAAA,GAAA,OAAA,CAAA,EAAwD,GAAA,IAAA;AAClD,QAAA,iBAAA,GAAA,iBAAA;AAAe,QAAA,0BAAA;AACnB,QAAA,4BAAA,GAAA,GAAA;AAAG,QAAA,iBAAA,GAAA,6CAAA;AAA2C,QAAA,0BAAA,EAAI;;;;;;sEAI3C,sBAAoB,CAAA;UAVhC;WAAU;MACT,UAAU;MACV,YAAY;MACZ,UAAU;;;;;;KAMX;;;;6EACY,sBAAoB,EAAA,WAAA,wBAAA,UAAA,mEAAA,YAAA,GAAA,CAAA;AAAA,GAAA;",
+  "names": []
+}

@@ -1,0 +1,846 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/divisi">Divisi</a></li>
+          <li class="breadcrumb-item active">{{ isEdit ? 'Edit' : 'Tambah' }}</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <button type="button" class="btn btn-light btn-sm" (click)="batal()"><i class="bx bx-arrow-back"></i></button>
+    <h5 class="mb-0"><i class="bx me-1" [class.bx-plus]="!isEdit" [class.bx-edit]="isEdit"></i>
+      {{ isEdit ? 'Edit Divisi' : 'Tambah Divisi' }}
+    </h5>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center">
+      <i class="bx bx-error-circle me-2 fs-5"></i> {{ error() }}
+      <button class="btn-close ms-auto" (click)="error.set('')"></button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card"><div class="card-body placeholder-glow">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="placeholder col-12 rounded mb-3" style="height:38px"></div>
+      }
+    </div></div>
+  }
+
+  @if (!loading()) {
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+    <!-- ① Identitas -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bx bx-buildings me-2"></i>Identitas Divisi</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Nama Divisi <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="namaDivisi"
+                   [class.is-invalid]="f['namaDivisi'].invalid && f['namaDivisi'].touched"
+                   placeholder="Nama divisi" />
+            <div class="invalid-feedback">Nama divisi wajib diisi.</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Denda Keterlambatan</label>
+            <div class="d-flex gap-3 mt-1">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" formControlName="dendaKeterlambatan"
+                       [value]="true" id="dendaYa" />
+                <label class="form-check-label" for="dendaYa">Ya</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" formControlName="dendaKeterlambatan"
+                       [value]="false" id="dendaTidak" />
+                <label class="form-check-label" for="dendaTidak">Tidak</label>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label d-block">Sistem Kerja Shift</label>
+            <div class="form-check form-switch mt-2">
+              <input class="form-check-input" type="checkbox" role="switch"
+                     id="sistemKerjaShift"
+                     [checked]="form.value.sistemKerja === 'SHIFT'"
+                     (change)="onShiftToggle($any($event.target).checked)" />
+              <label class="form-check-label" for="sistemKerjaShift">
+                Aktifkan agar karyawan divisi ini muncul di <strong>Jadwal Shift</strong>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ① Pola Kerja (muncul hanya jika Sistem Kerja = Hari Kerja) -->
+    @if (isHariKerja) {
+    <div class="card mb-3">
+      <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+        <span><i class="bx bx-time-five me-2"></i>Pola Kerja</span>
+        <div class="d-flex gap-2">
+          @if (isEdit) {
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openAssignModal()">
+              <i class="bx bx-link-alt me-1"></i> Tambah dari Pola yang Ada
+            </button>
+          }
+          <button type="button" class="btn btn-primary btn-sm" (click)="openTambahModal()">
+            <i class="bx bx-plus me-1"></i> Buat Pola Baru
+          </button>
+        </div>
+      </div>
+
+      @if (isEdit) {
+        <!-- Mode EDIT: tabel pola yang dipakai divisi ini -->
+        <div class="card-body p-0">
+          @if (polaKerjaList().length === 0) {
+            <div class="text-center py-4 text-muted">
+              <i class="bx bx-calendar-x" style="font-size:2rem"></i>
+              <p class="mt-2 mb-0 small">Belum ada pola kerja.</p>
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr><th>#</th><th>Nama Pola Kerja</th><th>Jadwal</th><th>Toleransi</th><th>Aksi</th></tr>
+                </thead>
+                <tbody>
+                  @for (pk of polaKerjaList(); track pk.id; let i = $index) {
+                    <tr>
+                      <td class="text-muted">{{ i + 1 }}</td>
+                      <td class="fw-semibold">{{ pk.namaPolaKerja }}</td>
+                      <td>
+                        <span class="badge" [class.bg-primary]="pk.jenisJadwal === 'JAM_TETAP'"
+                              [class.bg-info]="pk.jenisJadwal === 'JAM_FLEKSIBEL'">
+                          {{ pk.jenisJadwal === 'JAM_TETAP' ? 'Jam Tetap' : 'Jam Fleksibel' }}
+                        </span>
+                      </td>
+                      <td>{{ pk.toleransiKeterlambatan }} menit</td>
+                      <td>
+                        <button type="button" class="btn btn-outline-primary btn-sm me-1"
+                                title="Edit pola kerja" (click)="openEditModal(pk)">
+                          <i class="bx bx-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm"
+                                title="Lepas dari divisi ini (pola tidak dihapus)" (click)="deletePolaKerja(pk.id)">
+                          <i class="bx bx-unlink"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Mode TAMBAH: pilih dari pola global yang sudah ada -->
+        <div class="card-body">
+
+          @if (allPolaLoading()) {
+            <div class="text-center py-3 text-muted">
+              <span class="spinner-border spinner-border-sm me-2"></span> Memuat daftar pola kerja...
+            </div>
+          } @else if (allPolaKerjaList().length === 0 && localPolaKerjaList().length === 0) {
+            <div class="text-center py-4 text-muted">
+              <i class="bx bx-calendar-x" style="font-size:2rem"></i>
+              <p class="mt-2 mb-0 small">Belum ada pola kerja. Klik <strong>Buat Pola Baru</strong> untuk menambah.</p>
+            </div>
+          } @else {
+
+            <!-- Daftar pola global — centang untuk memilih -->
+            @if (allPolaKerjaList().length > 0) {
+              <p class="text-muted small mb-2"><i class="bx bx-info-circle me-1"></i>
+                Centang pola kerja yang ingin digunakan oleh divisi ini.
+              </p>
+              <div class="table-responsive mb-3">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width:40px"></th>
+                      <th>Nama Pola Kerja</th>
+                      <th>Jadwal</th>
+                      <th>Toleransi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (pk of allPolaKerjaList(); track pk.id) {
+                      <tr [class.table-primary]="isPolaSelected(pk.id)" style="cursor:pointer"
+                          (click)="toggleSelectPola(pk.id)">
+                        <td>
+                          <input type="checkbox" class="form-check-input"
+                                 [checked]="isPolaSelected(pk.id)"
+                                 (click)="$event.stopPropagation(); toggleSelectPola(pk.id)" />
+                        </td>
+                        <td class="fw-semibold">{{ pk.namaPolaKerja }}</td>
+                        <td>
+                          <span class="badge" [class.bg-primary]="pk.jenisJadwal === 'JAM_TETAP'"
+                                [class.bg-info]="pk.jenisJadwal === 'JAM_FLEKSIBEL'">
+                            {{ pk.jenisJadwal === 'JAM_TETAP' ? 'Jam Tetap' : 'Jam Fleksibel' }}
+                          </span>
+                        </td>
+                        <td>{{ pk.toleransiKeterlambatan }} menit</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            <!-- Pola baru lokal (belum tersimpan di DB) -->
+            @if (localPolaKerjaList().length > 0) {
+              <div class="border rounded p-3 bg-light mb-2">
+                <p class="small fw-semibold mb-2 text-success">
+                  <i class="bx bx-plus-circle me-1"></i> Pola Baru (akan dibuat saat Simpan)
+                </p>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr><th>#</th><th>Nama Pola Kerja</th><th>Jadwal</th><th>Toleransi</th><th>Aksi</th></tr>
+                    </thead>
+                    <tbody>
+                      @for (pk of localPolaKerjaList(); track $index; let i = $index) {
+                        <tr>
+                          <td class="text-muted">{{ i + 1 }}</td>
+                          <td class="fw-semibold">{{ pk.namaPolaKerja }}</td>
+                          <td>
+                            <span class="badge" [class.bg-primary]="pk.jenisJadwal === 'JAM_TETAP'"
+                                  [class.bg-info]="pk.jenisJadwal === 'JAM_FLEKSIBEL'">
+                              {{ pk.jenisJadwal === 'JAM_TETAP' ? 'Jam Tetap' : 'Jam Fleksibel' }}
+                            </span>
+                          </td>
+                          <td>{{ pk.toleransiKeterlambatan }} menit</td>
+                          <td>
+                            <button type="button" class="btn btn-outline-primary btn-sm me-1"
+                                    (click)="openEditLocalModal(i)">
+                              <i class="bx bx-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    (click)="deleteLocalPolaKerja(i)">
+                              <i class="bx bx-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="card-footer bg-transparent">
+          <small class="text-muted">
+            <i class="bx bx-info-circle me-1"></i>
+            Pola yang dicentang akan langsung terhubung ke divisi ini tanpa duplikat data.
+            @if (selectedPolaIds().size > 0 || localPolaKerjaList().length > 0) {
+              ·
+              @if (selectedPolaIds().size > 0) {
+                <span class="text-primary fw-semibold">{{ selectedPolaIds().size }} pola dipilih</span>
+              }
+              @if (selectedPolaIds().size > 0 && localPolaKerjaList().length > 0) { · }
+              @if (localPolaKerjaList().length > 0) {
+                <span class="text-success fw-semibold">{{ localPolaKerjaList().length }} pola baru</span>
+              }
+            }
+          </small>
+        </div>
+      }
+
+    </div>
+    }
+
+    <!-- ② Catatan Presensi -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bx bx-note me-2"></i>Catatan Saat Presensi</div>
+      <div class="card-body">
+        <div class="row g-3">
+          @for (item of [
+            {key:'catatanMasuk',        labelKey:'catatanMasukLabel',              placeholderKey:'catatanMasukPlaceholder',              label:'Catatan Saat Presensi Masuk'},
+            {key:'catatanKeluar',       labelKey:'catatanKeluarLabel',             placeholderKey:'catatanKeluarPlaceholder',             label:'Catatan Saat Presensi Keluar'},
+            {key:'catatanMulaiLembur',  labelKey:'catatanMulaiLemburLabel',        placeholderKey:'catatanMulaiLemburPlaceholder',        label:'Catatan Saat Presensi Mulai Lembur'},
+            {key:'catatanSelesaiLembur',labelKey:'catatanSelesaiLemburLabel',      placeholderKey:'catatanSelesaiLemburPlaceholder',      label:'Catatan Saat Presensi Selesai Lembur'}
+          ]; track item.key) {
+            <div class="col-md-6">
+              <label class="form-label">{{ item.label }}</label>
+              <select class="form-select" [formControlName]="item.key">
+                <option value="TIDAK_DIBUTUHKAN">Tidak Dibutuhkan</option>
+                <option value="OPTIONAL">Optional</option>
+                <option value="DIBUTUHKAN">Dibutuhkan</option>
+              </select>
+              @if (form.get(item.key)?.value === 'OPTIONAL' || form.get(item.key)?.value === 'DIBUTUHKAN') {
+                <div class="mt-2 d-flex flex-column gap-2">
+                  <div>
+                    <label class="form-label small text-muted mb-1">Label Catatan</label>
+                    <input type="text" class="form-control form-control-sm"
+                           [formControlName]="item.labelKey"
+                           placeholder="cth. Keterangan kehadiran" />
+                  </div>
+                  <div>
+                    <label class="form-label small text-muted mb-1">Placeholder Catatan</label>
+                    <input type="text" class="form-control form-control-sm"
+                           [formControlName]="item.placeholderKey"
+                           placeholder="cth. Masukkan keterangan..." />
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ Presensi Sesuai Lokasi -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bx bx-map-pin me-2"></i>Presensi Yang Harus Sesuai Lokasi</div>
+      <div class="card-body">
+        <div class="row g-2">
+          @for (item of [
+            {key:'lokasiMasuk',              label:'Masuk'},
+            {key:'lokasiIstirahat',          label:'Istirahat'},
+            {key:'lokasiSelesaiIstirahat',   label:'Selesai Istirahat'},
+            {key:'lokasiKeluar',             label:'Keluar'},
+            {key:'lokasiLembur',             label:'Lembur'},
+            {key:'lokasiSelesaiLembur',      label:'Selesai Lembur'},
+            {key:'lokasiPertamaKali',        label:'Presensi Pertama Kali'},
+            {key:'lokasiDiLuar',             label:'Di Luar Lokasi Kehadiran'},
+            {key:'lokasiPerangkatBerbeda',   label:'Menggunakan Perangkat Berbeda'},
+            {key:'lokasiFotoSelfieBermasalah',label:'Foto Selfie Bermasalah'}
+          ]; track item.key) {
+            <div class="col-md-4 col-sm-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" [formControlName]="item.key" [id]="item.key" />
+                <label class="form-check-label" [for]="item.key">{{ item.label }}</label>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ Supervisor & Supervisi -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bx bx-user-check me-2"></i>Supervisor & Supervisi</div>
+      <div class="card-body">
+
+        <!-- Supervisor dropdown -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label">Supervisor</label>
+            <select class="form-select" formControlName="supervisorId">
+              <option [ngValue]="null">-- Pilih Karyawan --</option>
+              @for (k of karyawanList(); track k.id) {
+                <option [ngValue]="k.id">{{ k.namaLengkap }} ({{ k.nip }})</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Supervisi -->
+        <label class="form-label fw-semibold">Supervisi</label>
+        <div class="alert py-2 px-3 mb-3" style="background:#f3f0ff;border:1px solid #c4b5fd;color:#5b21b6;font-size:.85rem">
+          <i class="bx bx-info-circle me-1"></i>
+          Supervisi ini dapat dipilih oleh karyawan sebagai tujuan kemana laporan catatannya akan dikirimkan.
+        </div>
+
+        <!-- Tabel supervisi dinamis -->
+        <div class="table-responsive mb-2" formArrayName="supervisiList">
+          <table class="table table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:50px">No</th>
+                <th>Nama</th>
+                <th>Email <small class="text-muted fw-normal">(pisah dengan koma)</small></th>
+                <th>BCC Laporan Ke <small class="text-muted fw-normal">(pisah dengan koma)</small></th>
+                <th style="width:80px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of supervisiArray.controls; track $index) {
+                <tr [formGroupName]="$index">
+                  <td class="text-center text-muted">{{ $index + 1 }}</td>
+                  <td>
+                    <input type="text" class="form-control form-control-sm"
+                           formControlName="nama" placeholder="Nama" />
+                  </td>
+                  <td>
+                    <input type="text" class="form-control form-control-sm"
+                           formControlName="email" placeholder="email1@domain.com, email2@domain.com" />
+                  </td>
+                  <td>
+                    <input type="text" class="form-control form-control-sm"
+                           formControlName="bcc" placeholder="bcc1@domain.com, bcc2@domain.com" />
+                  </td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-link btn-sm text-danger p-0"
+                            (click)="removeSupervisi($index)"
+                            [disabled]="supervisiArray.length === 1">
+                      - Hapus
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-link btn-sm text-primary p-0 mb-4"
+                (click)="addSupervisi()">
+          <i class="bx bx-plus"></i> + Tambah
+        </button>
+
+        <!-- BCC Global -->
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">BCC Laporan Ke</label>
+            <div class="alert py-2 px-3 mb-2" style="background:#f9fafb;border:1px solid #e5e7eb;color:#374151;font-size:.85rem">
+              <i class="bx bx-info-circle me-1"></i>
+              BCC ini akan digunakan jika kolom bcc pada tabel di atas tidak terisi.
+            </div>
+            <input type="text" class="form-control" formControlName="bccGlobal"
+                   placeholder="Pisahkan email dengan koma jika lebih dari satu" />
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ⑤ Pembatasan Presensi -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bx bx-time me-2"></i>Pembatasan Presensi</div>
+      <div class="card-body">
+
+        <!-- # Presensi Masuk -->
+        <p class="fw-semibold text-primary mb-2"># Presensi Masuk</p>
+        <hr class="mt-0 mb-3">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <div class="input-group">
+              <input type="number" class="form-control" formControlName="menitSebelumMasuk" min="0" />
+              <span class="input-group-text">Menit Sebelum Jadwal Masuk</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="input-group">
+              <input type="number" class="form-control" formControlName="menitSetelahMasuk" min="0" />
+              <span class="input-group-text">Menit Setelah Jadwal Masuk</span>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex flex-column gap-2 mb-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="cegahKalender"
+                   formControlName="cegahPresensiKalenderLibur" />
+            <label class="form-check-label" for="cegahKalender">
+              Cegah presensi masuk pada kalender libur
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="cegahJadwal"
+                   formControlName="cegahPresensiJadwalLibur" />
+            <label class="form-check-label" for="cegahJadwal">
+              Cegah presensi masuk pada jadwal libur
+            </label>
+          </div>
+        </div>
+
+        <!-- # Presensi Keluar -->
+        <p class="fw-semibold text-primary mb-2"># Presensi Keluar</p>
+        <hr class="mt-0 mb-3">
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="input-group">
+              <input type="number" class="form-control" formControlName="menitSetelahJadwalKeluar" min="0" />
+              <span class="input-group-text">Menit Setelah Jadwal Keluar</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- # Presensi Lembur -->
+        <p class="fw-semibold text-primary mb-2"># Presensi Lembur</p>
+        <hr class="mt-0 mb-3">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="cegahLembur"
+                 formControlName="cegahPresensiLemburTanpaJadwal" />
+          <label class="form-check-label" for="cegahLembur">
+            Cegah presensi lembur tanpa jadwal
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ⑥ Fitur On/Off -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bx bx-toggle-left me-2"></i>Fitur</div>
+      <div class="card-body">
+        <div class="row g-3">
+          @for (item of [
+            {key:'validasiPerangkat',      label:'Validasi Perangkat'},
+            {key:'presensiKeluarOtomatis', label:'Presensi Keluar Otomatis'},
+            {key:'dendaTerlambatKeluar',   label:'Denda Terlambat Presensi Keluar'},
+            {key:'kunjunganKlien',         label:'Kunjungan Klien'}
+          ]; track item.key) {
+            <div class="col-md-3 col-sm-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" [formControlName]="item.key" [id]="item.key+'_sw'" />
+                <label class="form-check-label" [for]="item.key+'_sw'">{{ item.label }}</label>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑦ Cuti -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bx bx-calendar me-2"></i>Pengaturan Cuti</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Minimal Hari Sebelum Cuti</label>
+            <input type="number" class="form-control" formControlName="minimalHariSebelumCuti" min="0" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Maks. Hari Per Request</label>
+            <input type="number" class="form-control" formControlName="maksHariPerRequest" min="0" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Maks. Request Per Bulan</label>
+            <input type="number" class="form-control" formControlName="maksRequestPerBulan" min="0" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-end gap-2 mb-4">
+      <button type="button" class="btn btn-secondary px-4" (click)="batal()">
+        <i class="bx bx-x me-1"></i> Batal
+      </button>
+      <button type="submit" class="btn btn-primary px-4" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...
+        } @else {
+          <i class="bx bx-save me-1"></i> {{ isEdit ? 'Perbarui' : 'Simpan' }}
+        }
+      </button>
+    </div>
+
+  </form>
+  }
+
+  <!-- ══ MODAL POLA KERJA ══════════════════════════════════ -->
+  @if (showModal()) {
+  <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1055">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+
+        <!-- Header -->
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bx me-2" [class.bx-plus]="!editPolaKerjaId()" [class.bx-edit]="editPolaKerjaId()"></i>
+            {{ editPolaKerjaId() ? 'Edit Pola Kerja' : 'Tambah Pola Kerja' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+          @if (modalError()) {
+            <div class="alert alert-danger py-2">{{ modalError() }}</div>
+          }
+
+          <div class="row g-3 mb-4">
+            <!-- Nama Pola Kerja -->
+            <div class="col-md-6">
+              <label class="form-label">Nama Pola Kerja <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="modalData.namaPolaKerja"
+                     [ngModelOptions]="{standalone: true}"
+                     placeholder="cth. Shift Pagi" />
+            </div>
+            <!-- Toleransi — hanya untuk JAM_TETAP -->
+            @if (modalData.jenisJadwal === 'JAM_TETAP') {
+            <div class="col-md-3">
+              <label class="form-label">Toleransi Keterlambatan</label>
+              <div class="input-group">
+                <input type="number" class="form-control" [(ngModel)]="modalData.toleransiKeterlambatan"
+                       [ngModelOptions]="{standalone: true}" min="0" />
+                <span class="input-group-text">Menit</span>
+              </div>
+            </div>
+            }
+          </div>
+
+          <!-- Jadwal Kerja toggle -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Jadwal Kerja <span class="text-danger">*</span>
+              <i class="bx bx-help-circle ms-1 text-muted" title="Pilih salah satu jenis jadwal"></i>
+            </label>
+            <div class="d-flex gap-2 mb-1">
+              <button type="button"
+                      class="btn btn-sm px-4"
+                      [class.btn-primary]="modalData.jenisJadwal === 'JAM_TETAP'"
+                      [class.btn-outline-secondary]="modalData.jenisJadwal !== 'JAM_TETAP'"
+                      (click)="onJadwalChange('JAM_TETAP')">
+                Jadwal Jam Tetap
+              </button>
+              <button type="button"
+                      class="btn btn-sm px-4"
+                      [class.btn-primary]="modalData.jenisJadwal === 'JAM_FLEKSIBEL'"
+                      [class.btn-outline-secondary]="modalData.jenisJadwal !== 'JAM_FLEKSIBEL'"
+                      (click)="onJadwalChange('JAM_FLEKSIBEL')">
+                Jadwal Jam Fleksibel
+              </button>
+            </div>
+            <small class="text-danger">*Hanya bisa pilih salah satu jadwal</small>
+          </div>
+
+          <!-- Tabel 7 hari — JAM TETAP -->
+          @if (modalData.jenisJadwal === 'JAM_TETAP') {
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:100px">Hari</th>
+                  <th style="width:140px">Pola Kerja</th>
+                  <th>Jam Masuk</th>
+                  <th>Jam Keluar</th>
+                  <th>Mulai Istirahat</th>
+                  <th>Selesai Istirahat</th>
+                  <th style="width:130px">Maks. Menit Istirahat</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (hari of modalData.hariList; track hari.hari) {
+                  <tr [class.table-secondary]="hari.polaHari === 'LIBUR'">
+                    <td class="fw-semibold">{{ hariLabels[hari.hari] }}</td>
+                    <td>
+                      <select class="form-select form-select-sm" [(ngModel)]="hari.polaHari"
+                              [ngModelOptions]="{standalone: true}">
+                        <option value="HARI_KERJA">Hari Kerja</option>
+                        <option value="LIBUR">Libur</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="time" class="form-control form-control-sm"
+                             [(ngModel)]="hari.jamMasuk"
+                             [ngModelOptions]="{standalone: true}"
+                             [disabled]="hari.polaHari === 'LIBUR'" />
+                    </td>
+                    <td>
+                      <input type="time" class="form-control form-control-sm"
+                             [(ngModel)]="hari.jamKeluar"
+                             [ngModelOptions]="{standalone: true}"
+                             [disabled]="hari.polaHari === 'LIBUR'" />
+                    </td>
+                    <td>
+                      <input type="time" class="form-control form-control-sm"
+                             [(ngModel)]="hari.mulaiIstirahat"
+                             [ngModelOptions]="{standalone: true}"
+                             [disabled]="hari.polaHari === 'LIBUR'" />
+                    </td>
+                    <td>
+                      <input type="time" class="form-control form-control-sm"
+                             [(ngModel)]="hari.selesaiIstirahat"
+                             [ngModelOptions]="{standalone: true}"
+                             [disabled]="hari.polaHari === 'LIBUR'" />
+                    </td>
+                    <td>
+                      <input type="number" class="form-control form-control-sm text-center"
+                             [(ngModel)]="hari.maksMenitIstirahat"
+                             [ngModelOptions]="{standalone: true}" min="0"
+                             [disabled]="hari.polaHari === 'LIBUR'" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
+
+          <!-- Tabel 7 hari — JAM FLEKSIBEL -->
+          @if (modalData.jenisJadwal === 'JAM_FLEKSIBEL') {
+          <div class="alert py-2 px-3 mb-3" style="background:#f3f0ff;border:1px solid #c4b5fd;color:#5b21b6;font-size:.85rem">
+            <i class="bx bx-info-circle me-1"></i>
+            Jadwal jam fleksibel tidak memiliki jam masuk/keluar tetap. Karyawan dapat masuk dan keluar kapan saja pada hari kerja yang ditentukan.
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:140px">Hari</th>
+                  <th>Pola Kerja</th>
+                  <th style="width:200px">Total Jam Kerja Dibutuhkan</th>
+                  <th style="width:180px">Maks. Menit Istirahat</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (hari of modalData.hariList; track hari.hari) {
+                  <tr [class.table-secondary]="hari.polaHari === 'LIBUR'">
+                    <td class="fw-semibold">{{ hariLabels[hari.hari] }}</td>
+                    <td>
+                      <div class="d-flex gap-3">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio"
+                                 [id]="'hk_' + hari.hari"
+                                 [(ngModel)]="hari.polaHari"
+                                 [ngModelOptions]="{standalone: true}"
+                                 value="HARI_KERJA" />
+                          <label class="form-check-label" [for]="'hk_' + hari.hari">Hari Kerja</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio"
+                                 [id]="'lb_' + hari.hari"
+                                 [(ngModel)]="hari.polaHari"
+                                 [ngModelOptions]="{standalone: true}"
+                                 value="LIBUR" />
+                          <label class="form-check-label" [for]="'lb_' + hari.hari">Libur</label>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="input-group input-group-sm">
+                        <input type="number" class="form-control text-center"
+                               [(ngModel)]="hari.totalJamKerjaDibutuhkan"
+                               [ngModelOptions]="{standalone: true}" min="0"
+                               [disabled]="hari.polaHari === 'LIBUR'"
+                               placeholder="jam" />
+                        <span class="input-group-text">jam</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="input-group input-group-sm">
+                        <input type="number" class="form-control text-center"
+                               [(ngModel)]="hari.maksMenitIstirahat"
+                               [ngModelOptions]="{standalone: true}" min="0"
+                               [disabled]="hari.polaHari === 'LIBUR'" />
+                        <span class="input-group-text">menit</span>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm px-4" (click)="closeModal()">
+            <i class="bx bx-x me-1"></i> Tutup
+          </button>
+          <button type="button" class="btn btn-primary btn-sm px-4"
+                  (click)="savePolaKerja()" [disabled]="modalSaving()">
+            @if (modalSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...
+            } @else {
+              <i class="bx bx-save me-1"></i> Simpan
+            }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- ══ Modal: Tambah dari Pola yang Ada (mode EDIT) ═════════════ -->
+  @if (showAssignModal()) {
+  <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bx bx-link-alt me-2"></i>Tambah dari Pola yang Ada</h5>
+          <button type="button" class="btn-close" (click)="closeAssignModal()"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="input-group input-group-sm mb-3">
+            <span class="input-group-text"><i class="bx bx-search"></i></span>
+            <input type="text" class="form-control" placeholder="Cari nama pola kerja..."
+                   [ngModel]="assignSearchQuery()"
+                   [ngModelOptions]="{standalone: true}"
+                   (ngModelChange)="assignSearchQuery.set($event)" />
+          </div>
+
+          @if (allPolaLoading()) {
+            <div class="text-center py-4 text-muted">
+              <span class="spinner-border spinner-border-sm me-2"></span> Memuat data...
+            </div>
+          } @else if (polaKerjaBelumAssigned.length === 0) {
+            <div class="text-center py-4 text-muted">
+              <i class="bx bx-check-circle" style="font-size:2rem;color:#28a745"></i>
+              <p class="mt-2 mb-0 small">
+                @if (assignSearchQuery()) {
+                  Tidak ada pola yang cocok dengan pencarian.
+                } @else {
+                  Semua pola kerja yang tersedia sudah terhubung ke divisi ini.
+                }
+              </p>
+            </div>
+          } @else {
+            <p class="text-muted small mb-2">
+              <i class="bx bx-info-circle me-1"></i>
+              Klik <strong>Hubungkan</strong> untuk menambahkan pola ke divisi ini.
+            </p>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Nama Pola Kerja</th>
+                    <th>Jenis Jadwal</th>
+                    <th>Toleransi</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (pk of polaKerjaBelumAssigned; track pk.id) {
+                    <tr>
+                      <td class="fw-semibold">{{ pk.namaPolaKerja }}</td>
+                      <td>
+                        <span class="badge"
+                              [class.bg-primary]="pk.jenisJadwal === 'JAM_TETAP'"
+                              [class.bg-info]="pk.jenisJadwal === 'JAM_FLEKSIBEL'">
+                          {{ pk.jenisJadwal === 'JAM_TETAP' ? 'Jam Tetap' : 'Jam Fleksibel' }}
+                        </span>
+                      </td>
+                      <td>{{ pk.toleransiKeterlambatan }} menit</td>
+                      <td>
+                        <button type="button" class="btn btn-primary btn-sm"
+                                [disabled]="assignSaving()"
+                                (click)="assignPolaKerja(pk)">
+                          <i class="bx bx-link-alt me-1"></i> Hubungkan
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm px-4" (click)="closeAssignModal()">
+            <i class="bx bx-x me-1"></i> Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  }
+
+</app-layout>

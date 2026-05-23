@@ -1,0 +1,327 @@
+<app-layout>
+  <!-- Breadcrumb -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h4 class="fw-bold mb-0">Revisi Kehadiran</h4>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0" style="font-size:.82rem">
+          <li class="breadcrumb-item"><a routerLink="/dashboard" class="text-primary text-decoration-none">Dasbor</a></li>
+          <li class="breadcrumb-item"><span class="text-primary">Kehadiran</span></li>
+          <li class="breadcrumb-item active">Revisi Kehadiran</li>
+        </ol>
+      </nav>
+    </div>
+<!--    <button class="btn btn-primary btn-sm px-3" (click)="openBuat()">-->
+<!--      <i class="bx bx-plus me-1"></i> Tambah Revisi-->
+<!--    </button>-->
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+
+      <!-- Tab -->
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-sm px-4 rounded-pill"
+          [class.btn-primary]="activeTab()==='PENGAJUAN'"
+          [class.btn-outline-secondary]="activeTab()!=='PENGAJUAN'"
+          (click)="setTab('PENGAJUAN')">Pengajuan</button>
+        <button class="btn btn-sm px-4 rounded-pill"
+          [class.btn-primary]="activeTab()==='DIPROSES'"
+          [class.btn-outline-secondary]="activeTab()!=='DIPROSES'"
+          (click)="setTab('DIPROSES')">Telah Diproses</button>
+      </div>
+
+      <!-- Filter -->
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <input type="date" class="form-control form-control-sm" style="max-width:150px"
+          [value]="filterMulai()" (change)="filterMulai.set($any($event.target).value)">
+        <span class="align-self-center">-</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:150px"
+          [value]="filterAkhir()" (change)="filterAkhir.set($any($event.target).value)">
+        <select class="form-select form-select-sm" style="max-width:180px"
+          [value]="filterDivisi()" (change)="filterDivisi.set($any($event.target).value)">
+          <option value="">Pilih Divisi</option>
+          <option *ngFor="let d of divisiList()" [value]="d.id">{{ d.namaDivisi }}</option>
+        </select>
+        <div class="d-flex gap-1">
+          <input type="text" class="form-control form-control-sm" placeholder="Cari karyawan..."
+            style="max-width:180px"
+            [value]="filterCari()" (input)="filterCari.set($any($event.target).value)">
+          <button class="btn btn-sm btn-primary px-3" (click)="cari()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Info Pengajuan -->
+      <div *ngIf="activeTab()==='PENGAJUAN'"
+           class="rounded p-2 mb-3"
+           style="background:#f8f9fa;font-size:.82rem;color:#6c757d;font-family:monospace">
+        Permintaan revisi kehadiran karyawan yang memerlukan validasi
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error()" class="alert alert-danger py-2">{{ error() }}</div>
+
+      <!-- DataTable controls -->
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Tampilkan</label>
+          <select class="form-select form-select-sm" style="width:70px"
+            [value]="dtPageSize()"
+            (change)="dtPageSize.set(+$any($event.target).value); dtPage.set(1)">
+            <option *ngFor="let n of pageSizeOptions" [value]="n">{{ n }}</option>
+          </select>
+          <span style="font-size:.83rem">data</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Cari:</label>
+          <input type="text" class="form-control form-control-sm" style="width:180px"
+            [value]="dtSearch()"
+            (input)="dtSearch.set($any($event.target).value); dtPage.set(1)"
+            placeholder="Ketik untuk mencari…">
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" *ngIf="!loading(); else loadTpl">
+        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+          <thead style="background:#f0f2f5">
+            <tr>
+              <th style="width:36px">#</th>
+              <th style="cursor:pointer" (click)="sort('namaKaryawan')">
+                Karyawan <i class="bx {{ sortIcon('namaKaryawan') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('jenisKehadiran')">
+                Jenis Kehadiran <i class="bx {{ sortIcon('jenisKehadiran') }}"></i>
+              </th>
+              <th>Revisi Kehadiran</th>
+              <th>Alasan</th>
+              <th *ngIf="activeTab()==='DIPROSES'" style="cursor:pointer" (click)="sort('status')">
+                Status <i class="bx {{ sortIcon('status') }}"></i>
+              </th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="paged().length === 0">
+              <td [attr.colspan]="activeTab()==='DIPROSES' ? 7 : 6" class="text-center text-muted py-4">
+                <b>Menampilkan 0 dari 0 total data</b>
+              </td>
+            </tr>
+            <tr *ngFor="let r of paged(); let i = index">
+              <td class="text-muted" style="font-size:.78rem">
+                {{ (dtPage()-1)*dtPageSize() + i + 1 }}
+              </td>
+              <!-- Karyawan -->
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                       style="width:34px;height:34px;overflow:hidden;background:#e0d7fa">
+                    <img *ngIf="r.fotoProfil" [src]="r.fotoProfil" alt=""
+                         style="width:34px;height:34px;object-fit:cover;border-radius:50%"
+                         onerror="this.style.display='none'">
+                    <span *ngIf="!r.fotoProfil" class="fw-bold" style="color:#6c5ce7;font-size:.8rem">
+                      {{ r.namaKaryawan.charAt(0) }}
+                    </span>
+                  </div>
+                  <div>
+                    <div class="fw-semibold" style="font-size:.85rem">{{ r.namaKaryawan }}</div>
+                    <div class="text-muted" style="font-size:.75rem">{{ r.namaDivisi ?? '-' }}</div>
+                  </div>
+                </div>
+              </td>
+              <!-- Jenis -->
+              <td>
+                <span class="badge px-2 py-1" style="font-size:.76rem"
+                  [style.background]="jenisColor(r.jenisKehadiran)"
+                  [style.color]="'#fff'">
+                  {{ jenisLabel(r.jenisKehadiran) }}
+                </span>
+                <div class="text-muted" style="font-size:.75rem">{{ formatTanggal(r.tanggal) }}</div>
+              </td>
+              <!-- Revisi Kehadiran -->
+              <td>
+                <div style="font-size:.82rem">
+                  <span *ngIf="r.jamAsli" class="text-muted text-decoration-line-through me-1">
+                    {{ formatJam(r.jamAsli) }}
+                  </span>
+                  <i class="bx bx-right-arrow-alt text-muted" *ngIf="r.jamAsli"></i>
+                  <span class="fw-semibold text-success ms-1">{{ formatJam(r.jamBaru) }}</span>
+                </div>
+              </td>
+              <!-- Alasan -->
+              <td>
+                <span style="font-size:.82rem">{{ r.alasan }}</span>
+                <div *ngIf="r.catatanPenolakan" class="text-danger" style="font-size:.75rem">
+                  <i class="bx bx-info-circle me-1"></i>{{ r.catatanPenolakan }}
+                </div>
+              </td>
+              <!-- Status (hanya tab Diproses) -->
+              <td *ngIf="activeTab()==='DIPROSES'">
+                <span class="badge px-2 py-1" style="font-size:.76rem"
+                  [style.background]="statusBadge(r.status).bg"
+                  [style.color]="statusBadge(r.status).color">
+                  {{ statusBadge(r.status).label }}
+                </span>
+              </td>
+              <!-- Aksi -->
+              <td>
+                <div class="d-flex gap-1 flex-wrap">
+                  <ng-container *ngIf="activeTab()==='PENGAJUAN'">
+                    <button class="btn btn-sm btn-success px-2 py-1"
+                      style="font-size:.78rem"
+                      [disabled]="savingId() === r.id"
+                      (click)="setujui(r)">
+                      <i class="bx bx-check me-1"></i>Setujui
+                    </button>
+                    <button class="btn btn-sm btn-danger px-2 py-1"
+                      style="font-size:.78rem"
+                      (click)="openTolak(r)">
+                      <i class="bx bx-x me-1"></i>Tolak
+                    </button>
+                  </ng-container>
+                  <button class="btn btn-sm btn-outline-danger px-2 py-1"
+                    style="font-size:.78rem"
+                    (click)="hapus(r)">
+                    <i class="bx bx-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #loadTpl>
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" style="width:2rem;height:2rem"></div>
+        </div>
+      </ng-template>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted" style="font-size:.82rem">{{ info() }}</div>
+        <nav *ngIf="totalPages() > 1">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <button class="page-link" (click)="goPage(1)">«</button>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <button class="page-link" (click)="goPage(dtPage()-1)">‹</button>
+            </li>
+            <li class="page-item" *ngFor="let p of pagesArr()" [class.active]="p===dtPage()">
+              <button class="page-link" (click)="goPage(p)">{{ p }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===totalPages()">
+              <button class="page-link" (click)="goPage(dtPage()+1)">›</button>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===totalPages()">
+              <button class="page-link" (click)="goPage(totalPages())">»</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ Modal Tambah Revisi ═══════════════ -->
+  <div *ngIf="showBuatModal()" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Tambah Permintaan Revisi</h5>
+          <button class="btn-close" (click)="showBuatModal.set(false)"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="modalError()" class="alert alert-danger py-2 mb-3">{{ modalError() }}</div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Karyawan *</label>
+            <select class="form-select form-select-sm"
+              [value]="formKaryawanId()"
+              (change)="formKaryawanId.set($any($event.target).value)">
+              <option value="">-- Pilih Karyawan --</option>
+              <option *ngFor="let k of karyawanList()" [value]="k.id">{{ k.namaLengkap }}</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tanggal *</label>
+            <input type="date" class="form-control form-control-sm"
+              [value]="formTanggal()"
+              (change)="formTanggal.set($any($event.target).value)">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Jenis Kehadiran *</label>
+            <select class="form-select form-select-sm"
+              [value]="formJenis()"
+              (change)="formJenis.set($any($event.target).value)">
+              <option *ngFor="let o of jenisOptions" [value]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col">
+              <label class="form-label fw-semibold">Jam Asli</label>
+              <input type="time" class="form-control form-control-sm"
+                [value]="formJamAsli()"
+                (change)="formJamAsli.set($any($event.target).value)">
+            </div>
+            <div class="col">
+              <label class="form-label fw-semibold">Jam Baru *</label>
+              <input type="time" class="form-control form-control-sm"
+                [value]="formJamBaru()"
+                (change)="formJamBaru.set($any($event.target).value)">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Alasan *</label>
+            <textarea class="form-control form-control-sm" rows="3"
+              [value]="formAlasan()"
+              (input)="formAlasan.set($any($event.target).value)"
+              placeholder="Jelaskan alasan revisi..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="showBuatModal.set(false)">Batal</button>
+          <button class="btn btn-primary btn-sm" [disabled]="modalSaving()" (click)="submitBuat()">
+            <span *ngIf="modalSaving()" class="spinner-border spinner-border-sm me-1"></span>
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ Modal Tolak ═══════════════ -->
+  <div *ngIf="showTolakModal()" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-danger">Tolak Revisi</h5>
+          <button class="btn-close" (click)="showTolakModal.set(false)"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="tolakError()" class="alert alert-danger py-2 mb-3">{{ tolakError() }}</div>
+          <label class="form-label fw-semibold">Catatan Penolakan *</label>
+          <textarea class="form-control form-control-sm" rows="3"
+            [value]="tolakCatatan()"
+            (input)="tolakCatatan.set($any($event.target).value)"
+            placeholder="Jelaskan alasan penolakan..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="showTolakModal.set(false)">Batal</button>
+          <button class="btn btn-danger btn-sm" [disabled]="tolakSaving()" (click)="submitTolak()">
+            <span *ngIf="tolakSaving()" class="spinner-border spinner-border-sm me-1"></span>
+            Tolak
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</app-layout>

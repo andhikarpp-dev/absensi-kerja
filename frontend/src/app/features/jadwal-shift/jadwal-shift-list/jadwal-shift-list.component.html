@@ -1,0 +1,549 @@
+<app-layout>
+  <div class="container-fluid p-3">
+
+    <!-- Breadcrumb / Title -->
+    <div class="mb-3">
+      <h4 class="fw-bold mb-1">Jadwal Shift</h4>
+      <nav aria-label="breadcrumb" class="small">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard">Dasbor</a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Kelola Karyawan</a></li>
+          <li class="breadcrumb-item active">Jadwal Shift</li>
+        </ol>
+      </nav>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-3">
+            <select class="form-select" [ngModel]="divisiFilter()" (ngModelChange)="divisiFilter.set($event ? +$event : null)">
+              <option [ngValue]="null">--Divisi--</option>
+              @for (d of shiftDivisi(); track d.id) {
+                <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Cari karyawan..."
+                     [ngModel]="search()" (ngModelChange)="search.set($event)" />
+              <button class="btn btn-outline-secondary" type="button" (click)="loadMatrix()">
+                <i class="bx bx-search"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6 d-flex justify-content-end gap-2">
+            <button class="btn btn-outline-success" (click)="openImporModal()">
+              <i class="bx bx-import me-1"></i> Impor Jadwal
+            </button>
+            <button class="btn btn-success" (click)="eksporExcel()" [disabled]="exporting()">
+              <i class="bx bx-export me-1"></i>
+              {{ exporting() ? 'Mengekspor…' : 'Ekspor Excel' }}
+            </button>
+            <button class="btn text-white" style="background:#6f42c1;" (click)="openBulkModal()">
+              <i class="bx bx-refresh me-1"></i> Ulang Jadwal Massal
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-center align-items-center gap-2 mt-3 flex-wrap">
+          <button class="btn btn-success btn-sm" (click)="prevWeek()">← Minggu sebelumnya</button>
+          <button class="btn btn-success btn-sm" (click)="nextWeek()">Minggu berikutnya →</button>
+          <span class="fw-semibold ms-2">{{ weekRangeLabel() }}</span>
+          <input type="month" class="form-control form-control-sm ms-2" style="max-width: 180px;"
+                 [ngModel]="bulan()" (ngModelChange)="bulan.set($event)" />
+        </div>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="alert alert-danger">{{ error() }}</div>
+    }
+
+    <!-- Matrix table -->
+    <div class="card">
+      <div class="card-body p-0">
+        @if (loading()) {
+          <div class="p-4 text-center text-muted">
+            <div class="spinner-border spinner-border-sm me-2"></div> Memuat...
+          </div>
+        } @else if (!matrix() || matrix()!.karyawan.length === 0) {
+          <div class="p-4 text-center text-muted">
+            Belum ada karyawan dengan divisi ber-Sistem Kerja Shift.
+          </div>
+        } @else {
+          <div class="table-responsive jadwal-shift-wrapper">
+            <table class="table table-bordered table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="sticky-col" style="min-width: 230px;">Nama</th>
+                  @for (d of weekDates(); track trackByDate($index, d)) {
+                    <th class="text-center" [class.bg-warning-subtle]="isWeekend(d)" style="min-width: 140px;">
+                      {{ formatHariTanggal(parseDate(d)) }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (k of matrix()!.karyawan; track trackByKaryawan($index, k)) {
+                  <tr>
+                    <td class="sticky-col">
+                      <div class="d-flex align-items-center gap-2">
+                        @if (fotoUrl(k.fotoProfil); as url) {
+                          <img [src]="url" alt="foto" class="rounded-circle"
+                               style="width:36px; height:36px; object-fit:cover;" />
+                        } @else {
+                          <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center"
+                               style="width:36px; height:36px;">
+                            <i class="bx bx-user"></i>
+                          </div>
+                        }
+                        <div class="flex-grow-1">
+                          <div class="fw-semibold small">{{ k.namaLengkap }}</div>
+                          <div class="text-muted small">{{ k.divisiNama }}</div>
+                          <div class="form-check form-check-sm mt-1 repeat-check">
+                            <input class="form-check-input" type="checkbox"
+                                   [id]="'rpt_'+k.id"
+                                   [checked]="isRepeating(k.id)"
+                                   [disabled]="isProcessing(k.id)"
+                                   (change)="toggleRepeatWeekly(k.id, $any($event.target).checked)" />
+                            <label class="form-check-label small" [for]="'rpt_'+k.id">
+                              Ulang jadwal ini tiap minggu
+                              @if (isProcessing(k.id)) {
+                                <span class="spinner-border spinner-border-sm ms-1" style="width: .8rem; height: .8rem;"></span>
+                              }
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    @for (d of weekDates(); track trackByDate($index, d)) {
+                      @let assign = assignmentMap()[cellKey(k.id, d)];
+                      <td class="text-center cell-shift"
+                          [class.bg-warning-subtle]="isWeekend(d)"
+                          (dblclick)="openEditor(k.id, d)">
+                        @if (assign) {
+                          <div class="shift-chip"
+                               [style.background]="assign.warna || '#0d6efd'"
+                               [title]="assign.keterangan || ''">
+                            @if (assign.status === 'AKTIF') {
+                              <div class="fw-semibold">{{ assign.polaKerjaNama || 'Shift' }}</div>
+                              @if (assign.jamMasuk || assign.jamKeluar) {
+                                <div class="small">{{ assign.jamMasuk }} - {{ assign.jamKeluar }}</div>
+                              }
+                            } @else if (assign.status === 'LIBUR') {
+                              <div class="fw-semibold">LIBUR</div>
+                            } @else {
+                              <div class="fw-semibold">OFF</div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="d-flex flex-column align-items-stretch gap-1">
+                            <select class="form-select form-select-sm"
+                                    (click)="$event.stopPropagation()"
+                                    (change)="quickAssignShift(k.id, d, +$any($event.target).value || null);
+                                              $any($event.target).value = ''">
+                              <option value="">Pilih Jadwal</option>
+                              @for (p of matrix()?.shiftOptions || []; track trackByPola($index, p)) {
+                                <option [value]="p.id">{{ p.namaPolaKerja }}</option>
+                              }
+                            </select>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                                    (click)="$event.stopPropagation(); openEditor(k.id, d)"
+                                    title="Tambah jadwal baru">
+                              <i class="bx bx-plus"></i>
+                            </button>
+                          </div>
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="px-3 py-2 small text-muted border-top">
+            Klik dua kali pada sel untuk edit. Menampilkan {{ matrix()!.karyawan.length }} karyawan.
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Editor Modal (Tambah / Edit Pola Kerja) ─────── -->
+  @if (showEditor()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);" (click)="closeEditor()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">
+              @if (editorIsEdit()) { Edit Pola Kerja }
+              @else if (editorCells().length > 1) { Tambah Pola Kerja Massal ({{ editorCells().length }} sel) }
+              @else { Tambah Pola Kerja }
+            </h5>
+            <button type="button" class="btn-close" (click)="closeEditor()"></button>
+          </div>
+          <div class="modal-body">
+
+            <!-- Status (LIBUR/OFF/AKTIF) -->
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-3 col-form-label">Status</label>
+              <div class="col-sm-9">
+                <select class="form-select"
+                        [ngModel]="editorForm().status"
+                        (ngModelChange)="updateForm('status', $event)">
+                  @for (s of statusOptions; track s.value) {
+                    <option [ngValue]="s.value">{{ s.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            @if (editorForm().status === 'AKTIF') {
+
+              <!-- Nama Pola Kerja -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label">
+                  Nama Pola Kerja <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="text" class="form-control"
+                         [ngModel]="editorForm().namaPolaKerja"
+                         (ngModelChange)="updateForm('namaPolaKerja', $event)" />
+                </div>
+              </div>
+
+              <!-- Toleransi Keterlambatan -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label">Toleransi Keterlambatan</label>
+                <div class="col-sm-9">
+                  <div class="input-group" style="max-width: 200px;">
+                    <input type="number" class="form-control" min="0"
+                           [ngModel]="editorForm().toleransi"
+                           (ngModelChange)="updateForm('toleransi', +$event || 0)" />
+                    <span class="input-group-text">Menit</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Catatan -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label">Catatan</label>
+                <div class="col-sm-9">
+                  <input type="text" class="form-control"
+                         [ngModel]="editorForm().catatan"
+                         (ngModelChange)="updateForm('catatan', $event)" />
+                </div>
+              </div>
+
+              <!-- Warna -->
+              <div class="row mb-3 align-items-center">
+                <label class="col-sm-3 col-form-label">Warna</label>
+                <div class="col-sm-9">
+                  <input type="color" class="form-control form-control-color"
+                         [ngModel]="editorForm().warna"
+                         (ngModelChange)="updateForm('warna', $event)" />
+                </div>
+              </div>
+
+              <!-- Jadwal Kerja Table -->
+              <div class="row mb-2">
+                <label class="col-sm-3 col-form-label">
+                  Jadwal Kerja <span class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <div class="table-responsive">
+                    <table class="table table-bordered align-middle mb-0 text-center">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Jam Masuk</th>
+                          <th>Jam Keluar</th>
+                          <th>Mulai Istirahat</th>
+                          <th>Selesai Istirahat</th>
+                          <th>Maks. Menit Istirahat</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>
+                            <input type="time" class="form-control form-control-sm"
+                                   [ngModel]="editorForm().jamMasuk"
+                                   (ngModelChange)="updateForm('jamMasuk', $event)" />
+                          </td>
+                          <td>
+                            <input type="time" class="form-control form-control-sm"
+                                   [ngModel]="editorForm().jamKeluar"
+                                   (ngModelChange)="updateForm('jamKeluar', $event)" />
+                          </td>
+                          <td>
+                            <input type="time" class="form-control form-control-sm"
+                                   [ngModel]="editorForm().mulaiIstirahat"
+                                   (ngModelChange)="updateForm('mulaiIstirahat', $event)" />
+                          </td>
+                          <td>
+                            <input type="time" class="form-control form-control-sm"
+                                   [ngModel]="editorForm().selesaiIstirahat"
+                                   (ngModelChange)="updateForm('selesaiIstirahat', $event)" />
+                          </td>
+                          <td>
+                            <input type="number" class="form-control form-control-sm text-center" min="0"
+                                   [ngModel]="editorForm().maksMenitIstirahat"
+                                   (ngModelChange)="updateForm('maksMenitIstirahat', +$event || 0)" />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            }
+          </div>
+
+          <div class="modal-footer justify-content-center">
+            @if (editorIsEdit()) {
+              <button type="button" class="btn btn-outline-danger me-auto"
+                      [disabled]="editorSaving()" (click)="hapusJadwal()">
+                <i class="bx bx-trash me-1"></i> Hapus
+              </button>
+            }
+            <button type="button" class="btn text-white px-4" style="background:#6f42c1;"
+                    [disabled]="editorSaving()" (click)="saveEditor()">
+              @if (editorSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Simpan
+            </button>
+            <button type="button" class="btn btn-light px-4 border" (click)="closeEditor()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Ulang Jadwal Massal Modal ────────────────── -->
+  @if (showBulkModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);" (click)="closeBulkModal()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Ulang Jadwal Massal</h5>
+            <button type="button" class="btn-close" (click)="closeBulkModal()"></button>
+          </div>
+          <div class="modal-body">
+
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-3 col-form-label">Filter Divisi</label>
+              <div class="col-sm-9">
+                <select class="form-select"
+                        [ngModel]="bulkDivisiId()"
+                        (ngModelChange)="bulkDivisiId.set($event ? +$event : null)">
+                  <option [ngValue]="null">--Divisi--</option>
+                  @for (d of shiftDivisi(); track d.id) {
+                    <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-3 col-form-label">Jumlah Target</label>
+              <div class="col-sm-9">
+                <span class="fw-semibold">{{ bulkTargetCount() }} Karyawan</span>
+              </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-3 col-form-label">Jadwal Shift</label>
+              <div class="col-sm-9">
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-success" (click)="prevBulkWeek()">←</button>
+                  <div class="form-control text-center" style="min-width: 280px;">
+                    {{ bulkWeekLabel() }}
+                  </div>
+                  <button type="button" class="btn btn-success" (click)="nextBulkWeek()">→</button>
+                </div>
+                <div class="form-check mt-3">
+                  <input class="form-check-input" type="checkbox" id="repeatWeekly"
+                         [checked]="bulkRepeatWeekly()"
+                         (change)="bulkRepeatWeekly.set($any($event.target).checked)" />
+                  <label class="form-check-label" for="repeatWeekly">
+                    Ulang jadwal yang ada pada rentang tanggal ini di setiap minggu berikutnya
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button type="button" class="btn text-white px-4" style="background:#6f42c1;"
+                    [disabled]="bulkSaving() || bulkTargetCount() === 0"
+                    (click)="saveBulk()">
+              @if (bulkSaving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Proses
+            </button>
+            <button type="button" class="btn btn-light px-4 border" (click)="closeBulkModal()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Impor Jadwal Modal ────────────────── -->
+  @if (showImporModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1055">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:640px">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Impor Jadwal Shift</h5>
+            <button type="button" class="btn-close" (click)="closeImporModal()"></button>
+          </div>
+          <div class="modal-body">
+
+            <div class="alert alert-light border small mb-3">
+              <div class="fw-bold mb-2">PENTING!</div>
+              <ul class="mb-0 ps-3">
+                <li>
+                  Untuk melakukan impor jadwal shift, pastikan file yang diupload sudah sesuai format yang ditentukan.
+                  <a href="javascript:void(0)" class="text-primary fw-semibold" (click)="downloadTemplate()">
+                    Download format impor excel di sini.
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-4 col-form-label small">
+                Pilih Berkas <span class="text-danger">*</span>
+              </label>
+              <div class="col-sm-8">
+                <input type="file" accept=".xlsx, .xls" class="form-control form-control-sm"
+                       (change)="onFileSelected($event)">
+                <div class="form-text small text-muted">Maksimal 5 MB. Format .xlsx / .xls.</div>
+              </div>
+            </div>
+
+            @if (imporResult(); as r) {
+              <hr class="my-3">
+              <div class="d-flex gap-3 mb-2 small">
+                <span class="badge bg-success">Berhasil: {{ r.berhasil }}</span>
+                <span class="badge bg-danger">Gagal: {{ r.gagal }}</span>
+              </div>
+              @if (r.errors && r.errors.length > 0) {
+                <div class="table-responsive" style="max-height:240px;overflow:auto">
+                  <table class="table table-sm table-bordered small mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width:60px" class="text-center">Baris</th>
+                        <th>NIP</th>
+                        <th>Nama</th>
+                        <th>Tanggal</th>
+                        <th>Pesan Error</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (e of r.errors; track $index) {
+                        <tr>
+                          <td class="text-center">{{ e.baris }}</td>
+                          <td>{{ e.nip || '-' }}</td>
+                          <td>{{ e.nama || '-' }}</td>
+                          <td>{{ e.tanggal || '-' }}</td>
+                          <td class="text-danger">{{ e.pesan }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            }
+
+          </div>
+          <div class="modal-footer d-flex justify-content-center gap-2">
+            @if (!imporResult()) {
+              <button type="button" class="btn btn-primary btn-sm px-4"
+                      [disabled]="!imporFile() || imporUploading()"
+                      (click)="uploadImpor()">
+                {{ imporUploading() ? 'Memproses...' : 'Proses' }}
+              </button>
+            }
+            <button type="button" class="btn btn-light border btn-sm px-4"
+                    [disabled]="imporUploading()"
+                    (click)="closeImporModal()">
+              {{ imporResult() ? 'Tutup' : 'Batal' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Ekspor Excel Modal ─────────────────── -->
+  @if (showEksporModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Ekspor Excel</h5>
+            <button type="button" class="btn-close" (click)="closeEksporModal()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-4 col-form-label">Filter Divisi</label>
+              <div class="col-sm-8">
+                <select class="form-select"
+                        [ngModel]="eksporDivisiId()"
+                        (ngModelChange)="eksporDivisiId.set($event === '' || $event === null ? null : +$event)">
+                  <option [ngValue]="null">--Divisi--</option>
+                  @for (d of shiftDivisi(); track d.id) {
+                    <option [ngValue]="d.id">{{ d.namaDivisi }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-4 col-form-label">Jumlah Target</label>
+              <div class="col-sm-8 fw-semibold">
+                {{ eksporTargetCount() }} Karyawan
+              </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <label class="col-sm-4 col-form-label">Bulan</label>
+              <div class="col-sm-8 d-flex gap-2">
+                <select class="form-select"
+                        [ngModel]="eksporBulan()"
+                        (ngModelChange)="eksporBulan.set(+$event)">
+                  @for (b of bulanNamaList; track b.value) {
+                    <option [ngValue]="b.value">{{ b.label }}</option>
+                  }
+                </select>
+                <select class="form-select"
+                        [ngModel]="eksporTahun()"
+                        (ngModelChange)="eksporTahun.set(+$event)">
+                  @for (y of eksporTahunList(); track y) {
+                    <option [ngValue]="y">{{ y }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer d-flex justify-content-center gap-2">
+            <button type="button" class="btn text-white px-4"
+                    style="background:#6f42c1;"
+                    [disabled]="exporting()"
+                    (click)="submitEkspor()">
+              {{ exporting() ? 'Memproses...' : 'Proses' }}
+            </button>
+            <button type="button" class="btn btn-light border px-4"
+                    [disabled]="exporting()"
+                    (click)="closeEksporModal()">
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</app-layout>

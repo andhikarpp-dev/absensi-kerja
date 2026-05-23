@@ -1,0 +1,455 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item active" aria-current="page">Jabatan</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h5 class="mb-0"><i class="bx bx-briefcase me-2"></i>Data Jabatan</h5>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-outline-primary btn-sm" (click)="openVisualisasi()">
+        <i class="bx bx-sitemap me-1"></i> Lihat Visualisasi
+      </button>
+      <button class="btn btn-outline-secondary btn-sm" (click)="openDefaultModal()">
+        <i class="bx bx-add-to-queue me-1"></i> Tambah Jabatan Default
+      </button>
+      <a routerLink="/jabatan/baru" class="btn btn-primary btn-sm px-3">
+        <i class="bx bx-plus me-1"></i> Tambah Jabatan
+      </a>
+    </div>
+  </div>
+
+  <!-- Error alert -->
+  @if (error()) {
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+      <i class="bx bx-error-circle me-2 fs-5"></i>
+      {{ error() }}
+      <button type="button" class="btn-close ms-auto" (click)="error.set('')"></button>
+    </div>
+  }
+
+  <!-- Table card -->
+  <div class="card">
+    <div class="card-body">
+      @if (loading()) {
+        <div class="py-4">
+          @for (i of [1,2,3,4,5]; track i) {
+            <div class="placeholder-glow mb-2">
+              <span class="placeholder col-12 rounded" style="height:38px"></span>
+            </div>
+          }
+        </div>
+      } @else if (list().length === 0) {
+        <div class="text-center py-5 text-muted">
+          <i class="bx bx-briefcase" style="font-size:3rem"></i>
+          <p class="mt-2 mb-3">Belum ada data jabatan.</p>
+          <a routerLink="/jabatan/baru" class="btn btn-primary btn-sm">Tambah Sekarang</a>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Jabatan</th>
+                <th>Induk</th>
+                <th>Target Kehadiran</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (j of list(); track j.id; let i = $index) {
+                <tr>
+                  <td class="text-muted">{{ i + 1 }}</td>
+                  <td class="fw-semibold">{{ j.namaJabatan }}</td>
+                  <td class="text-muted small">{{ j.indukNama || '-' }}</td>
+                  <td class="small">
+                    @if (!j.targetKehadiranList.length) {
+                      <span class="text-muted">-</span>
+                    } @else {
+                      @for (t of j.targetKehadiranList; track t.namaLokasi) {
+                        <span class="badge bg-info text-dark me-1">
+                          {{ t.namaLokasi }} {{ t.targetPersen }}%
+                        </span>
+                      }
+                    }
+                  </td>
+                  <td>
+                    <a [routerLink]="['/jabatan', j.id, 'edit']"
+                       class="btn btn-outline-primary btn-sm me-1" title="Edit">
+                      <i class="bx bx-edit"></i>
+                    </a>
+                    <button class="btn btn-outline-danger btn-sm me-1" title="Hapus"
+                            (click)="confirmDelete(j.id)">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" title="Riwayat Perubahan"
+                            (click)="openRiwayat(j.id)">
+                      <i class="bx bx-history"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Modal konfirmasi hapus -->
+  @if (confirmDeleteId() !== null) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger">
+              <i class="bx bx-trash me-2"></i>Hapus Jabatan?
+            </h5>
+          </div>
+          <div class="modal-body text-muted">
+            Data yang dihapus tidak dapat dikembalikan.
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-secondary btn-sm" (click)="cancelDelete()">Batal</button>
+            <button class="btn btn-danger btn-sm" (click)="doDelete()">Ya, Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal riwayat perubahan -->
+  @if (showRiwayatId() !== null && riwayatJabatan) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bx bx-history me-2"></i>
+              Riwayat Perubahan — <span class="text-primary">{{ riwayatJabatan.namaJabatan }}</span>
+            </h5>
+            <button type="button" class="btn-close" (click)="closeRiwayat()"></button>
+          </div>
+          <div class="modal-body">
+            @if (!riwayatJabatan.riwayatList.length) {
+              <p class="text-muted text-center py-3">Belum ada riwayat perubahan.</p>
+            } @else {
+              <div class="table-responsive">
+                <table class="table table-sm table-striped align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>Keterangan</th>
+                      <th>Diubah oleh</th>
+                      <th>Waktu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (r of riwayatJabatan.riwayatList; track r.id; let ri = $index) {
+                      <tr>
+                        <td class="text-muted">{{ ri + 1 }}</td>
+                        <td>{{ r.keterangan || '-' }}</td>
+                        <td class="text-muted small">{{ r.changedBy || '-' }}</td>
+                        <td class="text-muted small">{{ formatDate(r.changedAt) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-secondary btn-sm" (click)="closeRiwayat()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════
+       Modal Visualisasi Hirarki Jabatan
+  ═══════════════════════════════════════════════════════ -->
+  @if (showVisualisasi()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-sitemap me-2"></i>Hirarki Jabatan</h5>
+            <button type="button" class="btn-close" (click)="closeVisualisasi()"></button>
+          </div>
+          <div class="modal-body" style="overflow:auto; min-height:300px">
+            @if (list().length === 0) {
+              <p class="text-muted text-center py-5">Belum ada data jabatan.</p>
+            } @else if (treeRoots.length === 0) {
+              <p class="text-muted text-center py-5">Belum ada data jabatan.</p>
+            } @else {
+              <div class="org-tree-container">
+                <ul class="org-tree">
+                  @for (root of treeRoots; track root.jabatan.id) {
+                    <li>
+                      <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: root }"></ng-container>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-secondary btn-sm" (click)="closeVisualisasi()">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════
+       Modal Tambah Jabatan Default
+  ═══════════════════════════════════════════════════════ -->
+  @if (showDefaultModal()) {
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Tambahkan Jabatan Default</h5>
+            <button type="button" class="btn-close" (click)="closeDefaultModal()"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted mb-3">Jabatan yang akan ditambahkan memiliki struktur hirarki seperti berikut:</p>
+            <!-- Preview org chart default -->
+            <div style="overflow-x:auto; text-align:center">
+              <ul class="org-tree" style="display:inline-flex">
+                <li>
+                  <div class="org-node-wrap"><div class="org-node org-node-active">CEO</div></div>
+                  <ul>
+                    <li>
+                      <div class="org-node-wrap"><div class="org-node">IT Manager</div></div>
+                      <ul>
+                        <li>
+                          <div class="org-node-wrap"><div class="org-node">IT Supervisor</div></div>
+                          <ul>
+                            <li><div class="org-node-wrap"><div class="org-node">IT Staff</div></div></li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      <div class="org-node-wrap"><div class="org-node">Sales &amp; Marketing Manager</div></div>
+                      <ul>
+                        <li>
+                          <div class="org-node-wrap"><div class="org-node">Sales &amp; Marketing Supervisor</div></div>
+                          <ul>
+                            <li><div class="org-node-wrap"><div class="org-node">Sales Staff</div></div></li>
+                            <li><div class="org-node-wrap"><div class="org-node">Marketing Staff</div></div></li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      <div class="org-node-wrap"><div class="org-node">HRGA Manager</div></div>
+                      <ul>
+                        <li>
+                          <div class="org-node-wrap"><div class="org-node">HRGA Supervisor</div></div>
+                          <ul>
+                            <li><div class="org-node-wrap"><div class="org-node">HRD Staff</div></div></li>
+                            <li><div class="org-node-wrap"><div class="org-node">GA Staff</div></div></li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      <div class="org-node-wrap"><div class="org-node">Finance Accounting Manager</div></div>
+                      <ul>
+                        <li>
+                          <div class="org-node-wrap"><div class="org-node">Accounting Supervisor</div></div>
+                          <ul>
+                            <li><div class="org-node-wrap"><div class="org-node">Accounting Staff</div></div></li>
+                          </ul>
+                        </li>
+                        <li>
+                          <div class="org-node-wrap"><div class="org-node">Finance Supervisor</div></div>
+                          <ul>
+                            <li><div class="org-node-wrap"><div class="org-node">Finance Staff</div></div></li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer border-0">
+            <button class="btn btn-primary" [disabled]="savingDefault()" (click)="tambahJabatanDefault()">
+              @if (savingDefault()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Ok Tambahkan
+            </button>
+            <button class="btn btn-outline-secondary" (click)="closeDefaultModal()">Batal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</app-layout>
+
+<!-- ── Template rekursif pohon jabatan ─────────────────── -->
+<ng-template #treeNodeTpl let-node="node">
+  <div class="org-node-wrap">
+    <div class="org-node" [class.org-node-active]="node.jabatan.indukId === null">
+      {{ node.jabatan.namaJabatan }}
+    </div>
+  </div>
+  @if (node.children.length > 0) {
+    <ul>
+      @for (child of node.children; track child.jabatan.id) {
+        <li>
+          <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: child }"></ng-container>
+        </li>
+      }
+    </ul>
+  }
+</ng-template>
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   Org Chart — top-down tree, horizontal branches
+   Reference: https://codepen.io/philippkuehn/pen/QbrOaN
+   ═══════════════════════════════════════════════════════ */
+
+.org-tree-container {
+  overflow: auto;
+  padding: 20px;
+  text-align: center;
+}
+
+/* The root ul and all child ul share these rules */
+.org-tree {
+  display: inline-flex;         /* shrink-wrap width */
+  flex-direction: column;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Children row — horizontal */
+.org-tree ul {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  padding-top: 20px;            /* space for vertical drop from parent */
+  position: relative;
+}
+
+/* Horizontal bar connecting siblings */
+.org-tree ul::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  /* width will be set below via first/last child */
+}
+
+.org-tree li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+  position: relative;
+}
+
+/* Vertical drop from horizontal bar down to each node */
+.org-tree li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 20px;
+  background: #a89fe0;
+}
+
+/* Horizontal bar — spans from first child midpoint to last child midpoint */
+.org-tree li:not(:first-child):not(:last-child)::after,
+.org-tree li:first-child:not(:last-child)::after,
+.org-tree li:last-child:not(:first-child)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 2px;
+  background: #a89fe0;
+}
+/* Left half of bar (on non-first children) */
+.org-tree li:not(:first-child)::after {
+  right: 50%;
+  left: 0;
+}
+/* Right half of bar (on non-last children) */
+.org-tree li:not(:last-child)::after {
+  left: 50%;
+  right: 0;
+}
+/* Only child: no bar, just vertical */
+.org-tree li:first-child:last-child::before {
+  /* keep vertical line only */
+}
+.org-tree li:first-child:last-child::after {
+  display: none;
+}
+
+/* ── Vertical line DOWN from each node to its children ul ── */
+.org-tree li > .org-node-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.org-tree li > .org-node-wrap::after {
+  content: '';
+  width: 2px;
+  height: 20px;
+  background: #a89fe0;
+}
+/* Hide the bottom line if no children */
+.org-tree li:not(:has(ul)) > .org-node-wrap::after {
+  display: none;
+}
+
+/* ── Node box ── */
+.org-node {
+  display: inline-block;
+  border: 1.5px solid #6c5ce7;
+  border-radius: 6px;
+  padding: 6px 14px;
+  background: #fff;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(108,92,231,.15);
+}
+
+.org-node-active {
+  background: #ede9fc;
+  font-weight: 700;
+  color: #4a3aaa;
+}
+</style>
+

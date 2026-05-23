@@ -1,0 +1,80 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  APP_DIR: /home/appserv/absensi_kerja
+  JAR_NAME: absensikerja-0.0.1-SNAPSHOT.jar
+  DIST_DIR: frontend/dist/frontend/browser
+
+# ── Build Backend (Maven on host) ────────────────────────────
+build-backend:
+  stage: build
+  script:
+    - mvn clean package -DskipTests
+  artifacts:
+    paths:
+      - target/$JAR_NAME
+    expire_in: 1 hour
+  only:
+    - main
+
+# ── Build Frontend (Node via Docker) ─────────────────────────
+build-frontend:
+  stage: build
+  script:
+    - |
+      docker run --rm \
+        -v "$CI_PROJECT_DIR/frontend:/app" \
+        -w /app \
+        node:22-alpine \
+        sh -c "npm ci && npx ng build --configuration production --base-href /ak/"
+  artifacts:
+    paths:
+      - $DIST_DIR/
+    expire_in: 1 hour
+  only:
+    - main
+
+# ── Deploy ────────────────────────────────────────────────────
+deploy:
+  stage: deploy
+  needs:
+    - build-backend
+    - build-frontend
+  script:
+    - echo "==> Copying backend JAR..."
+    - mkdir -p $APP_DIR/target
+    - cp target/$JAR_NAME $APP_DIR/target/$JAR_NAME
+
+    - echo "==> Copying frontend dist..."
+    - mkdir -p $APP_DIR/$DIST_DIR
+    - rsync -a --delete $DIST_DIR/ $APP_DIR/$DIST_DIR/
+
+    - echo "==> Stopping old backend..."
+    - sudo /usr/sbin/lsof -t -i:8192 | xargs -r sudo /bin/kill || true
+    - sleep 3
+
+    - echo "==> Starting new backend..."
+    - cd $APP_DIR
+    - nohup java -jar target/$JAR_NAME > $APP_DIR/backend.log 2>&1 &
+    - echo "Backend PID:$!"
+
+    - echo "==> Waiting for backend health check..."
+    - |
+      for i in $(seq 1 30); do
+        if curl -sf http://localhost:8192/absensikerja/health > /dev/null 2>&1; then
+          echo "Backend is UP!"
+          exit 0
+        fi
+        echo "Waiting... ($i/30)"
+        sleep 2
+      done
+      echo "ERROR: Backend failed to start within 60s"
+      tail -50 $APP_DIR/backend.log
+      exit 1
+  only:
+    - main
+  environment:
+    name: production
+    url: https://labs.lua.co.id/ak/

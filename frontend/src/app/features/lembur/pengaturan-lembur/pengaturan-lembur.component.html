@@ -1,0 +1,239 @@
+<app-layout>
+  <div class="mb-3">
+    <h4 class="fw-bold mb-0">Pengaturan Lembur</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0" style="font-size:.82rem">
+        <li class="breadcrumb-item"><a routerLink="/dashboard" class="text-primary text-decoration-none">Dasbor</a></li>
+        <li class="breadcrumb-item"><span class="text-primary">Lembur</span></li>
+        <li class="breadcrumb-item active">Pengaturan Lembur</li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+
+      <!-- Tabs -->
+      <div class="d-flex gap-2 mb-4">
+        <button class="btn btn-sm px-4 fw-semibold"
+          [class.btn-primary]="activeTab()==='JADWAL'" [class.btn-outline-secondary]="activeTab()!=='JADWAL'"
+          (click)="setTab('JADWAL')">Jadwal</button>
+        <button class="btn btn-sm px-4 fw-semibold"
+          [class.btn-primary]="activeTab()==='ATURAN_UPAH'" [class.btn-outline-secondary]="activeTab()!=='ATURAN_UPAH'"
+          (click)="setTab('ATURAN_UPAH')">Aturan Upah Lembur</button>
+        <button class="btn btn-sm px-4 fw-semibold"
+          [class.btn-primary]="activeTab()==='DIVISI'" [class.btn-outline-secondary]="activeTab()!=='DIVISI'"
+          (click)="setTab('DIVISI')">Divisi</button>
+      </div>
+
+      <!-- ==================== TAB: JADWAL ==================== -->
+      <div *ngIf="activeTab()==='JADWAL'">
+        <div *ngIf="jadwalError()" class="alert alert-danger py-2">{{ jadwalError() }}</div>
+        <div *ngIf="jadwalSuccess()" class="alert alert-success py-2">{{ jadwalSuccess() }}</div>
+
+        <div *ngIf="jadwalLoading()" class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm me-2"></div>Memuat...
+        </div>
+
+        <div *ngIf="!jadwalLoading()" class="py-3">
+          <!-- Toggle 1 -->
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" role="switch" id="cegahPresensi"
+                [checked]="cegahPresensiTanpaJadwal()"
+                (change)="cegahPresensiTanpaJadwal.set($any($event.target).checked)"
+                style="width:2.5em;height:1.3em;cursor:pointer">
+            </div>
+            <label for="cegahPresensi" class="mb-0" style="font-size:.9rem;cursor:pointer">
+              Karyawan yang ada jadwal lembur hanya bisa presensi lembur sesuai jadwal
+            </label>
+          </div>
+
+          <!-- Toggle 2 -->
+          <div class="d-flex align-items-center gap-3 mb-2">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" role="switch" id="kirimNotif"
+                [checked]="kirimNotifikasiJadwal()"
+                (change)="kirimNotifikasiJadwal.set($any($event.target).checked)"
+                style="width:2.5em;height:1.3em;cursor:pointer">
+            </div>
+            <label for="kirimNotif" class="mb-0" style="font-size:.9rem;cursor:pointer">
+              Pengiriman notifikasi jadwal lembur ke semua karyawan yang mempunyai jadwal
+            </label>
+          </div>
+
+          <!-- Menit Sebelum Jadwal (visible when notif is on) -->
+          <div *ngIf="kirimNotifikasiJadwal()" class="ms-5 mb-4">
+            <div class="input-group" style="max-width:240px">
+              <input type="number" class="form-control form-control-sm" min="1"
+                placeholder=""
+                [value]="menitSebelumJadwal()"
+                (change)="menitSebelumJadwal.set(+$any($event.target).value || null)">
+              <span class="input-group-text" style="font-size:.82rem">Menit Sebelum Jadwal</span>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <button class="btn btn-primary px-4" (click)="saveJadwal()" [disabled]="jadwalSaving()">
+              <span *ngIf="jadwalSaving()" class="spinner-border spinner-border-sm me-1"></span>
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: ATURAN UPAH LEMBUR ==================== -->
+      <div *ngIf="activeTab()==='ATURAN_UPAH'">
+        <div *ngIf="tarifError()" class="alert alert-danger py-2">{{ tarifError() }}</div>
+        <div *ngIf="tarifSuccess()" class="alert alert-success py-2">{{ tarifSuccess() }}</div>
+
+        <div *ngIf="tarifLoading()" class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm me-2"></div>Memuat...
+        </div>
+
+        <div *ngIf="!tarifLoading()">
+          <div class="row">
+            <div class="col-md-9 col-lg-8">
+              <!-- Label header -->
+              <div class="row fw-semibold text-center mb-2 border-bottom pb-2" style="font-size:.82rem">
+                <div class="col-3 text-start" style="color:#6366f1">Tarif Upah</div>
+                <div class="col-3">Jam Lembur</div>
+                <div class="col-2">Hari Kerja</div>
+                <div class="col-2">(hari libur)<br>5 Hari Kerja</div>
+                <div class="col-2">(hari libur)<br>6 Hari Kerja</div>
+              </div>
+
+              <!-- Rows -->
+              <div class="row align-items-center py-2 border-bottom"
+                   *ngFor="let t of tarifList()"
+                   style="font-size:.85rem">
+                <div class="col-3"></div>
+                <div class="col-3 text-muted">{{ t.jamLembur }} jam</div>
+                <div class="col-2">
+                  <div class="input-group input-group-sm" style="max-width:90px">
+                    <input type="number" class="form-control form-control-sm text-center"
+                      [(ngModel)]="t.hariKerja" min="0" step="0.5">
+                    <span class="input-group-text">x</span>
+                  </div>
+                </div>
+                <div class="col-2">
+                  <div class="input-group input-group-sm" style="max-width:90px">
+                    <input type="number" class="form-control form-control-sm text-center"
+                      [(ngModel)]="t.hariLibur5HariKerja" min="0" step="0.5">
+                    <span class="input-group-text">x</span>
+                  </div>
+                </div>
+                <div class="col-2">
+                  <div class="input-group input-group-sm" style="max-width:90px">
+                    <input type="number" class="form-control form-control-sm text-center"
+                      [(ngModel)]="t.hariLibur6HariKerja" min="0" step="0.5">
+                    <span class="input-group-text">x</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button class="btn btn-primary px-4" (click)="saveTarif()" [disabled]="tarifSaving()">
+              <span *ngIf="tarifSaving()" class="spinner-border spinner-border-sm me-1"></span>
+              Simpan Perubahan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: DIVISI ==================== -->
+      <div *ngIf="activeTab()==='DIVISI'">
+        <div *ngIf="divisiError()" class="alert alert-danger py-2">{{ divisiError() }}</div>
+        <div *ngIf="divisiSuccess()" class="alert alert-success py-2">{{ divisiSuccess() }}</div>
+
+        <!-- Search -->
+        <div class="d-flex gap-2 mb-3">
+          <div class="input-group" style="max-width:260px">
+            <input type="text" class="form-control form-control-sm" placeholder="Cari"
+              [value]="divisiSearch()" (input)="divisiSearch.set($any($event.target).value)">
+            <button class="btn btn-outline-secondary btn-sm"><i class="bx bx-search"></i></button>
+          </div>
+        </div>
+
+        <div *ngIf="divisiLoading()" class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm me-2"></div>Memuat...
+        </div>
+
+        <div *ngIf="!divisiLoading()">
+          <div *ngIf="filteredDivisi.length === 0" class="text-center py-5 text-muted">
+            <i class="bx bx-group" style="font-size:2.5rem"></i>
+            <p class="mt-2 mb-0">Tidak ada data divisi.</p>
+          </div>
+
+          <div class="table-responsive" *ngIf="filteredDivisi.length > 0">
+            <table class="table table-hover align-middle" style="font-size:.85rem">
+              <thead class="table-light">
+                <tr>
+                  <th>Nama</th>
+                  <th class="text-center">Presensi Sesuai Lokasi</th>
+                  <th class="text-center">Catatan Mulai Lembur</th>
+                  <th class="text-center">Catatan Selesai Lembur</th>
+                  <th class="text-center">Jadwal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of filteredDivisi">
+                  <td>
+                    <span class="fw-semibold">{{ d.nama }}</span>
+                    <span *ngIf="d.polaMinggu" class="badge ms-1"
+                      style="background:#fef9c3;color:#92400e;font-size:.7rem">{{ d.polaMinggu }}</span>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-flex justify-content-center gap-3">
+                      <div class="form-check form-check-inline mb-0">
+                        <input class="form-check-input" type="checkbox"
+                          [(ngModel)]="d.presensiLokasiMulai" [id]="'ml-'+d.id">
+                        <label class="form-check-label small" [for]="'ml-'+d.id">Mulai Lembur</label>
+                      </div>
+                      <div class="form-check form-check-inline mb-0">
+                        <input class="form-check-input" type="checkbox"
+                          [(ngModel)]="d.presensiLokasiSelesai" [id]="'sl-'+d.id">
+                        <label class="form-check-label small" [for]="'sl-'+d.id">Selesai Lembur</label>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <select class="form-select form-select-sm" style="min-width:150px"
+                      [(ngModel)]="d.catatanMulaiLembur">
+                      <option *ngFor="let opt of catatanOptions" [value]="opt">{{ opt }}</option>
+                    </select>
+                  </td>
+                  <td class="text-center">
+                    <select class="form-select form-select-sm" style="min-width:150px"
+                      [(ngModel)]="d.catatanSelesaiLembur">
+                      <option *ngFor="let opt of catatanOptions" [value]="opt">{{ opt }}</option>
+                    </select>
+                  </td>
+                  <td class="text-center">
+                    <div class="form-check mb-0 d-flex justify-content-center">
+                      <input class="form-check-input" type="checkbox"
+                        [(ngModel)]="d.cegahTanpaJadwal" [id]="'cj-'+d.id">
+                      <label class="form-check-label small ms-1" [for]="'cj-'+d.id">
+                        Cegah presensi lembur tanpa jadwal
+                      </label>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-3" *ngIf="filteredDivisi.length > 0">
+            <button class="btn btn-primary px-4" (click)="saveDivisi()" [disabled]="divisiSaving()">
+              <span *ngIf="divisiSaving()" class="spinner-border spinner-border-sm me-1"></span>
+              Simpan Perubahan
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</app-layout>

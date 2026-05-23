@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;d6de6a16ed294fe4abcbf40e400d0b01fe4f3edaebcc491c739f804522a77307;C:\\Users\\Muhriz\\Music\\absensikerja\\frontend\\src\\app\\features\\absensi\\check-in-out\\check-in-out.component.html"],
+  "sourcesContent": ["\n  @keyframes pulse {\n    0%, 100% { opacity: 1; transform: scale(1); }\n    50%       { opacity: .5; transform: scale(.8); }\n  }\n"],
+  "mappings": ";AACE,WAAW;AACT;AAAW,aAAS;AAAG,eAAW,MAAM;AAAI;AAC5C;AAAY,aAAS;AAAI,eAAW,MAAM;AAAK;AACjD;",
+  "names": []
+}

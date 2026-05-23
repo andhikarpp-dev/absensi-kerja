@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/karyawan/karyawan-cuti/karyawan-cuti.component.scss"],
+  "sourcesContent": [".btn-group .btn.active {\r\n  background-color: #ede9fe;\r\n  border-color: #c4b5fd;\r\n  color: #5b21b6;\r\n}\r\n.dropdown-item:hover {\r\n  background-color: #f3f4f6;\r\n}\r\n"],
+  "mappings": ";AAAA,CAAA,UAAA,CAAA,GAAA,CAAA;AACE,oBAAA;AACA,gBAAA;AACA,SAAA;;AAEF,CAAA,aAAA;AACE,oBAAA;;",
+  "names": []
+}

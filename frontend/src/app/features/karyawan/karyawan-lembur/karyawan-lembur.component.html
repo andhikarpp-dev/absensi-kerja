@@ -1,0 +1,215 @@
+<app-layout>
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Manajemen</div>
+    <div class="ps-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 p-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard"><i class="bx bx-home-alt"></i></a></li>
+          <li class="breadcrumb-item"><a routerLink="/karyawan">Karyawan</a></li>
+          @if (karyawan()?.namaLengkap) {
+            <li class="breadcrumb-item">
+              <a [routerLink]="['/karyawan', karyawan()!.id]">{{ karyawan()!.namaLengkap }}</a>
+            </li>
+          }
+          <li class="breadcrumb-item active">Lembur</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Info Bar -->
+  <div class="info-bar card border-0 shadow-sm mb-3 px-4 py-3 d-flex flex-row align-items-center gap-3">
+    @if (fotoUrl(karyawan()?.fotoProfil); as url) {
+      <img [src]="url" alt="Foto" class="rounded-circle"
+           style="width:44px;height:44px;object-fit:cover;border:2px solid #e9ecef;flex-shrink:0" />
+    } @else {
+      <div class="rounded-circle d-flex align-items-center justify-content-center"
+           style="width:44px;height:44px;background:#f3f4f6;color:#9ca3af;font-size:1.2rem;flex-shrink:0">
+        <i class="bx bx-user"></i>
+      </div>
+    }
+    <div class="flex-grow-1">
+      <div class="fw-bold" style="font-size:1rem">{{ karyawan()?.namaLengkap || '—' }}</div>
+      <div class="text-muted small">
+        {{ karyawan()?.namaDivisi || 'Belum ada divisi' }}
+        @if (karyawan()?.namaJabatan) { · {{ karyawan()!.namaJabatan }} }
+      </div>
+    </div>
+    <a [routerLink]="['/karyawan', karyawan()?.id]" class="btn btn-outline-secondary btn-sm px-3">
+      <i class="bx bx-arrow-back me-1"></i> Kembali
+    </a>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+      <i class="bx bx-error-circle fs-5"></i> {{ error() }}
+    </div>
+  }
+
+  <!-- Card utama -->
+  <div class="card border-0 shadow-sm">
+
+    <!-- Header judul + filter -->
+    <div class="px-4 pt-4 pb-3 border-bottom">
+      <div class="fw-bold mb-3" style="font-size:1.1rem">
+        <i class="bx bx-moon me-2 text-warning"></i>Lembur
+      </div>
+
+      <!-- Filter row -->
+      <div class="d-flex align-items-center flex-wrap gap-2 justify-content-between">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <!-- Dari tanggal -->
+          <input type="date" class="form-control form-control-sm"
+                 style="width:155px"
+                 [ngModel]="dariTgl()"
+                 (ngModelChange)="dariTgl.set($event); halaman.set(1)" />
+          <span class="text-muted small">-</span>
+          <!-- Sampai tanggal -->
+          <input type="date" class="form-control form-control-sm"
+                 style="width:155px"
+                 [ngModel]="sampaiTgl()"
+                 (ngModelChange)="sampaiTgl.set($event); halaman.set(1)" />
+          <!-- Cari -->
+          <input type="text" class="form-control form-control-sm"
+                 style="width:180px"
+                 placeholder="Cari..."
+                 [ngModel]="cari()"
+                 (ngModelChange)="cari.set($event); halaman.set(1)" />
+          <button class="btn btn-sm btn-secondary px-3" (click)="cariData()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+
+        <!-- Tombol Reset -->
+        <button class="btn btn-sm btn-danger px-3" (click)="resetFilter()" title="Reset filter">
+          <i class="bx bx-reset"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Subjudul -->
+    <div class="px-4 py-2 border-bottom"
+         style="background:#f9fafb;font-size:.78rem;color:#9ca3af;font-style:italic">
+      Daftar jam lembur karyawan yang memerlukan validasi
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="text-center py-5 text-muted">
+        <span class="spinner-border text-warning mb-3"></span>
+        <p class="mb-0 small">Memuat data lembur...</p>
+      </div>
+    }
+
+    @if (!loading()) {
+      <!-- Tabel -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+          <thead>
+            <tr>
+              <th style="min-width:240px">Karyawan</th>
+              <th style="min-width:200px">Waktu Lembur</th>
+              <th style="min-width:130px">Total Lembur</th>
+              <th class="text-center" style="min-width:80px">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (listHalaman().length === 0) {
+              <tr>
+                <td colspan="4" class="text-center py-5 text-muted">
+                  <i class="bx bx-moon fs-3 d-block mb-2"></i>
+                  Tidak ada data lembur untuk filter ini.
+                </td>
+              </tr>
+            }
+            @for (a of listHalaman(); track a.tanggal) {
+              <tr>
+                <!-- Karyawan -->
+                <td class="py-3 px-4">
+                  <div class="d-flex align-items-center gap-3">
+                    @if (fotoUrl(a.fotoProfil); as url) {
+                      <img [src]="url" alt="Foto"
+                           class="rounded-circle flex-shrink-0"
+                           style="width:38px;height:38px;object-fit:cover;border:2px solid #e9ecef" />
+                    } @else {
+                      <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                           style="width:38px;height:38px;background:#fef9c3;color:#a16207;font-size:1rem">
+                        <i class="bx bx-user"></i>
+                      </div>
+                    }
+                    <div>
+                      <div class="fw-semibold" style="font-size:.88rem">{{ a.namaKaryawan }}</div>
+                      <div class="text-muted" style="font-size:.77rem">
+                        {{ formatTanggal(a.tanggal) }}
+                      </div>
+                      @if (a.namaDivisi) {
+                        <div style="font-size:.74rem;color:#a3a8b4">{{ a.namaDivisi }}</div>
+                      }
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Waktu Lembur -->
+                <td class="py-3 px-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="lembur-jam">{{ formatJam(a.jamMulaiLembur) }}</span>
+                    <i class="bx bx-right-arrow-alt text-muted"></i>
+                    <span class="lembur-jam">{{ formatJam(a.jamSelesaiLembur) }}</span>
+                  </div>
+                  @if (a.namaPolaKerja) {
+                    <div class="text-muted mt-1" style="font-size:.75rem">{{ a.namaPolaKerja }}</div>
+                  }
+                </td>
+
+                <!-- Total Lembur -->
+                <td class="py-3 px-3">
+                  <span class="lembur-durasi">
+                    <i class="bx bx-time-five me-1"></i>{{ formatDurasi(a) }}
+                  </span>
+                </td>
+
+                <!-- Aksi -->
+                <td class="py-3 text-center">
+                  <a [routerLink]="['/karyawan', karyawan()?.id, 'kehadiran']"
+                     class="btn btn-sm btn-outline-secondary px-3" style="font-size:.78rem">
+                    Detail
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer: info + pagination -->
+      <div class="px-4 py-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2"
+           style="background:#fafafa">
+        <div style="font-size:.82rem;color:#6b7280;font-weight:600">
+          Menampilkan {{ listHalaman().length }} dari {{ totalData() }} total data
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center gap-1">
+          <button class="pg-btn" [disabled]="halaman() === 1" (click)="halaman.set(1)">
+            <i class="bx bx-chevrons-left"></i>
+          </button>
+          <button class="pg-btn" [disabled]="halaman() === 1" (click)="halamanSebelumnya()">
+            <i class="bx bx-chevron-left"></i>
+          </button>
+          <span class="pg-info">{{ halaman() }} / {{ totalHalaman() }}</span>
+          <button class="pg-btn" [disabled]="halaman() >= totalHalaman()" (click)="halamanBerikutnya()">
+            <i class="bx bx-chevron-right"></i>
+          </button>
+          <button class="pg-btn" [disabled]="halaman() >= totalHalaman()" (click)="halaman.set(totalHalaman())">
+            <i class="bx bx-chevrons-right"></i>
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+
+</app-layout>

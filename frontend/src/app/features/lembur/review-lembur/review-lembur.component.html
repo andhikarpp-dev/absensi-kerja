@@ -1,0 +1,463 @@
+<app-layout>
+  <!-- Breadcrumb -->
+  <div class="mb-3">
+    <h4 class="fw-bold mb-0">Review Lembur</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0" style="font-size:.82rem">
+        <li class="breadcrumb-item"><a routerLink="/dashboard" class="text-primary text-decoration-none">Dasbor</a></li>
+        <li class="breadcrumb-item"><span class="text-primary">Lembur</span></li>
+        <li class="breadcrumb-item active">Review Lembur</li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+
+      <!-- Filter -->
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <input type="date" class="form-control form-control-sm" style="max-width:145px"
+          [value]="filterDari()" (change)="filterDari.set($any($event.target).value)">
+        <span class="text-muted">-</span>
+        <input type="date" class="form-control form-control-sm" style="max-width:145px"
+          [value]="filterSampai()" (change)="filterSampai.set($any($event.target).value)">
+
+        <select class="form-select form-select-sm" style="max-width:180px"
+          [value]="filterDivisi()" (change)="filterDivisi.set($any($event.target).value)">
+          <option value="">--Divisi--</option>
+          <option *ngFor="let d of divisiList()" [value]="d.id">{{ d.namaDivisi }}</option>
+        </select>
+
+        <div class="d-flex gap-1">
+          <input type="text" class="form-control form-control-sm" placeholder="Cari" style="max-width:170px"
+            [value]="filterCari()" (input)="filterCari.set($any($event.target).value)" (keyup.enter)="load()">
+          <button class="btn btn-sm btn-primary px-3" (click)="load()">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
+
+        <!-- Tombol riwayat (merah) dan hapus massal (biru) sesuai gambar -->
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-danger btn-sm px-3" title="Riwayat Penolakan" (click)="openRiwayat()">
+            <i class="bx bx-history"></i>
+          </button>
+          <button class="btn btn-primary btn-sm px-3" title="Ekspor Excel" (click)="openEkspor()">
+            <i class="bx bx-spreadsheet"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="rounded p-2 mb-3" style="background:#f8f9fa;font-size:.82rem;color:#6c757d;font-family:monospace">
+        Daftar jam lembur karyawan yang memerlukan validasi
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error()" class="alert alert-danger py-2">{{ error() }}</div>
+
+      <!-- DataTable controls -->
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Tampilkan</label>
+          <select class="form-select form-select-sm" style="width:70px"
+            [value]="dtPageSize()" (change)="dtPageSize.set(+$any($event.target).value); dtPage.set(1)">
+            <option *ngFor="let n of pageSizeOptions" [value]="n">{{ n }}</option>
+          </select>
+          <span style="font-size:.83rem">data</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0" style="font-size:.83rem">Cari:</label>
+          <input type="text" class="form-control form-control-sm" style="width:180px"
+            [value]="dtSearch()"
+            (input)="dtSearch.set($any($event.target).value); dtPage.set(1)"
+            placeholder="Ketik untuk mencari…">
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" *ngIf="!loading(); else loadTpl">
+        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+          <thead style="background:#f0f2f5">
+            <tr>
+              <th style="width:36px">#</th>
+              <th style="cursor:pointer" (click)="sort('namaKaryawan')">
+                Karyawan <i class="bx {{ sortIcon('namaKaryawan') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('tanggal')">
+                Waktu Lembur <i class="bx {{ sortIcon('tanggal') }}"></i>
+              </th>
+              <th style="cursor:pointer" (click)="sort('totalLembur')">
+                Total Lembur <i class="bx {{ sortIcon('totalLembur') }}"></i>
+              </th>
+              <th class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="dtFiltered().length === 0">
+              <td colspan="5" class="text-center py-4">
+                <strong>Menampilkan 0 dari 0 total data</strong>
+              </td>
+            </tr>
+            <tr *ngFor="let r of dtPaged(); let i = index">
+              <td class="text-muted" style="font-size:.78rem">{{ (dtPage()-1)*dtPageSize() + i + 1 }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <img *ngIf="r.fotoProfil" [src]="r.fotoProfil"
+                    class="rounded-circle" style="width:36px;height:36px;object-fit:cover"
+                    onerror="this.style.display='none'">
+                  <div>
+                    <div class="fw-semibold">{{ r.namaKaryawan }}</div>
+                    <div class="text-muted" style="font-size:.75rem">{{ r.namaDivisi }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="fw-semibold">{{ r.namaHari }}, {{ formatTanggal(r.tanggal) }}</div>
+                <div class="text-muted" style="font-size:.78rem">
+                  {{ r.jamMulaiLembur ?? '-' }} – {{ r.jamSelesaiLembur ?? '-' }}
+                </div>
+                <div *ngIf="r.namaPolaKerja" class="text-muted" style="font-size:.75rem">
+                  Shift: {{ r.namaPolaKerja }}
+                  <span *ngIf="r.jamKerjaMulai">({{ r.jamKerjaMulai }} – {{ r.jamKerjaSelesai }})</span>
+                </div>
+              </td>
+              <td>
+                <span *ngIf="r.totalLembur" class="badge bg-warning-subtle text-warning fw-semibold px-2">
+                  {{ r.totalLembur }}
+                </span>
+                <span *ngIf="!r.totalLembur" class="text-muted">-</span>
+              </td>
+              <td class="text-center">
+                <div class="d-flex justify-content-center gap-1">
+                  <button class="btn btn-sm btn-outline-secondary px-2" title="Detail" (click)="openDetail(r)">
+                    <i class="bx bx-info-circle"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger px-2" title="Hapus lembur" (click)="openHapus(r)">
+                    <i class="bx bx-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #loadTpl>
+        <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div> Memuat…</div>
+      </ng-template>
+
+      <!-- Footer -->
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <small class="text-muted">
+          Menampilkan
+          {{ dtFiltered().length === 0 ? 0 : (dtPage()-1)*dtPageSize()+1 }}–{{ Math.min(dtPage()*dtPageSize(), dtFiltered().length) }}
+          dari {{ dtFiltered().length }} total data
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(1)">&laquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===1">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtPage()-1)">&lsaquo;</a>
+            </li>
+            <li *ngFor="let p of pageNumbers()" class="page-item" [class.active]="dtPage()===p">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(p)">{{ p }}</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===dtTotalPages()">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtPage()+1)">&rsaquo;</a>
+            </li>
+            <li class="page-item" [class.disabled]="dtPage()===dtTotalPages()">
+              <a class="page-link" href="javascript:;" (click)="dtPage.set(dtTotalPages())">&raquo;</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal Detail ─────────────────────────────────────── -->
+  <div *ngIf="showDetailModal()" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Detail Lembur</h5>
+          <button class="btn-close" (click)="closeDetail()"></button>
+        </div>
+        <div class="modal-body" *ngIf="detailTarget() as r">
+          <table class="table table-borderless mb-0" style="font-size:.88rem">
+            <tr><th style="width:40%">Karyawan</th><td>{{ r.namaKaryawan }}</td></tr>
+            <tr><th>Divisi</th><td>{{ r.namaDivisi ?? '-' }}</td></tr>
+            <tr><th>Tanggal</th><td>{{ r.namaHari }}, {{ formatTanggal(r.tanggal) }}</td></tr>
+            <tr><th>Mulai Lembur</th><td>{{ r.jamMulaiLembur ?? '-' }}</td></tr>
+            <tr><th>Selesai Lembur</th><td>{{ r.jamSelesaiLembur ?? '-' }}</td></tr>
+            <tr><th>Total Lembur</th><td><strong>{{ r.totalLembur ?? '-' }}</strong></td></tr>
+            <tr><th>Shift</th><td>{{ r.namaPolaKerja ?? '-' }}</td></tr>
+            <tr *ngIf="r.jamKerjaMulai"><th>Jam Kerja</th><td>{{ r.jamKerjaMulai }} – {{ r.jamKerjaSelesai }}</td></tr>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm px-4" (click)="closeDetail()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Konfirmasi Hapus ───────────────────────────── -->
+  <div *ngIf="showHapusModal()" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold text-danger">Hapus Data Lembur</h5>
+          <button class="btn-close" (click)="closeHapus()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">Apakah Anda yakin ingin menghapus data lembur milik:</p>
+          <p class="fw-semibold mb-0">{{ hapusTarget()?.namaKaryawan }}</p>
+          <p class="text-muted" style="font-size:.83rem">
+            {{ hapusTarget()?.namaHari }}, {{ formatTanggal(hapusTarget()?.tanggal ?? '') }}
+            — Total: {{ hapusTarget()?.totalLembur ?? '-' }}
+          </p>
+          <div *ngIf="hapusError()" class="alert alert-danger py-2 mt-2">{{ hapusError() }}</div>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-secondary btn-sm px-4" (click)="closeHapus()">Batal</button>
+          <button class="btn btn-danger btn-sm px-4" (click)="konfirmasiHapus()" [disabled]="hapusSaving()">
+            <span *ngIf="hapusSaving()" class="spinner-border spinner-border-sm me-1"></span>
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Riwayat Penolakan ─────────────────────────── -->
+  <div *ngIf="showRiwayatModal()" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bx bx-history me-1 text-danger"></i>Riwayat Penolakan Lembur</h5>
+          <button class="btn-close" (click)="closeRiwayat()"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Loading -->
+          <div *ngIf="riwayatLoading()" class="text-center py-4">
+            <div class="spinner-border spinner-border-sm text-danger"></div> Memuat…
+          </div>
+
+          <!-- Error -->
+          <div *ngIf="riwayatError()" class="alert alert-danger py-2">{{ riwayatError() }}</div>
+
+          <ng-container *ngIf="!riwayatLoading()">
+            <!-- Controls -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0" style="font-size:.83rem">Tampilkan</label>
+                <select class="form-select form-select-sm" style="width:70px"
+                  [value]="riwayatPageSize()"
+                  (change)="riwayatPageSize.set(+$any($event.target).value); riwayatPage.set(1)">
+                  <option *ngFor="let n of pageSizeOptions" [value]="n">{{ n }}</option>
+                </select>
+                <span style="font-size:.83rem">data</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0" style="font-size:.83rem">Cari:</label>
+                <input type="text" class="form-control form-control-sm" style="width:200px"
+                  placeholder="Nama karyawan…"
+                  [value]="riwayatSearch()"
+                  (input)="riwayatSearch.set($any($event.target).value); riwayatPage.set(1)">
+              </div>
+            </div>
+
+            <!-- Tabel -->
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0" style="font-size:.84rem">
+                <thead style="background:#f0f2f5">
+                  <tr>
+                    <th style="width:36px">#</th>
+                    <th>Karyawan</th>
+                    <th>Tanggal Absensi</th>
+                    <th>Waktu Lembur</th>
+                    <th>Total Lembur</th>
+                    <th>Dihapus Oleh</th>
+                    <th>Waktu Penolakan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngIf="riwayatFiltered().length === 0">
+                    <td colspan="7" class="text-center py-4 text-muted fw-semibold">
+                      Belum ada riwayat penolakan
+                    </td>
+                  </tr>
+                  <tr *ngFor="let r of riwayatPaged(); let i = index">
+                    <td class="text-muted" style="font-size:.78rem">{{ (riwayatPage()-1)*riwayatPageSize()+i+1 }}</td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <img *ngIf="r.fotoProfil" [src]="r.fotoProfil"
+                          class="rounded-circle" style="width:32px;height:32px;object-fit:cover"
+                          onerror="this.style.display='none'">
+                        <div>
+                          <div class="fw-semibold">{{ r.namaKaryawan }}</div>
+                          <div class="text-muted" style="font-size:.74rem">{{ r.namaDivisi }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="fw-semibold">{{ r.namaHari }}</div>
+                      <div class="text-muted" style="font-size:.78rem">{{ formatTanggal(r.tanggalAbsensi) }}</div>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{ r.jamMulaiLembur ?? '-' }} – {{ r.jamSelesaiLembur ?? '-' }}</span>
+                    </td>
+                    <td>
+                      <span *ngIf="r.totalLembur" class="badge bg-danger-subtle text-danger fw-semibold">
+                        {{ r.totalLembur }}
+                      </span>
+                      <span *ngIf="!r.totalLembur" class="text-muted">-</span>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{ r.dihapusOleh ?? '-' }}</span>
+                    </td>
+                    <td>
+                      <span class="text-muted" style="font-size:.78rem">{{ formatDateTime(r.dihapusAt) }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination riwayat -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <small class="text-muted">
+                Menampilkan
+                {{ riwayatFiltered().length === 0 ? 0 : (riwayatPage()-1)*riwayatPageSize()+1 }}–{{ Math.min(riwayatPage()*riwayatPageSize(), riwayatFiltered().length) }}
+                dari {{ riwayatFiltered().length }} total data
+              </small>
+              <nav>
+                <ul class="pagination pagination-sm mb-0">
+                  <li class="page-item" [class.disabled]="riwayatPage()===1">
+                    <a class="page-link" href="javascript:;" (click)="riwayatPage.set(1)">&laquo;</a>
+                  </li>
+                  <li class="page-item" [class.disabled]="riwayatPage()===1">
+                    <a class="page-link" href="javascript:;" (click)="riwayatPage.set(riwayatPage()-1)">&lsaquo;</a>
+                  </li>
+                  <li *ngFor="let p of riwayatPageNumbers()" class="page-item" [class.active]="riwayatPage()===p">
+                    <a class="page-link" href="javascript:;" (click)="riwayatPage.set(p)">{{ p }}</a>
+                  </li>
+                  <li class="page-item" [class.disabled]="riwayatPage()===riwayatTotalPages()">
+                    <a class="page-link" href="javascript:;" (click)="riwayatPage.set(riwayatPage()+1)">&rsaquo;</a>
+                  </li>
+                  <li class="page-item" [class.disabled]="riwayatPage()===riwayatTotalPages()">
+                    <a class="page-link" href="javascript:;" (click)="riwayatPage.set(riwayatTotalPages())">&raquo;</a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </ng-container>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm px-4" (click)="closeRiwayat()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Ekspor Excel ──────────────────────────────── -->
+  <div *ngIf="showEksporModal()" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+      <div class="modal-content">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold">Ekspor Excel</h5>
+          <button class="btn-close" (click)="closeEkspor()"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Tanggal -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">
+              Tanggal <span class="text-danger">*</span>
+            </label>
+            <div class="col-sm-8">
+              <div class="d-flex align-items-center gap-2">
+                <input type="date" class="form-control form-control-sm"
+                  [value]="eksporDari()"
+                  (change)="eksporDari.set($any($event.target).value)">
+                <span>-</span>
+                <input type="date" class="form-control form-control-sm"
+                  [value]="eksporSampai()"
+                  (change)="eksporSampai.set($any($event.target).value)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Divisi -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">Divisi</label>
+            <div class="col-sm-8">
+              <select class="form-select form-select-sm"
+                [value]="eksporDivisi()"
+                (change)="eksporDivisi.set($any($event.target).value)">
+                <option value="">--Divisi--</option>
+                <option *ngFor="let d of divisiList()" [value]="d.id">{{ d.namaDivisi }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Kata kunci -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">Kata kunci</label>
+            <div class="col-sm-8">
+              <input type="text" class="form-control form-control-sm"
+                placeholder=""
+                [value]="eksporCari()"
+                (input)="eksporCari.set($any($event.target).value)">
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="mb-2 row align-items-center">
+            <label class="col-sm-4 col-form-label" style="font-size:.88rem">
+              Kirimkan File ke Email <span class="text-danger">*</span>
+            </label>
+            <div class="col-sm-8">
+              <input type="text" class="form-control form-control-sm"
+                placeholder=""
+                [value]="eksporEmail()"
+                (input)="eksporEmail.set($any($event.target).value)">
+              <div class="text-muted mt-1" style="font-size:.78rem">Pisah email dengan koma jika lebih dari satu.</div>
+            </div>
+          </div>
+
+          <!-- Info box -->
+          <div class="row">
+            <div class="col-sm-8 offset-sm-4">
+              <div class="rounded p-3 mt-1" style="background:#6c63ff;color:#fff;font-size:.82rem">
+                Waktu yang dibutuhkan untuk menerima email hasil ekspor excel maksimal 20 menit, tergantung banyaknya data yang dikumpulkan.
+              </div>
+            </div>
+          </div>
+
+          <!-- Error -->
+          <div *ngIf="eksporError()" class="alert alert-danger py-2 mt-2">{{ eksporError() }}</div>
+
+          <!-- Sukses -->
+          <div *ngIf="eksporSukses()" class="alert alert-success py-2 mt-2">
+            <i class="bx bx-check-circle me-1"></i>
+            Email sedang diproses dan akan dikirim ke <strong>{{ eksporEmail() }}</strong> dalam beberapa menit. Modal akan tertutup otomatis…
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary btn-sm px-4" (click)="prosesEkspor()" [disabled]="eksporProses()">
+            <span *ngIf="eksporProses()" class="spinner-border spinner-border-sm me-1"></span>
+            Proses
+          </button>
+          <button class="btn btn-secondary btn-sm px-4" (click)="closeEkspor()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</app-layout>

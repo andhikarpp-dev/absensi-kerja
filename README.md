@@ -32,6 +32,7 @@ Frontend tampilkan daftar karyawan + info periode
 ```
 tidak-hadir/
 ├── tidak-hadir-list.component.ts   # Komponen utama (Angular standalone)
+├── tidak-hadir-list.component.html # Template HTML tampilan daftar karyawan
 │
 backend/
 ├── controller/
